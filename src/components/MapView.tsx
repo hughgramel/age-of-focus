@@ -8,12 +8,11 @@ interface StateData {
   name: string;
   color: string;
   path: SVGPathElement;
-  nationId?: string;
+  nationId?: string; // Track which nation this province belongs to
 }
 
 interface Nation {
   id: string;
-  name: string;
   provinceIds: string[];
   color: string;
 }
@@ -30,56 +29,39 @@ export default function MapView() {
   const originalColorsRef = useRef<Map<string, string>>(new Map());
   const nationsRef = useRef<Map<string, Nation>>(new Map());
 
-  // Function to generate a random color
-  const generateRandomColor = () => {
-    const hue = Math.random() * 360;
-    const saturation = 70 + Math.random() * 20; // 70-90%
-    const lightness = 45 + Math.random() * 10;  // 45-55%
-    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
-  };
-
   // Function to create a nation from provinces
-  const createNation = useCallback((provinceIds: string[], nationName: string) => {
-    if (!stateDataRef.current) return;
-
-    // Create unique ID for nation
-    const nationId = `nation-${Date.now()}`;
-    const nationColor = generateRandomColor();
-
-    // Create nation object
-    const nation: Nation = {
-      id: nationId,
-      name: nationName,
-      provinceIds: [],
-      color: nationColor
-    };
-
-    // Process each province
-    provinceIds.forEach(provinceId => {
-      const province = stateDataRef.current.get(provinceId.toLowerCase());
-      if (province) {
-        // Add to nation's provinces
-        nation.provinceIds.push(province.id);
+  const createNation = useCallback((provinceIds: string[], color: string) => {
+    // Convert province names to lowercase for case-insensitive matching
+    const lowerProvinceIds = provinceIds.map(id => id.toLowerCase());
+    
+    // Find matching provinces
+    const matchingProvinces: string[] = [];
+    stateDataRef.current.forEach((state, id) => {
+      if (lowerProvinceIds.includes(state.name.toLowerCase())) {
+        matchingProvinces.push(id);
         
-        // Update province with nation ID
-        province.nationId = nationId;
-        
-        // Update province color
-        province.path.style.fill = nationColor;
-        province.path.style.transition = 'fill 0.3s ease';
+        // Update province color and store nation association
+        state.path.style.fill = color;
+        state.path.style.transition = 'fill 0.2s ease';
+        state.nationId = matchingProvinces.join('-'); // Store nation association
       }
     });
 
-    // Store nation if we found any valid provinces
-    if (nation.provinceIds.length > 0) {
+    if (matchingProvinces.length > 0) {
+      const nationId = matchingProvinces.join('-');
+      const nation: Nation = {
+        id: nationId,
+        provinceIds: matchingProvinces,
+        color: color
+      };
+      
       nationsRef.current.set(nationId, nation);
-      console.log(`Created nation: ${nationName}`);
-      console.log(`  Color: ${nationColor}`);
-      console.log(`  Provinces: ${nation.provinceIds.length}`);
-      console.log(`  Province IDs: ${nation.provinceIds.join(', ')}`);
+      console.log(`Created nation with ID ${nationId}:`, nation);
+      return nation;
+    } else {
+      console.warn('No matching provinces found for nation creation');
+      return null;
     }
-
-    return nation;
   }, []);
 
   // Function to handle state selection
@@ -89,7 +71,8 @@ export default function MapView() {
     // Reset all states to their original colors first
     stateDataRef.current.forEach((state, id) => {
       const originalColor = originalColorsRef.current.get(id);
-      if (originalColor) {
+      // Only reset color if the state isn't part of a nation
+      if (originalColor && !state.nationId) {
         state.path.style.fill = originalColor;
         state.path.style.transition = 'fill 0.2s ease';
       }
@@ -104,17 +87,15 @@ export default function MapView() {
     // Select new state
     const newState = stateDataRef.current.get(stateId);
     if (newState) {
-      // Store original color if not already stored
-      if (!originalColorsRef.current.has(stateId)) {
+      // Only highlight if not part of a nation
+      if (!newState.nationId) {
         const currentFill = newState.path.style.fill || window.getComputedStyle(newState.path).fill;
-        originalColorsRef.current.set(stateId, currentFill);
-      }
-      
-      // Apply highlight with transition
-      const originalColor = originalColorsRef.current.get(stateId);
-      if (originalColor) {
+        if (!originalColorsRef.current.has(stateId)) {
+          originalColorsRef.current.set(stateId, currentFill);
+        }
+        
         newState.path.style.transition = 'fill 0.2s ease';
-        newState.path.style.fill = adjustColor(originalColor, 20);
+        newState.path.style.fill = adjustColor(currentFill, 20);
       }
     }
 
@@ -256,7 +237,7 @@ export default function MapView() {
 
     let isInitialized = false;
 
-    fetch('/MapChart_Map_no_border.svg')
+    fetch('/svg_maps/MapChart_Map_europe_colored.svg')
       .then(response => response.text())
       .then(svgContent => {
         if (!svgContainerRef.current || isInitialized) return;
@@ -291,7 +272,8 @@ export default function MapView() {
             color,
             path: path as SVGPathElement
           };
-          stateDataRef.current.set(id.toLowerCase(), stateData);
+
+          stateDataRef.current.set(id, stateData);
           originalColorsRef.current.set(id, color);
 
           // Log detailed province data
@@ -313,11 +295,11 @@ export default function MapView() {
           path.dataset.clickId = id;
         });
 
-        // Test nation creation with west coast states
-        setTimeout(() => {
-          const westCoastStates = ['washington', 'oregon', 'california', 'nevada'];
-          createNation(westCoastStates, 'West Coast Nation');
-        }, 1000); // Wait 1 second to ensure all provinces are loaded
+        // Create west coast nation immediately after loading provinces
+        createNation(
+          ['Washington', 'Oregon', 'California', 'Nevada'],
+          '#6C7483'
+        );
 
         // Add click listener to SVG to deselect when clicking outside states
         svg.addEventListener('click', () => handleStateClick(null));
@@ -339,7 +321,7 @@ export default function MapView() {
 
         // Initialize panzoom
         const panzoomInstance = panzoom(svg, {
-          maxZoom: 20,
+          maxZoom: 40,
           minZoom: initialZoom * 0.8,
           initialZoom: initialZoom,
           smoothScroll: false,
