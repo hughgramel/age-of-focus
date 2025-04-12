@@ -195,7 +195,7 @@ export default function MapView() {
 
     let isInitialized = false;
 
-    fetch('/MapChart_Map.svg')
+    fetch('/MapChart_Map_no_border.svg')
       .then(response => response.text())
       .then(svgContent => {
         if (!svgContainerRef.current || isInitialized) return;
@@ -213,11 +213,15 @@ export default function MapView() {
 
         // Process all paths in the SVG
         const paths = svg.querySelectorAll('path');
+        console.log(`Found ${paths.length} provinces in the SVG:`);
+        console.log('----------------------------------------');
+        
         paths.forEach((path) => {
           const id = path.id || crypto.randomUUID();
           const name = path.getAttribute('name') || id;
           const computedStyle = window.getComputedStyle(path);
           const color = computedStyle.fill;
+          const bbox = path.getBBox();
 
           // Store state data
           const stateData: StateData = {
@@ -228,6 +232,15 @@ export default function MapView() {
           };
           stateDataRef.current.set(id, stateData);
           originalColorsRef.current.set(id, color);
+
+          // Log detailed province data
+          console.log(`Province: ${name}`);
+          console.log(`  ID: ${id}`);
+          console.log(`  Color: ${color}`);
+          console.log(`  Position: x=${bbox.x.toFixed(2)}, y=${bbox.y.toFixed(2)}`);
+          console.log(`  Size: width=${bbox.width.toFixed(2)}, height=${bbox.height.toFixed(2)}`);
+          console.log(`  Path Data: ${path.getAttribute('d')?.substring(0, 50)}...`);
+          console.log('----------------------------------------');
 
           // Add click listener
           const clickHandler = (e: MouseEvent) => {
