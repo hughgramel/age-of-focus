@@ -8,6 +8,14 @@ interface StateData {
   name: string;
   color: string;
   path: SVGPathElement;
+  nationId?: string;
+}
+
+interface Nation {
+  id: string;
+  name: string;
+  provinceIds: string[];
+  color: string;
 }
 
 export default function MapView() {
@@ -20,6 +28,59 @@ export default function MapView() {
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const stateDataRef = useRef<Map<string, StateData>>(new Map());
   const originalColorsRef = useRef<Map<string, string>>(new Map());
+  const nationsRef = useRef<Map<string, Nation>>(new Map());
+
+  // Function to generate a random color
+  const generateRandomColor = () => {
+    const hue = Math.random() * 360;
+    const saturation = 70 + Math.random() * 20; // 70-90%
+    const lightness = 45 + Math.random() * 10;  // 45-55%
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+  };
+
+  // Function to create a nation from provinces
+  const createNation = useCallback((provinceIds: string[], nationName: string) => {
+    if (!stateDataRef.current) return;
+
+    // Create unique ID for nation
+    const nationId = `nation-${Date.now()}`;
+    const nationColor = generateRandomColor();
+
+    // Create nation object
+    const nation: Nation = {
+      id: nationId,
+      name: nationName,
+      provinceIds: [],
+      color: nationColor
+    };
+
+    // Process each province
+    provinceIds.forEach(provinceId => {
+      const province = stateDataRef.current.get(provinceId.toLowerCase());
+      if (province) {
+        // Add to nation's provinces
+        nation.provinceIds.push(province.id);
+        
+        // Update province with nation ID
+        province.nationId = nationId;
+        
+        // Update province color
+        province.path.style.fill = nationColor;
+        province.path.style.transition = 'fill 0.3s ease';
+      }
+    });
+
+    // Store nation if we found any valid provinces
+    if (nation.provinceIds.length > 0) {
+      nationsRef.current.set(nationId, nation);
+      console.log(`Created nation: ${nationName}`);
+      console.log(`  Color: ${nationColor}`);
+      console.log(`  Provinces: ${nation.provinceIds.length}`);
+      console.log(`  Province IDs: ${nation.provinceIds.join(', ')}`);
+    }
+
+    return nation;
+  }, []);
 
   // Function to handle state selection
   const handleStateClick = useCallback((stateId: string | null) => {
@@ -230,7 +291,7 @@ export default function MapView() {
             color,
             path: path as SVGPathElement
           };
-          stateDataRef.current.set(id, stateData);
+          stateDataRef.current.set(id.toLowerCase(), stateData);
           originalColorsRef.current.set(id, color);
 
           // Log detailed province data
@@ -251,6 +312,12 @@ export default function MapView() {
           path.addEventListener('click', clickHandler);
           path.dataset.clickId = id;
         });
+
+        // Test nation creation with west coast states
+        setTimeout(() => {
+          const westCoastStates = ['washington', 'oregon', 'california', 'nevada'];
+          createNation(westCoastStates, 'West Coast Nation');
+        }, 1000); // Wait 1 second to ensure all provinces are loaded
 
         // Add click listener to SVG to deselect when clicking outside states
         svg.addEventListener('click', () => handleStateClick(null));
@@ -306,7 +373,7 @@ export default function MapView() {
           `;
         }
       });
-  }, []);
+  }, [createNation]);
 
   return (
     <div className="w-full h-full bg-white relative">
