@@ -807,24 +807,6 @@ export default function MapView() {
         ref={svgContainerRef}
         className="w-full h-full border-[6px] border-blue-500"
       />
-      <div className="absolute bottom-4 right-80 flex flex-col gap-2">
-        <button
-          className="bg-white border border-gray-300 rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-gray-50"
-          onMouseDown={() => startZooming(true)}
-          onMouseUp={stopZooming}
-          onMouseLeave={stopZooming}
-        >
-          +
-        </button>
-        <button
-          className="bg-white border border-gray-300 rounded-full w-10 h-10 flex items-center justify-center shadow-lg hover:bg-gray-50"
-          onMouseDown={() => startZooming(false)}
-          onMouseUp={stopZooming}
-          onMouseLeave={stopZooming}
-        >
-          -
-        </button>
-      </div>
     </div>
   );
 } 
