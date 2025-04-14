@@ -15,30 +15,37 @@ interface GameViewProps {
 export default function GameView({ game, isDemo = false, onBack }: GameViewProps) {
   const selectedProvinceRef = useRef<string | null>(null);
   const provincePopupRef = useRef<HTMLDivElement | null>(null);
+  const nationPopupRef = useRef<HTMLDivElement | null>(null);
 
   const handleProvinceSelect = (provinceId: string | null) => {
     selectedProvinceRef.current = provinceId;
     console.log('Selected Province:', provinceId);
 
-    // Remove existing popup if any
+    // Remove existing popups if any
     if (provincePopupRef.current) {
       provincePopupRef.current.remove();
       provincePopupRef.current = null;
+    }
+    if (nationPopupRef.current) {
+      nationPopupRef.current.remove();
+      nationPopupRef.current = null;
     }
 
     if (provinceId && game) {
       // Find the selected province in the game's nations
       let selectedProvince = null;
+      let owningNation = null;
       for (const nation of game.nations) {
         const province = nation.provinces.find(p => p.id === provinceId);
         if (province) {
           selectedProvince = { ...province, nationName: nation.name };
+          owningNation = nation;
           break;
         }
       }
 
       if (selectedProvince) {
-        // Create and style the popup
+        // Create and style the province popup
         const popup = document.createElement('div');
         popup.className = 'fixed bottom-4 left-4 z-50 bg-[#1F1F1F] p-4 rounded-lg border border-[#FFD78C20] text-[#FFD78C]';
         popup.style.width = '300px';
@@ -55,11 +62,78 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             <p><span class="text-gray-400">Resource:</span> ${selectedProvince.resourceType}</p>
             <p><span class="text-gray-400">Army:</span> ${selectedProvince.army.toLocaleString()}</p>
           </div>
+          <button 
+            class="mt-4 w-full px-4 py-2 bg-[#2A2A2A] text-[#FFD78C] rounded-lg border border-[#FFD78C40] hover:bg-[#3A3A3A] transition-colors duration-200"
+            id="showNationButton"
+          >
+            View Nation Details
+          </button>
         `;
 
         // Add to DOM and store reference
         document.body.appendChild(popup);
         provincePopupRef.current = popup;
+
+        // Add click handler for the nation button
+        const showNationButton = popup.querySelector('#showNationButton');
+        if (showNationButton && owningNation) {
+          showNationButton.addEventListener('click', () => {
+            // Remove existing nation popup if any
+            if (nationPopupRef.current) {
+              nationPopupRef.current.remove();
+            }
+
+            // Create and style the nation popup
+            const nationPopup = document.createElement('div');
+            nationPopup.className = 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-[#1F1F1F] p-6 rounded-lg border border-[#FFD78C20] text-[#FFD78C]';
+            nationPopup.style.width = '400px';
+            nationPopup.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4)';
+
+            // Calculate total province stats
+            const totalPopulation = owningNation.provinces.reduce((sum, p) => sum + p.population, 0);
+            const totalGoldIncome = owningNation.provinces.reduce((sum, p) => sum + p.goldIncome, 0);
+            const totalIndustry = owningNation.provinces.reduce((sum, p) => sum + p.industry, 0);
+            const totalArmy = owningNation.provinces.reduce((sum, p) => sum + p.army, 0);
+
+            // Add nation details
+            nationPopup.innerHTML = `
+              <div class="flex justify-between items-start mb-4">
+                <h3 class="text-2xl font-semibold">${owningNation.name}</h3>
+                <button 
+                  class="text-gray-400 hover:text-[#FFD78C] transition-colors duration-200"
+                  id="closeNationButton"
+                >
+                  ✕
+                </button>
+              </div>
+              <div class="space-y-3 text-sm">
+                <p><span class="text-gray-400">Nation Tag:</span> ${owningNation.nationTag}</p>
+                <p><span class="text-gray-400">Total Population:</span> ${totalPopulation.toLocaleString()}</p>
+                <p><span class="text-gray-400">Total Gold Income:</span> ${totalGoldIncome}</p>
+                <p><span class="text-gray-400">Total Industry:</span> ${totalIndustry}</p>
+                <p><span class="text-gray-400">Total Army:</span> ${totalArmy.toLocaleString()}</p>
+                <p><span class="text-gray-400">Gold Reserves:</span> ${owningNation.gold}</p>
+                <p><span class="text-gray-400">Research Points:</span> ${owningNation.researchPoints}</p>
+                <p><span class="text-gray-400">Current Research:</span> ${owningNation.currentResearchId || 'None'}</p>
+                <p><span class="text-gray-400">Research Progress:</span> ${owningNation.currentResearchProgress}%</p>
+                <p><span class="text-gray-400">Number of Provinces:</span> ${owningNation.provinces.length}</p>
+              </div>
+            `;
+
+            // Add to DOM and store reference
+            document.body.appendChild(nationPopup);
+            nationPopupRef.current = nationPopup;
+
+            // Add click handler for the close button
+            const closeButton = nationPopup.querySelector('#closeNationButton');
+            if (closeButton) {
+              closeButton.addEventListener('click', () => {
+                nationPopup.remove();
+                nationPopupRef.current = null;
+              });
+            }
+          });
+        }
       }
     }
   };
