@@ -207,16 +207,16 @@ interface MapViewProps {
   mapName?: string;
   isDemo?: boolean;
   nations?: Nation[];
+  onProvinceSelect?: (provinceId: string | null) => void;
 }
 
-export default function MapView({ mapName = 'world_states', isDemo = false, nations }: MapViewProps) {
+export default function MapView({ mapName = 'world_states', isDemo = false, nations, onProvinceSelect }: MapViewProps) {
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const panzoomInstanceRef = useRef<ReturnType<typeof panzoom> | null>(null);
   const keysPressed = useRef<Set<string>>(new Set<string>());
   const animationFrameId = useRef<number | null>(null);
   const zoomAnimationId = useRef<number | null>(null);
   const initialZoomRef = useRef<number>(1);
-  const [selectedState, setSelectedState] = useState<string | null>(null);
   const stateDataRef = useRef<Map<string, StateData>>(new Map());
   const originalColorsRef = useRef<Map<string, string>>(new Map());
   const nationsRef = useRef<Map<string, Nation>>(new Map());
@@ -229,6 +229,9 @@ export default function MapView({ mapName = 'world_states', isDemo = false, nati
     industry: true
   });
   const [isLoading, setIsLoading] = useState(true);
+  const originalProvinceColorsRef = useRef<Map<string, string>>(new Map());
+  const selectedProvinceRef = useRef<string | null>(null);
+  const selectedOriginalColorRef = useRef<string | null>(null);
 
   // Example resource stats - in a real app these would be dynamic
   const [resources] = useState<ResourceStats>({
@@ -302,39 +305,48 @@ export default function MapView({ mapName = 'world_states', isDemo = false, nati
   const handleStateClick = useCallback((stateId: string | null) => {
     if (!stateDataRef.current) return;
 
-    // Reset all states to their original colors first
-    stateDataRef.current.forEach((state, id) => {
-      const originalColor = originalColorsRef.current.get(id);
-      // Only reset color if the state isn't part of a nation
-      if (originalColor && !state.nationId) {
-        state.path.style.fill = originalColor;
-        state.path.style.transition = 'fill 0.2s ease';
+    // If we have a currently selected province, reset its color
+    if (selectedProvinceRef.current && stateDataRef.current.has(selectedProvinceRef.current)) {
+      const currentState = stateDataRef.current.get(selectedProvinceRef.current)!;
+      if (selectedOriginalColorRef.current) {
+        currentState.path.style.fill = selectedOriginalColorRef.current;
+        currentState.path.style.transition = 'fill 0.2s ease';
       }
-    });
+    }
 
-    // If clicking the same state or clicking outside, just deselect
-    if (!stateId || stateId === selectedState) {
-      setSelectedState(null);
+    // If clicking the same province or clicking outside, just deselect
+    if (!stateId || stateId === selectedProvinceRef.current) {
+      selectedProvinceRef.current = null;
+      selectedOriginalColorRef.current = null;
+      onProvinceSelect?.(null);
       return;
     }
 
-    // Select new state
     const newState = stateDataRef.current.get(stateId);
-    if (newState) {
-      // Only highlight if not part of a nation
-      if (!newState.nationId) {
-        const currentFill = newState.path.style.fill || window.getComputedStyle(newState.path).fill;
-        if (!originalColorsRef.current.has(stateId)) {
-          originalColorsRef.current.set(stateId, currentFill);
-        }
-        
-        newState.path.style.transition = 'fill 0.2s ease';
-        newState.path.style.fill = adjustColor(currentFill, 20);
-      }
+    if (!newState) return;
+
+    // Check if this province belongs to a nation
+    const belongsToNation = nations?.some(nation => 
+      nation.provinces.some(province => province.id === stateId)
+    );
+
+    // Only allow selection of provinces that belong to nations
+    if (!belongsToNation) {
+      return;
     }
 
-    setSelectedState(stateId);
-  }, [selectedState]);
+    // Store the current color before modifying
+    const currentFill = newState.path.style.fill || window.getComputedStyle(newState.path).fill;
+    selectedOriginalColorRef.current = currentFill;
+
+    // Apply highlight to the new selection
+    newState.path.style.transition = 'fill 0.2s ease';
+    newState.path.style.fill = adjustColor(currentFill, 40);
+
+    // Update selection refs and notify parent
+    selectedProvinceRef.current = stateId;
+    onProvinceSelect?.(stateId);
+  }, [nations, onProvinceSelect]);
 
   /**
    * Initialize panzoom with proper bounds and zoom constraints
@@ -653,8 +665,10 @@ export default function MapView({ mapName = 'world_states', isDemo = false, nati
           const computedStyle = window.getComputedStyle(path);
           const color = computedStyle.fill;
 
-          // Store original colors and state data
+          // Store original colors
           originalColorsRef.current.set(id, color);
+          originalProvinceColorsRef.current.set(id, color);
+
           const stateData: StateData = {
             id,
             name,
@@ -680,17 +694,11 @@ export default function MapView({ mapName = 'world_states', isDemo = false, nati
           colorNations();
         }
 
-        // Only create west coast nation in demo mode
-        if (isDemo) {
-          createNation(
-            ['Washington', 'Oregon', 'California', 'Nevada'],
-            '#6C7483'
-          );
-        }
-
         // Add click handler to SVG for deselection
-        svg.addEventListener('click', () => {
-          if (!isDraggingRef.current) {
+        svg.addEventListener('click', (e: MouseEvent) => {
+          const target = e.target as Element;
+          // Only deselect if clicking the SVG background, not a province
+          if (target === svg && !isDraggingRef.current) {
             handleStateClick(null);
           }
         });
@@ -713,11 +721,18 @@ export default function MapView({ mapName = 'world_states', isDemo = false, nati
 
     // Cleanup
     return () => {
+      // Reset selection on unmount
+      if (selectedProvinceRef.current && stateDataRef.current.has(selectedProvinceRef.current)) {
+        const currentState = stateDataRef.current.get(selectedProvinceRef.current)!;
+        if (selectedOriginalColorRef.current) {
+          currentState.path.style.fill = selectedOriginalColorRef.current;
+        }
+      }
       if (panzoomInstanceRef.current) {
         panzoomInstanceRef.current.dispose();
       }
     };
-  }, [mapName, isDemo, createNation, colorNations, nations, initializeZoom, handleZoom]);
+  }, [mapName, isDemo, createNation, colorNations, nations, initializeZoom, handleStateClick]);
 
   useEffect(() => {
     // Add Victorian-style font
