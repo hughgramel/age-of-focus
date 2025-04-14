@@ -1,9 +1,5 @@
-import MapContainer from '../components/MapContainer';
+import HomeScreen from '@/components/HomeScreen';
 
 export default function Home() {
-  return (
-    <main className="w-screen h-screen">
-      <MapContainer />
-    </main>
-  );
+  return <HomeScreen />;
 }
