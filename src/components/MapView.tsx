@@ -240,6 +240,12 @@ export default function MapView({ mapName = 'world_states', isDemo = false, nati
     military: 55
   });
 
+  // Track zoom velocity and state
+  const zoomVelocityRef = useRef<number>(0);
+  const isZoomingRef = useRef<boolean>(false);
+  const lastZoomTimeRef = useRef<number>(0);
+  const zoomDirectionRef = useRef<boolean | null>(null);
+
   // Function to create a nation from provinces
   const createNation = useCallback((provinceIds: string[], color: string) => {
     // Find matching provinces
@@ -330,20 +336,93 @@ export default function MapView({ mapName = 'world_states', isDemo = false, nati
     setSelectedState(stateId);
   }, [selectedState]);
 
-  // Handle smooth keyboard controls
+  /**
+   * Initialize panzoom with proper bounds and zoom constraints
+   * @param svg - The SVG element to initialize panzoom on
+   * @returns Initialized panzoom instance
+   */
+  const initializeZoom = useCallback((svg: SVGElement) => {
+    // Calculate initial zoom to fit SVG to screen while maintaining aspect ratio
+    const calculateInitialZoom = () => {
+      const svgRect = svg.getBoundingClientRect();
+      const containerRect = svgContainerRef.current?.getBoundingClientRect();
+      if (!containerRect) return 1;
+
+      const widthRatio = containerRect.width / svgRect.width;
+      const heightRatio = containerRect.height / svgRect.height;
+
+      // Use the smaller ratio to ensure the entire map fits, with a slight padding
+      return Math.min(widthRatio, heightRatio) * 1.2;
+    };
+
+    const initialZoom = calculateInitialZoom();
+    initialZoomRef.current = initialZoom;
+
+    // Initialize panzoom with constraints
+    const panzoomInstance = panzoom(svg, {
+      maxZoom: 40,                    // Maximum zoom level
+      minZoom: initialZoom * 0.8,     // Minimum zoom level based on initial fit
+      initialZoom: initialZoom,       // Start with the calculated fit zoom
+      smoothScroll: false,            // Disable smooth scroll for better control
+      bounds: true,                   // Enable bounds to prevent dragging outside
+      boundsPadding: 0.1              // Add slight padding to bounds
+    });
+
+    panzoomInstanceRef.current = panzoomInstance;
+    return panzoomInstance;
+  }, []);
+
+  /**
+   * Handle direct zooming based on trackpad/wheel input
+   * @param zoomIn - Boolean indicating zoom direction (true = in, false = out)
+   * @param delta - The zoom delta from the wheel event
+   */
+  const handleZoom = useCallback((zoomIn: boolean, delta: number) => {
+    if (!panzoomInstanceRef.current) return;
+
+    // Use a small base scale factor
+    const baseScale = 0.0008;
+    const scaleFactor = 1 + (Math.abs(delta) * baseScale);
+    
+    const currentScale = panzoomInstanceRef.current.getTransform().scale;
+    const nextScale = zoomIn ? currentScale * scaleFactor : currentScale / scaleFactor;
+
+    // Check zoom bounds
+    if ((zoomIn && nextScale < 20) || (!zoomIn && nextScale > initialZoomRef.current * 0.8)) {
+      // Get viewport center for centered zooming
+      const containerRect = svgContainerRef.current?.getBoundingClientRect();
+      if (!containerRect) return;
+      
+      const centerX = containerRect.width / 2;
+      const centerY = containerRect.height / 2;
+
+      // Apply zoom directly
+      panzoomInstanceRef.current.zoomTo(centerX, centerY, scaleFactor);
+    }
+  }, []);
+
+  /**
+   * Handle WASD keyboard controls for smooth panning
+   */
   useEffect(() => {
-    const baseSpeed = 8;
-    const shiftMultiplier = 3;
+    const baseSpeed = 45;  // Increased from 8 to 24 for faster base movement
+    const shiftMultiplier = 3;  // Increased from 3 to 4 for even faster shift-movement
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Add pressed key to tracking set
       keysPressed.current.add(e.key.toLowerCase());
+      
+      // Start movement animation if not already running
       if (!animationFrameId.current) {
         moveWithKeys();
       }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
+      // Remove released key from tracking set
       keysPressed.current.delete(e.key.toLowerCase());
+      
+      // Stop animation if no keys are pressed
       if (keysPressed.current.size === 0 && animationFrameId.current) {
         cancelAnimationFrame(animationFrameId.current);
         animationFrameId.current = null;
@@ -357,27 +436,41 @@ export default function MapView({ mapName = 'world_states', isDemo = false, nati
       let dx = 0;
       let dy = 0;
       
+      // Apply speed modifier if shift is held
       const moveSpeed = keysPressed.current.has('shift') ? baseSpeed * shiftMultiplier : baseSpeed;
       
+      // Calculate movement based on pressed keys
       if (keysPressed.current.has('w')) dy += moveSpeed;
       if (keysPressed.current.has('s')) dy -= moveSpeed;
       if (keysPressed.current.has('a')) dx += moveSpeed;
       if (keysPressed.current.has('d')) dx -= moveSpeed;
 
+      // Apply diagonal movement normalization
+      if (dx !== 0 && dy !== 0) {
+        // Normalize diagonal movement to maintain consistent speed
+        const normalizer = 1 / Math.sqrt(2);
+        dx *= normalizer;
+        dy *= normalizer;
+      }
+
+      // Apply movement if there's any change
       if (dx !== 0 || dy !== 0) {
         const nextX = transform.x + dx;
         const nextY = transform.y + dy;
         panzoomInstanceRef.current.moveTo(nextX, nextY);
       }
 
+      // Continue animation if keys are still pressed
       if (keysPressed.current.size > 0) {
         animationFrameId.current = requestAnimationFrame(moveWithKeys);
       }
     };
 
+    // Add event listeners
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
     
+    // Cleanup
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
@@ -386,50 +479,6 @@ export default function MapView({ mapName = 'world_states', isDemo = false, nati
       }
     };
   }, []);
-
-  // Handle smooth zooming
-  const startZooming = (zoomIn: boolean) => {
-    if (zoomAnimationId.current) return;
-
-    const zoomSpeed = 0.03;
-    let lastTime = performance.now();
-
-    const zoom = () => {
-      if (!panzoomInstanceRef.current) return;
-      
-      const currentTime = performance.now();
-      const deltaTime = (currentTime - lastTime) / 16.67; // Normalize to 60fps
-      lastTime = currentTime;
-
-      const currentScale = panzoomInstanceRef.current.getTransform().scale;
-      const zoomFactor = zoomIn ? (1 + zoomSpeed) : (1 - zoomSpeed);
-      
-      // Get the center point of the viewport
-      const containerRect = svgContainerRef.current?.getBoundingClientRect();
-      if (!containerRect) return;
-      
-      const centerX = containerRect.width / 2;
-      const centerY = containerRect.height / 2;
-
-      // Check zoom bounds
-      const nextScale = currentScale * zoomFactor;
-      if ((zoomIn && nextScale < 20) || (!zoomIn && nextScale > initialZoomRef.current * 0.8)) {
-        panzoomInstanceRef.current.zoomTo(centerX, centerY, zoomFactor);
-        zoomAnimationId.current = requestAnimationFrame(zoom);
-      } else {
-        stopZooming();
-      }
-    };
-    
-    zoom();
-  };
-
-  const stopZooming = () => {
-    if (zoomAnimationId.current) {
-      cancelAnimationFrame(zoomAnimationId.current);
-      zoomAnimationId.current = null;
-    }
-  };
 
   // Helper function to adjust color brightness
   const adjustColor = (color: string, amount: number): string => {
@@ -554,10 +603,21 @@ export default function MapView({ mapName = 'world_states', isDemo = false, nati
         const svg = svgContainerRef.current.querySelector('svg');
         if (!svg) return;
 
+        // Set up SVG for proper display
         svg.style.width = '100%';
         svg.style.height = '100%';
         svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
         svg.style.border = '2px solid #d1d5db';
+
+        // Initialize zoom functionality
+        const panzoomInstance = initializeZoom(svg);
+
+        // Add wheel event listener for direct zooming
+        svg.addEventListener('wheel', (e: WheelEvent) => {
+          e.preventDefault();
+          const zoomIn = e.deltaY < 0;
+          handleZoom(zoomIn, e.deltaY);
+        });
 
         // Add mouse event listeners to track dragging
         const handleMouseDown = (e: MouseEvent) => {
@@ -651,18 +711,13 @@ export default function MapView({ mapName = 'world_states', isDemo = false, nati
 
     loadMap();
 
+    // Cleanup
     return () => {
-      if (svgContainerRef.current) {
-        const svg = svgContainerRef.current.querySelector('svg');
-        if (svg) {
-          svg.removeEventListener('mousedown', () => {});
-          svg.removeEventListener('click', () => {});
-        }
-        window.removeEventListener('mousemove', () => {});
-        window.removeEventListener('mouseup', () => {});
+      if (panzoomInstanceRef.current) {
+        panzoomInstanceRef.current.dispose();
       }
     };
-  }, [mapName, isDemo, createNation, colorNations, nations]);
+  }, [mapName, isDemo, createNation, colorNations, nations, initializeZoom, handleZoom]);
 
   useEffect(() => {
     // Add Victorian-style font
