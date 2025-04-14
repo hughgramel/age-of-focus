@@ -208,9 +208,16 @@ interface MapViewProps {
   isDemo?: boolean;
   nations?: Nation[];
   onProvinceSelect?: (provinceId: string | null) => void;
+  selectedProvinceRef: React.RefObject<string | null>;
 }
 
-export default function MapView({ mapName = 'world_states', isDemo = false, nations, onProvinceSelect }: MapViewProps) {
+export default function MapView({ 
+  mapName = 'world_states', 
+  isDemo = false, 
+  nations, 
+  onProvinceSelect,
+  selectedProvinceRef 
+}: MapViewProps) {
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const panzoomInstanceRef = useRef<ReturnType<typeof panzoom> | null>(null);
   const keysPressed = useRef<Set<string>>(new Set<string>());
@@ -230,7 +237,6 @@ export default function MapView({ mapName = 'world_states', isDemo = false, nati
   });
   const [isLoading, setIsLoading] = useState(true);
   const originalProvinceColorsRef = useRef<Map<string, string>>(new Map());
-  const selectedProvinceRef = useRef<string | null>(null);
   const selectedOriginalColorRef = useRef<string | null>(null);
 
   // Example resource stats - in a real app these would be dynamic
@@ -346,7 +352,7 @@ export default function MapView({ mapName = 'world_states', isDemo = false, nati
     // Update selection refs and notify parent
     selectedProvinceRef.current = stateId;
     onProvinceSelect?.(stateId);
-  }, [nations, onProvinceSelect]);
+  }, [nations, onProvinceSelect, selectedProvinceRef]);
 
   /**
    * Initialize panzoom with proper bounds and zoom constraints

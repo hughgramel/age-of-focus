@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useRef } from 'react';
 import MapView from './MapView';
 import Terminal from './Terminal';
 import BackButton from './BackButton';
@@ -13,6 +13,17 @@ interface GameViewProps {
 }
 
 export default function GameView({ game, isDemo = false, onBack }: GameViewProps) {
+  const selectedProvinceRef = useRef<string | null>(null);
+
+  const handleProvinceSelect = (provinceId: string | null) => {
+    selectedProvinceRef.current = provinceId;
+    console.log('Selected Province:', provinceId);
+  };
+
+  useEffect(() => {
+    console.log('Initial Selected Province:', selectedProvinceRef.current);
+  }, []);
+
   useEffect(() => {
     const loadGame = () => {
       console.log('Loading game:', game);
@@ -31,7 +42,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
       <BackButton onClick={onBack} />
       {isDemo ? (
         // Demo view with current map implementation
-        <MapView isDemo />
+        <MapView isDemo selectedProvinceRef={selectedProvinceRef} />
       ) : (
         <div className="w-full h-full">
           {/* Game details overlay */}
@@ -46,7 +57,12 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           </div>
           
           {/* Render the map using game.mapName and pass nations */}
-          <MapView mapName={game.mapName} nations={game.nations} />
+          <MapView 
+            mapName={game.mapName} 
+            nations={game.nations}
+            selectedProvinceRef={selectedProvinceRef}
+            onProvinceSelect={handleProvinceSelect}
+          />
         </div>
       )}
     </div>
