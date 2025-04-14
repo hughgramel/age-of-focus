@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import panzoom, { PanZoomOptions } from 'panzoom';
+import Terminal from './Terminal';
 
 interface StateData {
   id: string;
@@ -807,6 +808,9 @@ export default function MapView() {
         ref={svgContainerRef}
         className="w-full h-full border-[6px] border-blue-500"
       />
+
+      {/* Terminal */}
+      <Terminal />
     </div>
   );
 } 

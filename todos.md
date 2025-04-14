@@ -15,7 +15,7 @@ Here’s a detailed, **priority-based project to-do list** for building your gam
 
 ## 1. 🌐 Project Setup
 - [X] **Initialize frontend project** with Next.js + Tailwind CSS + TypeScript
-- [ ] **Set up backend** using Supabase (auth, DB) or Firebase
+- [X] **Set up backend** using Supabase (auth, DB) or Firebase
 - [ ] **Create shared types/interfaces** for user, country, and focus sessions
 
 ## 2. 👤 User System
