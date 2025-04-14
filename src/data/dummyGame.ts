@@ -243,8 +243,8 @@ const belgiumProvinces: Province[] = [
 const france: Nation = {
   nationTag: 'FRA',
   name: 'France',
-  color: '#2E5BBE',
-  hexColor: '#2E5BBE',
+  color: '#2e3a49',
+  hexColor: '#2e3a49',
   provinces: franceProvinces,
   borderProvinces: null,
   
@@ -264,8 +264,8 @@ const france: Nation = {
 const belgium: Nation = {
   nationTag: 'BEL',
   name: 'Belgium',
-  color: '#FFE000',
-  hexColor: '#FFE000',
+  color: '#9c7a3d',
+  hexColor: '#9c7a3d',
   provinces: belgiumProvinces,
   borderProvinces: null,
   

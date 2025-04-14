@@ -507,8 +507,8 @@ export default function MapView({ mapName = 'world_states', isDemo = false }: Ma
 
         // Process all paths in the SVG
         const paths = svg.querySelectorAll('path');
-        console.log(`Found ${paths.length} provinces in the SVG:`);
-        console.log('----------------------------------------');
+        // console.log(`Found ${paths.length} provinces in the SVG:`);
+        // console.log('----------------------------------------');
         
         paths.forEach((path) => {
           const id = path.id || crypto.randomUUID();
@@ -529,13 +529,13 @@ export default function MapView({ mapName = 'world_states', isDemo = false }: Ma
           originalColorsRef.current.set(id, color);
 
           // Log detailed province data
-          console.log(`Province: ${name}`);
-          console.log(`  ID: ${id}`);
-          console.log(`  Color: ${color}`);
-          console.log(`  Position: x=${bbox.x.toFixed(2)}, y=${bbox.y.toFixed(2)}`);
-          console.log(`  Size: width=${bbox.width.toFixed(2)}, height=${bbox.height.toFixed(2)}`);
-          console.log(`  Path Data: ${path.getAttribute('d')?.substring(0, 50)}...`);
-          console.log('----------------------------------------');
+          // console.log(`Province: ${name}`);
+          // console.log(`  ID: ${id}`);
+          // console.log(`  Color: ${color}`);
+          // console.log(`  Position: x=${bbox.x.toFixed(2)}, y=${bbox.y.toFixed(2)}`);
+          // console.log(`  Size: width=${bbox.width.toFixed(2)}, height=${bbox.height.toFixed(2)}`);
+          // console.log(`  Path Data: ${path.getAttribute('d')?.substring(0, 50)}...`);
+          // console.log('----------------------------------------');
 
           // Modified click handler
           const clickHandler = (e: MouseEvent) => {
@@ -555,7 +555,7 @@ export default function MapView({ mapName = 'world_states', isDemo = false }: Ma
             ['Washington', 'Oregon', 'California', 'Nevada'],
             '#6C7483'
           );
-          printStateDetails(['Washington', 'Oregon', 'California', 'Nevada', 'Idaho']);
+          // printStateDetails(['Washington', 'Oregon', 'California', 'Nevada', 'Idaho']);
         }
 
         // Modify SVG click handler to check for dragging
