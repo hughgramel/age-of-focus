@@ -30,7 +30,6 @@ interface Nation {
   }[];
   borderProvinces: any[] | null;
   gold: number;
-  industry: number;
   researchPoints: number;
   currentResearchId: string | null;
   currentResearchProgress: number;
@@ -290,7 +289,6 @@ export default function MapView({
         })),
         borderProvinces: null,
         gold: 0,
-        industry: 0,
         researchPoints: 0,
         currentResearchId: null,
         currentResearchProgress: 0,

@@ -155,9 +155,57 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
     return <div>Error: No game data provided</div>;
   }
 
+  // Find the player nation
+  const playerNation = game.nations.find(nation => nation.nationTag === game.playerNationTag);
+  if (!playerNation) {
+    return <div>Error: Player nation not found</div>;
+  }
+
+  // Calculate total stats for the player nation
+  const totalPopulation = playerNation.provinces.reduce((sum, province) => sum + province.population, 0);
+  const totalIndustry = playerNation.provinces.reduce((sum, province) => sum + province.industry, 0);
+  const totalGoldIncome = playerNation.provinces.reduce((sum, province) => sum + province.goldIncome, 0);
+  const totalArmy = playerNation.provinces.reduce((sum, province) => sum + province.army, 0);
+
+  // Calculate monthly population growth (using 0.5% monthly growth rate for 19th century)
+  const monthlyPopulationGrowth = Math.floor(totalPopulation * 0.005);
+
   return (
-    <div className="w-full h-screen bg-gray-900">
+    <div className="flex flex-col h-full">
       <BackButton onClick={onBack} />
+      
+      {/* Player Nation Resource Bar */}
+      <div className="fixed top-4 left-4 z-50 flex items-center gap-6 px-6 py-3 rounded-lg" 
+           style={{ 
+             backgroundColor: 'rgba(20, 20, 20, 0.95)',
+             border: '1px solid rgba(255, 215, 140, 0.3)',
+             boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+             fontFamily: '"Playfair Display", serif',
+             minWidth: '600px'
+           }}>
+        <div className="flex items-center gap-4 pr-4">
+          <span className="text-[#FFD78C] font-semibold text-lg">{playerNation.nationTag}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-gray-400 text-xl">💰</span>
+          <span className="text-[#FFD78C] text-lg">{playerNation.gold.toLocaleString()} Gold</span>
+          <span className="text-green-400 text-lg">+{totalGoldIncome.toLocaleString()}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-gray-400 text-xl">👥</span>
+          <span className="text-[#FFD78C] text-lg">{totalPopulation.toLocaleString()} Population</span>
+          <span className="text-green-400 text-lg">+{monthlyPopulationGrowth.toLocaleString()}</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-gray-400 text-xl">🏭</span>
+          <span className="text-[#FFD78C] text-lg">{totalIndustry.toLocaleString()} Industry</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-gray-400 text-xl">⚔️</span>
+          <span className="text-[#FFD78C] text-lg">{totalArmy.toLocaleString()} Army</span>
+        </div>
+      </div>
+
       {isDemo ? (
         // Demo view with current map implementation
         <MapView isDemo selectedProvinceRef={selectedProvinceRef} />

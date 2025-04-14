@@ -6,210 +6,210 @@ const franceProvinces: Province[] = [
     id: 'Ile_De_France',
     name: 'Île-de-France',
     path: '',  // Will be populated from SVG
-    population: 3500000,  // Paris and surroundings
+    population: 3512347,  // Paris and surroundings
     goldIncome: 250,     // Financial and administrative center
     industry: 180,       // Most industrialized
     buildings: [],
     resourceType: 'gold' as ResourceType,
-    army: 25000,  // Major garrison in Paris
+    army: 25172,  // Major garrison in Paris
   },
   {
     id: 'Normandy',
     name: 'Normandy',
     path: '',
-    population: 2200000,  // Rich agricultural region
+    population: 2187432,  // Rich agricultural region
     goldIncome: 150,
     industry: 120,       // Textile industry
     buildings: [],
     resourceType: 'food' as ResourceType,
-    army: 15000,
+    army: 15234,
   },
   {
     id: 'Brittany',
     name: 'Brittany',
     path: '',
-    population: 2100000,  // Maritime region
+    population: 2134567,  // Maritime region
     goldIncome: 120,     // Naval trade
     industry: 90,
     buildings: [],
     resourceType: 'food' as ResourceType,
-    army: 12000,  // Naval presence
+    army: 12345,  // Naval presence
   },
   {
     id: 'Alsace_Lorraine',
     name: 'Alsace-Lorraine',
     path: '',
-    population: 1800000,
+    population: 1876543,
     goldIncome: 140,
     industry: 150,       // Early industrialization
     buildings: [],
     resourceType: 'coal' as ResourceType,
-    army: 20000,  // Border region
+    army: 20123,  // Border region
   },
   {
     id: 'Rhone',
     name: 'Rhône',
     path: '',
-    population: 2000000,  // Lyon and surroundings
+    population: 2045678,  // Lyon and surroundings
     goldIncome: 180,     // Silk industry
     industry: 160,
     buildings: [],
     resourceType: 'gold' as ResourceType,
-    army: 18000,
+    army: 18456,
   },
   {
     id: 'Provence',
     name: 'Provence',
     path: '',
-    population: 1700000,  // Mediterranean coast
+    population: 1723456,  // Mediterranean coast
     goldIncome: 160,     // Maritime trade
     industry: 100,
     buildings: [],
     resourceType: 'food' as ResourceType,
-    army: 15000,  // Mediterranean presence
+    army: 15678,  // Mediterranean presence
   },
   {
     id: 'Languedoc',
     name: 'Languedoc',
     path: '',
-    population: 1900000,
+    population: 1923456,
     goldIncome: 130,
     industry: 90,
     buildings: [],
     resourceType: 'food' as ResourceType,
-    army: 12000,
+    army: 12345,
   },
   {
     id: 'Guyenne',
     name: 'Guyenne',
     path: '',
-    population: 1800000,  // Bordeaux region
+    population: 1845678,  // Bordeaux region
     goldIncome: 140,     // Wine trade
     industry: 100,
     buildings: [],
     resourceType: 'food' as ResourceType,
-    army: 10000,
+    army: 10234,
   },
   {
     id: 'Burgundy',
     name: 'Burgundy',
     path: '',
-    population: 1600000,
+    population: 1634567,
     goldIncome: 130,
     industry: 110,
     buildings: [],
     resourceType: 'food' as ResourceType,
-    army: 12000,
+    army: 12345,
   },
   {
     id: 'Champagne',
     name: 'Champagne',
     path: '',
-    population: 1500000,
+    population: 1523456,
     goldIncome: 140,
     industry: 100,
     buildings: [],
     resourceType: 'food' as ResourceType,
-    army: 10000,
+    army: 10123,
   },
   {
     id: 'French_Low_Countries',
     name: 'French Low Countries',
     path: '',
-    population: 2000000,  // Industrial north
+    population: 2045678,  // Industrial north
     goldIncome: 160,
     industry: 140,
     buildings: [],
     resourceType: 'coal' as ResourceType,
-    army: 20000,  // Border region
+    army: 20456,  // Border region
   },
   {
     id: 'Picardy',
     name: 'Picardy',
     path: '',
-    population: 1800000,
+    population: 1823456,
     goldIncome: 120,
     industry: 110,
     buildings: [],
     resourceType: 'food' as ResourceType,
-    army: 15000,
+    army: 15234,
   },
   {
     id: 'Orleans',
     name: 'Orléans',
     path: '',
-    population: 1600000,
+    population: 1634567,
     goldIncome: 110,
     industry: 90,
     buildings: [],
     resourceType: 'food' as ResourceType,
-    army: 10000,
+    army: 10123,
   },
   {
     id: 'Maine_Anjou',
     name: 'Maine-Anjou',
     path: '',
-    population: 1500000,
+    population: 1523456,
     goldIncome: 100,
     industry: 80,
     buildings: [],
     resourceType: 'food' as ResourceType,
-    army: 8000,
+    army: 8234,
   },
   {
     id: 'Poitou',
     name: 'Poitou',
     path: '',
-    population: 1400000,
+    population: 1423456,
     goldIncome: 90,
     industry: 70,
     buildings: [],
     resourceType: 'food' as ResourceType,
-    army: 8000,
+    army: 8123,
   },
   {
     id: 'Auvergne_Limousin',
     name: 'Auvergne-Limousin',
     path: '',
-    population: 1700000,
+    population: 1723456,
     goldIncome: 100,
     industry: 80,
     buildings: [],
     resourceType: 'coal' as ResourceType,
-    army: 10000,
+    army: 10234,
   },
   {
     id: 'Aquitaine',
     name: 'Aquitaine',
     path: '',
-    population: 1600000,
+    population: 1634567,
     goldIncome: 110,
     industry: 85,
     buildings: [],
     resourceType: 'food' as ResourceType,
-    army: 12000,
+    army: 12345,
   },
   {
     id: 'Franche_Comte',
     name: 'Franche-Comté',
     path: '',
-    population: 1400000,
+    population: 1423456,
     goldIncome: 100,
     industry: 95,
     buildings: [],
     resourceType: 'iron' as ResourceType,
-    army: 15000,
+    army: 15234,
   },
   {
     id: 'Lorraine',
     name: 'Lorraine',
     path: '',
-    population: 1400000,
+    population: 1423456,
     goldIncome: 110,
     industry: 100,
     buildings: [],
     resourceType: 'iron' as ResourceType,
-    army: 18000,  // Border region
+    army: 18456,  // Border region
   }
 ];
 
@@ -219,23 +219,23 @@ const belgiumProvinces: Province[] = [
     id: 'Flanders',
     name: 'Flanders',
     path: 'M300...',  // This will be replaced with actual SVG path data
-    population: 2200000,   // More populated than Wallonia
+    population: 2234567,   // More populated than Wallonia
     goldIncome: 100,      // Strong textile industry
     industry: 90,         // Early industrialization
     buildings: [],
     resourceType: 'coal' as ResourceType,  // Coal mining was important
-    army: 15000,  // Main Belgian force
+    army: 15234,  // Main Belgian force
   },
   {
     id: 'Wallonia',
     name: 'Wallonia',
     path: 'M400...',  // This will be replaced with actual SVG path data
-    population: 1800000,   // Industrial but less populated
+    population: 1823456,   // Industrial but less populated
     goldIncome: 90,       // Heavy industry focus
     industry: 85,         // Steel and coal industries
     buildings: [],
     resourceType: 'iron' as ResourceType,  // Major iron deposits
-    army: 10000,
+    army: 10123,
   }
 ];
 
@@ -250,7 +250,6 @@ const france: Nation = {
   
   // Resources / Stats
   gold: 2000,            // Wealthy nation
-  industry: 2050,         // Sum of province industry
   researchPoints: 100,   // Leading in sciences
   currentResearchId: 'steam_power',
   currentResearchProgress: 25,
@@ -271,7 +270,6 @@ const belgium: Nation = {
   
   // Resources / Stats
   gold: 1000,           // Newly independent but industrialized
-  industry: 175,        // Sum of province industry
   researchPoints: 50,   // Developing scientific base
   currentResearchId: null,
   currentResearchProgress: 0,

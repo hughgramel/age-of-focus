@@ -37,7 +37,6 @@ export type Nation = {
 
   // Resources / Stats
   gold: number;
-  industry: number;
   researchPoints: number;
   currentResearchId: string | null;
   currentResearchProgress: number;
