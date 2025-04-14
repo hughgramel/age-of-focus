@@ -183,7 +183,12 @@ const ArmyItem = ({
   </div>
 );
 
-export default function MapView() {
+interface MapViewProps {
+  mapName?: string;
+  isDemo?: boolean;
+}
+
+export default function MapView({ mapName = 'world_states', isDemo = false }: MapViewProps) {
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const panzoomInstanceRef = useRef<ReturnType<typeof panzoom> | null>(null);
   const keysPressed = useRef<Set<string>>(new Set<string>());
@@ -453,17 +458,18 @@ export default function MapView() {
   // Initialize map and state data
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (!svgContainerRef.current) return;
-
     let isInitialized = false;
 
-    fetch('/svg_maps/MapChart_Map_europe_colored.svg')
-      .then(response => response.text())
-      .then(svgContent => {
+    const loadMap = async () => {
+      try {
+        const response = await fetch(`/svg_maps/${mapName}.svg`);
+        if (!response.ok) throw new Error('Failed to load map');
+        const svgText = await response.text();
+        
         if (!svgContainerRef.current || isInitialized) return;
         isInitialized = true;
         
-        svgContainerRef.current.innerHTML = svgContent;
+        svgContainerRef.current.innerHTML = svgText;
         
         const svg = svgContainerRef.current.querySelector('svg');
         if (!svg) return;
@@ -543,14 +549,14 @@ export default function MapView() {
           path.dataset.clickId = id;
         });
 
-        // Create west coast nation immediately after loading provinces
-        createNation(
-          ['Washington', 'Oregon', 'California', 'Nevada'],
-          '#6C7483'
-        );
-
-        // Print details for the specified states
-        printStateDetails(['Washington', 'Oregon', 'California', 'Nevada', 'Idaho']);
+        // Only create west coast nation and print details in demo mode
+        if (isDemo) {
+          createNation(
+            ['Washington', 'Oregon', 'California', 'Nevada'],
+            '#6C7483'
+          );
+          printStateDetails(['Washington', 'Oregon', 'California', 'Nevada', 'Idaho']);
+        }
 
         // Modify SVG click handler to check for dragging
         svg.addEventListener('click', () => {
@@ -608,9 +614,8 @@ export default function MapView() {
           window.removeEventListener('mouseup', handleMouseUp);
           panzoomInstance.dispose();
         };
-      })
-      .catch(error => {
-        console.error('Error loading SVG:', error);
+      } catch (error) {
+        console.error('Error loading map:', error);
         if (svgContainerRef.current) {
           svgContainerRef.current.innerHTML = `
             <div class="text-red-600 bg-red-100 p-4 rounded">
@@ -618,8 +623,11 @@ export default function MapView() {
             </div>
           `;
         }
-      });
-  }, [createNation]);
+      }
+    };
+
+    loadMap();
+  }, [createNation, mapName, isDemo]);
 
   useEffect(() => {
     // Add Victorian-style font
@@ -642,167 +650,171 @@ export default function MapView() {
 
   return (
     <div className="w-full h-full bg-white relative">
-      {/* Status Bar */}
-      <div className="fixed top-4 left-6 z-50 flex items-center gap-4 px-4 py-2 rounded" 
-           style={{ 
-             backgroundColor: 'rgba(20, 20, 20, 0.95)',
-             border: '1px solid rgba(255, 215, 140, 0.3)',
-             boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-             fontFamily: '"Playfair Display", serif'
-           }}>
-        <div className="flex items-center gap-4 pr-2">
-          <FranceFlag />
-        </div>
-        <ResourceDisplay 
-          icon={GoldIcon} 
-          value={89.1} 
-          change="5.75K" 
-          isPositive={true}
-          unit="M"
-          showDivider={true}
-        />
-        <ResourceDisplay 
-          icon={PopulationIcon} 
-          value={91.6} 
-          change="1487" 
-          isPositive={true}
-          unit="%"
-          showDivider={true}
-        />
-        <ResourceDisplay 
-          icon={IndustryIcon} 
-          value={21.6} 
-          change="1.34K" 
-          isPositive={true}
-          showDivider={true}
-        />
-        <ResourceDisplay 
-          icon={BuildingsIcon} 
-          value={34.8} 
-          change="192" 
-          isPositive={true}
-          unit="M"
-          showDivider={true}
-        />
-        <ResourceDisplay 
-          icon={MilitaryIcon} 
-          value={460} 
-          change="273K" 
-          isPositive={false}
-          unit="K"
-          showDivider={true}
-        />
-        <ResourceDisplay 
-          icon={ResearchIcon} 
-          value={16.2} 
-          change="0" 
-          unit="M"
-        />
-      </div>
-
-      {/* Right Sidebar */}
-      <div 
-        className="fixed right-4 top-1/2 -translate-y-1/2 w-72 bg-[#1F1F1F] rounded-lg overflow-hidden z-50"
-        style={{
-          border: '1px solid rgba(255, 215, 140, 0.3)',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-          fontFamily: '"Playfair Display", serif',
-          maxHeight: 'min-content'
-        }}
-      >
-        {/* Markets Section */}
-        <div>
-          <SidebarHeader 
-            title="Markets" 
-            stars={1} 
-            isOpen={openSections.markets}
-            onToggle={() => toggleSection('markets')}
+      {/* Status Bar - only show in demo mode */}
+      {isDemo && (
+        <div className="fixed top-4 left-6 z-50 flex items-center gap-4 px-4 py-2 rounded" 
+             style={{ 
+               backgroundColor: 'rgba(20, 20, 20, 0.95)',
+               border: '1px solid rgba(255, 215, 140, 0.3)',
+               boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+               fontFamily: '"Playfair Display", serif'
+             }}>
+          <div className="flex items-center gap-4 pr-2">
+            <FranceFlag />
+          </div>
+          <ResourceDisplay 
+            icon={GoldIcon} 
+            value={89.1} 
+            change="5.75K" 
+            isPositive={true}
+            unit="M"
+            showDivider={true}
           />
-          {openSections.markets && (
-            <div className="bg-[#1F1F1F]">
-              <MarketItem 
-                name="New Englander Market" 
-                values={[
-                  { value: 10601, isNegative: true },
-                  { value: 3543, isNegative: true },
-                  { value: 3464, isNegative: true },
-                  { value: 3339, isNegative: true }
-                ]} 
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Army Section */}
-        <div>
-          <SidebarHeader 
-            title="Army (152)" 
-            stars={3} 
-            isOpen={openSections.army}
-            onToggle={() => toggleSection('army')}
+          <ResourceDisplay 
+            icon={PopulationIcon} 
+            value={91.6} 
+            change="1487" 
+            isPositive={true}
+            unit="%"
+            showDivider={true}
           />
-          {openSections.army && (
-            <div className="bg-[#1F1F1F]">
-              <ArmyItem name="1st New Englander Army" current={100} max={325} />
-              <ArmyItem name="2nd New Englander Army" current={50} max={60} />
-              <ArmyItem name="3rd New Englander Army" current={2} max={96} />
-            </div>
-          )}
-        </div>
-
-        {/* Research Section */}
-        <div>
-          <SidebarHeader 
-            title="Research" 
-            stars={4} 
-            isOpen={openSections.research}
-            onToggle={() => toggleSection('research')}
+          <ResourceDisplay 
+            icon={IndustryIcon} 
+            value={21.6} 
+            change="1.34K" 
+            isPositive={true}
+            showDivider={true}
           />
-          {openSections.research && (
-            <div className="bg-[#1F1F1F] px-3 py-2">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[#CCCCCC] text-sm">Current Progress</span>
-                <span className="text-[#4CAF50]">+11</span>
+          <ResourceDisplay 
+            icon={BuildingsIcon} 
+            value={34.8} 
+            change="192" 
+            isPositive={true}
+            unit="M"
+            showDivider={true}
+          />
+          <ResourceDisplay 
+            icon={MilitaryIcon} 
+            value={460} 
+            change="273K" 
+            isPositive={false}
+            unit="K"
+            showDivider={true}
+          />
+          <ResourceDisplay 
+            icon={ResearchIcon} 
+            value={16.2} 
+            change="0" 
+            unit="M"
+          />
+        </div>
+      )}
+
+      {/* Right Sidebar - only show in demo mode */}
+      {isDemo && (
+        <div 
+          className="fixed right-4 top-1/2 -translate-y-1/2 w-72 bg-[#1F1F1F] rounded-lg overflow-hidden z-50"
+          style={{
+            border: '1px solid rgba(255, 215, 140, 0.3)',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+            fontFamily: '"Playfair Display", serif',
+            maxHeight: 'min-content'
+          }}
+        >
+          {/* Markets Section */}
+          <div>
+            <SidebarHeader 
+              title="Markets" 
+              stars={1} 
+              isOpen={openSections.markets}
+              onToggle={() => toggleSection('markets')}
+            />
+            {openSections.markets && (
+              <div className="bg-[#1F1F1F]">
+                <MarketItem 
+                  name="New Englander Market" 
+                  values={[
+                    { value: 10601, isNegative: true },
+                    { value: 3543, isNegative: true },
+                    { value: 3464, isNegative: true },
+                    { value: 3339, isNegative: true }
+                  ]} 
+                />
               </div>
-              <div className="w-full h-2 bg-[#333333] rounded-full overflow-hidden">
-                <div className="w-3/4 h-full bg-[#4CAF50]" />
-              </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
 
-        {/* Industry Section */}
-        <div>
-          <SidebarHeader 
-            title="Industry" 
-            stars={3} 
-            isOpen={openSections.industry}
-            onToggle={() => toggleSection('industry')}
-          />
-          {openSections.industry && (
-            <div className="bg-[#1F1F1F]">
-              <div className="px-3 py-1.5 hover:bg-[#3A3A3A]">
-                <div className="flex items-center justify-between">
-                  <span className="text-[#CCCCCC] text-sm">New Englander Foods Inc.</span>
-                  <span className="text-[#FFD78C]">£ 18.1</span>
-                </div>
-                <div className="w-full h-1.5 bg-[#333333] mt-1 rounded-full overflow-hidden">
-                  <div className="w-1/2 h-full bg-[#4CAF50]" />
-                </div>
+          {/* Army Section */}
+          <div>
+            <SidebarHeader 
+              title="Army (152)" 
+              stars={3} 
+              isOpen={openSections.army}
+              onToggle={() => toggleSection('army')}
+            />
+            {openSections.army && (
+              <div className="bg-[#1F1F1F]">
+                <ArmyItem name="1st New Englander Army" current={100} max={325} />
+                <ArmyItem name="2nd New Englander Army" current={50} max={60} />
+                <ArmyItem name="3rd New Englander Army" current={2} max={96} />
               </div>
-              <div className="px-3 py-1.5 hover:bg-[#3A3A3A]">
-                <div className="flex items-center justify-between">
-                  <span className="text-[#CCCCCC] text-sm">New Englander Oil Inc.</span>
-                  <span className="text-[#FFD78C]">£ 60.6</span>
+            )}
+          </div>
+
+          {/* Research Section */}
+          <div>
+            <SidebarHeader 
+              title="Research" 
+              stars={4} 
+              isOpen={openSections.research}
+              onToggle={() => toggleSection('research')}
+            />
+            {openSections.research && (
+              <div className="bg-[#1F1F1F] px-3 py-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[#CCCCCC] text-sm">Current Progress</span>
+                  <span className="text-[#4CAF50]">+11</span>
                 </div>
-                <div className="w-full h-1.5 bg-[#333333] mt-1 rounded-full overflow-hidden">
+                <div className="w-full h-2 bg-[#333333] rounded-full overflow-hidden">
                   <div className="w-3/4 h-full bg-[#4CAF50]" />
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
+
+          {/* Industry Section */}
+          <div>
+            <SidebarHeader 
+              title="Industry" 
+              stars={3} 
+              isOpen={openSections.industry}
+              onToggle={() => toggleSection('industry')}
+            />
+            {openSections.industry && (
+              <div className="bg-[#1F1F1F]">
+                <div className="px-3 py-1.5 hover:bg-[#3A3A3A]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#CCCCCC] text-sm">New Englander Foods Inc.</span>
+                    <span className="text-[#FFD78C]">£ 18.1</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-[#333333] mt-1 rounded-full overflow-hidden">
+                    <div className="w-1/2 h-full bg-[#4CAF50]" />
+                  </div>
+                </div>
+                <div className="px-3 py-1.5 hover:bg-[#3A3A3A]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[#CCCCCC] text-sm">New Englander Oil Inc.</span>
+                    <span className="text-[#FFD78C]">£ 60.6</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-[#333333] mt-1 rounded-full overflow-hidden">
+                    <div className="w-3/4 h-full bg-[#4CAF50]" />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       <div 
         ref={svgContainerRef}
