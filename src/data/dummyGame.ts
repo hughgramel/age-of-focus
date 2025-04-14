@@ -3,7 +3,7 @@ import { Game, Nation, Province, ResourceType } from '@/types/game';
 // French provinces with 1836 data
 const franceProvinces: Province[] = [
   {
-    id: 'ile_de_france',
+    id: 'Ile_De_France',
     name: 'Île-de-France',
     path: '',  // Will be populated from SVG
     population: 3500000,  // Paris and surroundings
@@ -14,7 +14,7 @@ const franceProvinces: Province[] = [
     army: 25000,  // Major garrison in Paris
   },
   {
-    id: 'normandy',
+    id: 'Normandy',
     name: 'Normandy',
     path: '',
     population: 2200000,  // Rich agricultural region
@@ -25,7 +25,7 @@ const franceProvinces: Province[] = [
     army: 15000,
   },
   {
-    id: 'brittany',
+    id: 'Brittany',
     name: 'Brittany',
     path: '',
     population: 2100000,  // Maritime region
@@ -36,7 +36,7 @@ const franceProvinces: Province[] = [
     army: 12000,  // Naval presence
   },
   {
-    id: 'alsace_lorraine',
+    id: 'Alsace_Lorraine',
     name: 'Alsace-Lorraine',
     path: '',
     population: 1800000,
@@ -47,7 +47,7 @@ const franceProvinces: Province[] = [
     army: 20000,  // Border region
   },
   {
-    id: 'rhone',
+    id: 'Rhone',
     name: 'Rhône',
     path: '',
     population: 2000000,  // Lyon and surroundings
@@ -58,7 +58,7 @@ const franceProvinces: Province[] = [
     army: 18000,
   },
   {
-    id: 'provence',
+    id: 'Provence',
     name: 'Provence',
     path: '',
     population: 1700000,  // Mediterranean coast
@@ -69,7 +69,7 @@ const franceProvinces: Province[] = [
     army: 15000,  // Mediterranean presence
   },
   {
-    id: 'languedoc',
+    id: 'Languedoc',
     name: 'Languedoc',
     path: '',
     population: 1900000,
@@ -80,7 +80,7 @@ const franceProvinces: Province[] = [
     army: 12000,
   },
   {
-    id: 'guyenne',
+    id: 'Guyenne',
     name: 'Guyenne',
     path: '',
     population: 1800000,  // Bordeaux region
@@ -91,7 +91,7 @@ const franceProvinces: Province[] = [
     army: 10000,
   },
   {
-    id: 'burgundy',
+    id: 'Burgundy',
     name: 'Burgundy',
     path: '',
     population: 1600000,
@@ -102,7 +102,7 @@ const franceProvinces: Province[] = [
     army: 12000,
   },
   {
-    id: 'champagne',
+    id: 'Champagne',
     name: 'Champagne',
     path: '',
     population: 1500000,
@@ -113,7 +113,7 @@ const franceProvinces: Province[] = [
     army: 10000,
   },
   {
-    id: 'french_low_countries',
+    id: 'French_Low_Countries',
     name: 'French Low Countries',
     path: '',
     population: 2000000,  // Industrial north
@@ -124,7 +124,7 @@ const franceProvinces: Province[] = [
     army: 20000,  // Border region
   },
   {
-    id: 'picardy',
+    id: 'Picardy',
     name: 'Picardy',
     path: '',
     population: 1800000,
@@ -135,7 +135,7 @@ const franceProvinces: Province[] = [
     army: 15000,
   },
   {
-    id: 'orleans',
+    id: 'Orleans',
     name: 'Orléans',
     path: '',
     population: 1600000,
@@ -146,7 +146,7 @@ const franceProvinces: Province[] = [
     army: 10000,
   },
   {
-    id: 'maine_anjou',
+    id: 'Maine_Anjou',
     name: 'Maine-Anjou',
     path: '',
     population: 1500000,
@@ -157,7 +157,7 @@ const franceProvinces: Province[] = [
     army: 8000,
   },
   {
-    id: 'poitou',
+    id: 'Poitou',
     name: 'Poitou',
     path: '',
     population: 1400000,
@@ -168,7 +168,7 @@ const franceProvinces: Province[] = [
     army: 8000,
   },
   {
-    id: 'auvergne_limousin',
+    id: 'Auvergne_Limousin',
     name: 'Auvergne-Limousin',
     path: '',
     population: 1700000,
@@ -179,7 +179,7 @@ const franceProvinces: Province[] = [
     army: 10000,
   },
   {
-    id: 'aquitaine',
+    id: 'Aquitaine',
     name: 'Aquitaine',
     path: '',
     population: 1600000,
@@ -190,7 +190,7 @@ const franceProvinces: Province[] = [
     army: 12000,
   },
   {
-    id: 'franche_comte',
+    id: 'Franche_Comte',
     name: 'Franche-Comté',
     path: '',
     population: 1400000,
@@ -201,7 +201,7 @@ const franceProvinces: Province[] = [
     army: 15000,
   },
   {
-    id: 'lorraine',
+    id: 'Lorraine',
     name: 'Lorraine',
     path: '',
     population: 1400000,
@@ -216,7 +216,7 @@ const franceProvinces: Province[] = [
 // Example provinces for Belgium
 const belgiumProvinces: Province[] = [
   {
-    id: 'flanders',
+    id: 'Flanders',
     name: 'Flanders',
     path: 'M300...',  // This will be replaced with actual SVG path data
     population: 2200000,   // More populated than Wallonia
@@ -227,7 +227,7 @@ const belgiumProvinces: Province[] = [
     army: 15000,  // Main Belgian force
   },
   {
-    id: 'wallonia',
+    id: 'Wallonia',
     name: 'Wallonia',
     path: 'M400...',  // This will be replaced with actual SVG path data
     population: 1800000,   // Industrial but less populated

@@ -13,9 +13,29 @@ interface StateData {
 }
 
 interface Nation {
-  id: string;
-  provinceIds: string[];
+  nationTag: string;
+  name: string;
   color: string;
+  hexColor: string;
+  provinces: {
+    id: string;
+    name: string;
+    path: string;
+    population: number;
+    goldIncome: number;
+    industry: number;
+    buildings: any[];
+    resourceType: string;
+    army: number;
+  }[];
+  borderProvinces: any[] | null;
+  gold: number;
+  industry: number;
+  researchPoints: number;
+  currentResearchId: string | null;
+  currentResearchProgress: number;
+  buildQueue: any[] | null;
+  isAI: boolean;
 }
 
 interface ResourceStats {
@@ -186,9 +206,10 @@ const ArmyItem = ({
 interface MapViewProps {
   mapName?: string;
   isDemo?: boolean;
+  nations?: Nation[];
 }
 
-export default function MapView({ mapName = 'world_states', isDemo = false }: MapViewProps) {
+export default function MapView({ mapName = 'world_states', isDemo = false, nations }: MapViewProps) {
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const panzoomInstanceRef = useRef<ReturnType<typeof panzoom> | null>(null);
   const keysPressed = useRef<Set<string>>(new Set<string>());
@@ -207,6 +228,7 @@ export default function MapView({ mapName = 'world_states', isDemo = false }: Ma
     research: true,
     industry: true
   });
+  const [isLoading, setIsLoading] = useState(true);
 
   // Example resource stats - in a real app these would be dynamic
   const [resources] = useState<ResourceStats>({
@@ -220,13 +242,10 @@ export default function MapView({ mapName = 'world_states', isDemo = false }: Ma
 
   // Function to create a nation from provinces
   const createNation = useCallback((provinceIds: string[], color: string) => {
-    // Convert province names to lowercase for case-insensitive matching
-    const lowerProvinceIds = provinceIds.map(id => id.toLowerCase());
-    
     // Find matching provinces
     const matchingProvinces: string[] = [];
     stateDataRef.current.forEach((state, id) => {
-      if (lowerProvinceIds.includes(state.name.toLowerCase())) {
+      if (provinceIds.includes(state.name)) {
         matchingProvinces.push(id);
         
         // Update province color and store nation association
@@ -239,9 +258,29 @@ export default function MapView({ mapName = 'world_states', isDemo = false }: Ma
     if (matchingProvinces.length > 0) {
       const nationId = matchingProvinces.join('-');
       const nation: Nation = {
-        id: nationId,
-        provinceIds: matchingProvinces,
-        color: color
+        nationTag: nationId,
+        name: nationId,
+        color: color,
+        hexColor: color,
+        provinces: matchingProvinces.map(id => ({
+          id,
+          name: stateDataRef.current.get(id)?.name || id,
+          path: '',
+          population: 0,
+          goldIncome: 0,
+          industry: 0,
+          buildings: [],
+          resourceType: 'gold',
+          army: 0
+        })),
+        borderProvinces: null,
+        gold: 0,
+        industry: 0,
+        researchPoints: 0,
+        currentResearchId: null,
+        currentResearchProgress: 0,
+        buildQueue: null,
+        isAI: false
       };
       
       nationsRef.current.set(nationId, nation);
@@ -455,10 +494,51 @@ export default function MapView({ mapName = 'world_states', isDemo = false }: Ma
     console.log('===================\n');
   };
 
+  // Function to color provinces based on nation ownership
+  const colorNations = useCallback(() => {
+    if (!nations || !svgContainerRef.current) return;
+
+    console.log('Coloring nations:', nations);
+    
+    nations.forEach(nation => {
+      console.log(`Processing nation ${nation.name} with color ${nation.color}`);
+      nation.provinces.forEach(province => {
+        const provinceId = province.id;
+        console.log(`Looking for province path with id: ${provinceId}`);
+        
+        const path = svgContainerRef.current?.querySelector(`path#${provinceId}`) as SVGPathElement | null;
+        
+        if (path) {
+          console.log(`Found path for province ${province.name}, applying color ${nation.color}`);
+          // Store original color if not already stored
+          if (!originalColorsRef.current.has(provinceId)) {
+            originalColorsRef.current.set(provinceId, path.style.fill);
+          }
+          
+          // Apply nation color
+          path.style.fill = nation.color;
+          
+          // Store state data
+          const stateData: StateData = {
+            id: provinceId,
+            name: province.name,
+            color: nation.color,
+            path: path,
+            nationId: nation.nationTag
+          };
+          stateDataRef.current.set(provinceId, stateData);
+        } else {
+          console.warn(`Province path not found for ID: ${province.id}`);
+        }
+      });
+    });
+  }, [nations]);
+
   // Initialize map and state data
   useEffect(() => {
     if (typeof window === 'undefined') return;
     let isInitialized = false;
+    setIsLoading(true);
 
     const loadMap = async () => {
       try {
@@ -491,7 +571,6 @@ export default function MapView({ mapName = 'world_states', isDemo = false }: Ma
           const deltaX = Math.abs(e.clientX - mouseStartPosRef.current.x);
           const deltaY = Math.abs(e.clientY - mouseStartPosRef.current.y);
           
-          // If moved more than 5 pixels, consider it a drag
           if (deltaX > 5 || deltaY > 5) {
             isDraggingRef.current = true;
           }
@@ -507,37 +586,24 @@ export default function MapView({ mapName = 'world_states', isDemo = false }: Ma
 
         // Process all paths in the SVG
         const paths = svg.querySelectorAll('path');
-        // console.log(`Found ${paths.length} provinces in the SVG:`);
-        // console.log('----------------------------------------');
         
         paths.forEach((path) => {
           const id = path.id || crypto.randomUUID();
           const name = path.getAttribute('name') || id;
           const computedStyle = window.getComputedStyle(path);
           const color = computedStyle.fill;
-          const bbox = path.getBBox();
 
-          // Store state data
+          // Store original colors and state data
+          originalColorsRef.current.set(id, color);
           const stateData: StateData = {
             id,
             name,
             color,
             path: path as SVGPathElement
           };
-
           stateDataRef.current.set(id, stateData);
-          originalColorsRef.current.set(id, color);
 
-          // Log detailed province data
-          // console.log(`Province: ${name}`);
-          // console.log(`  ID: ${id}`);
-          // console.log(`  Color: ${color}`);
-          // console.log(`  Position: x=${bbox.x.toFixed(2)}, y=${bbox.y.toFixed(2)}`);
-          // console.log(`  Size: width=${bbox.width.toFixed(2)}, height=${bbox.height.toFixed(2)}`);
-          // console.log(`  Path Data: ${path.getAttribute('d')?.substring(0, 50)}...`);
-          // console.log('----------------------------------------');
-
-          // Modified click handler
+          // Add click handler
           const clickHandler = (e: MouseEvent) => {
             e.stopPropagation();
             if (!isDraggingRef.current) {
@@ -549,73 +615,30 @@ export default function MapView({ mapName = 'world_states', isDemo = false }: Ma
           path.dataset.clickId = id;
         });
 
-        // Only create west coast nation and print details in demo mode
+        // Color nations if provided
+        if (nations) {
+          colorNations();
+        }
+
+        // Only create west coast nation in demo mode
         if (isDemo) {
           createNation(
             ['Washington', 'Oregon', 'California', 'Nevada'],
             '#6C7483'
           );
-          // printStateDetails(['Washington', 'Oregon', 'California', 'Nevada', 'Idaho']);
         }
 
-        // Modify SVG click handler to check for dragging
+        // Add click handler to SVG for deselection
         svg.addEventListener('click', () => {
           if (!isDraggingRef.current) {
             handleStateClick(null);
           }
         });
 
-        // Calculate initial zoom to fit the SVG to screen
-        const calculateInitialZoom = () => {
-          const svgRect = svg.getBoundingClientRect();
-          const containerRect = svgContainerRef.current?.getBoundingClientRect();
-          if (!containerRect) return 1;
-
-          const widthRatio = containerRect.width / svgRect.width;
-          const heightRatio = containerRect.height / svgRect.height;
-
-          return Math.min(widthRatio, heightRatio) * 1.2;
-        };
-
-        const initialZoom = calculateInitialZoom();
-        initialZoomRef.current = initialZoom;
-
-        // Initialize panzoom
-        const panzoomInstance = panzoom(svg, {
-          maxZoom: 40,
-          minZoom: initialZoom * 0.8,
-          initialZoom: initialZoom,
-          smoothScroll: false,
-          bounds: true,
-          boundsPadding: 0.1
-        });
-
-        panzoomInstanceRef.current = panzoomInstance;
-
-        return () => {
-          paths.forEach((path) => {
-            const id = path.dataset.clickId;
-            if (id) {
-              path.removeEventListener('click', (e) => {
-                e.stopPropagation();
-                if (!isDraggingRef.current) {
-                  handleStateClick(id);
-                }
-              });
-            }
-          });
-          svg.removeEventListener('click', () => {
-            if (!isDraggingRef.current) {
-              handleStateClick(null);
-            }
-          });
-          svg.removeEventListener('mousedown', handleMouseDown);
-          window.removeEventListener('mousemove', handleMouseMove);
-          window.removeEventListener('mouseup', handleMouseUp);
-          panzoomInstance.dispose();
-        };
+        setIsLoading(false);
       } catch (error) {
         console.error('Error loading map:', error);
+        setIsLoading(false);
         if (svgContainerRef.current) {
           svgContainerRef.current.innerHTML = `
             <div class="text-red-600 bg-red-100 p-4 rounded">
@@ -627,7 +650,19 @@ export default function MapView({ mapName = 'world_states', isDemo = false }: Ma
     };
 
     loadMap();
-  }, [createNation, mapName, isDemo]);
+
+    return () => {
+      if (svgContainerRef.current) {
+        const svg = svgContainerRef.current.querySelector('svg');
+        if (svg) {
+          svg.removeEventListener('mousedown', () => {});
+          svg.removeEventListener('click', () => {});
+        }
+        window.removeEventListener('mousemove', () => {});
+        window.removeEventListener('mouseup', () => {});
+      }
+    };
+  }, [mapName, isDemo, createNation, colorNations, nations]);
 
   useEffect(() => {
     // Add Victorian-style font
@@ -650,6 +685,12 @@ export default function MapView({ mapName = 'world_states', isDemo = false }: Ma
 
   return (
     <div className="w-full h-full bg-white relative">
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-50">
+          <div className="text-lg text-gray-600">Loading map...</div>
+        </div>
+      )}
+
       {/* Status Bar - only show in demo mode */}
       {isDemo && (
         <div className="fixed top-4 left-6 z-50 flex items-center gap-4 px-4 py-2 rounded" 

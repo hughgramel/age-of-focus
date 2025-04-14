@@ -31,7 +31,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
       <BackButton onClick={onBack} />
       {isDemo ? (
         // Demo view with current map implementation
-        <MapView />
+        <MapView isDemo />
       ) : (
         <div className="w-full h-full">
           {/* Game details overlay */}
@@ -45,8 +45,8 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             </div>
           </div>
           
-          {/* Render the map using game.mapName */}
-          <MapView mapName={game.mapName} />
+          {/* Render the map using game.mapName and pass nations */}
+          <MapView mapName={game.mapName} nations={game.nations} />
         </div>
       )}
     </div>
