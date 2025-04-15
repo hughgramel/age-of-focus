@@ -239,6 +239,164 @@ const belgiumProvinces: Province[] = [
   }
 ];
 
+// British provinces with 1836 data
+const britainProvinces: Province[] = [
+  {
+    id: 'Wales',
+    name: 'Wales',
+    path: '',
+    population: 1234567,  // Industrializing but still rural
+    goldIncome: 78,      // Coal and iron exports
+    industry: 62,        // Early industrialization
+    buildings: [],
+    resourceType: 'coal' as ResourceType,
+    army: 5123,
+  },
+  {
+    id: 'Midlands',
+    name: 'Midlands',
+    path: '',
+    population: 2512345,  // Heart of Industrial Revolution
+    goldIncome: 198,     // Major industrial center
+    industry: 182,       // Leading industrial region
+    buildings: [],
+    resourceType: 'coal' as ResourceType,
+    army: 9876,
+  },
+  {
+    id: 'East_Anglia',
+    name: 'East Anglia',
+    path: '',
+    population: 1523456,  // Agricultural region
+    goldIncome: 123,     // Agricultural exports
+    industry: 42,        // Limited industry
+    buildings: [],
+    resourceType: 'food' as ResourceType,
+    army: 4123,
+  },
+  {
+    id: 'West_Country',
+    name: 'West Country',
+    path: '',
+    population: 1823456,  // Mixed economy
+    goldIncome: 98,      // Agriculture and mining
+    industry: 52,        // Some industry
+    buildings: [],
+    resourceType: 'food' as ResourceType,
+    army: 6123,
+  },
+  {
+    id: 'Home_Counties',
+    name: 'Home Counties',
+    path: '',
+    population: 2012345,  // London surroundings
+    goldIncome: 182,     // Financial center
+    industry: 72,        // Some industry
+    buildings: [],
+    resourceType: 'gold' as ResourceType,
+    army: 8123,
+  },
+  {
+    id: 'Yorkshire',
+    name: 'Yorkshire',
+    path: '',
+    population: 2212345,  // Industrial region
+    goldIncome: 162,     // Textile and coal
+    industry: 152,       // Major industrial center
+    buildings: [],
+    resourceType: 'coal' as ResourceType,
+    army: 9123,
+  },
+  {
+    id: 'Lancashire',
+    name: 'Lancashire',
+    path: '',
+    population: 2312345,  // Industrial heartland
+    goldIncome: 192,     // Textile manufacturing
+    industry: 172,       // Leading industrial region
+    buildings: [],
+    resourceType: 'coal' as ResourceType,
+    army: 10123,
+  },
+  {
+    id: 'Lowlands',
+    name: 'Lowlands',
+    path: '',
+    population: 1623456,  // Industrializing Scotland
+    goldIncome: 142,     // Textile and shipbuilding
+    industry: 92,        // Growing industry
+    buildings: [],
+    resourceType: 'coal' as ResourceType,
+    army: 7123,
+  },
+  {
+    id: 'Highlands',
+    name: 'Highlands',
+    path: '',
+    population: 823456,   // Rural Scotland
+    goldIncome: 62,      // Limited economy
+    industry: 32,        // Minimal industry
+    buildings: [],
+    resourceType: 'food' as ResourceType,
+    army: 3123,
+  },
+  {
+    id: 'Leinster',
+    name: 'Leinster',
+    path: '',
+    population: 1523456,  // Dublin region
+    goldIncome: 92,      // Agricultural
+    industry: 42,        // Limited industry
+    buildings: [],
+    resourceType: 'food' as ResourceType,
+    army: 5123,
+  },
+  {
+    id: 'Ulster',
+    name: 'Ulster',
+    path: '',
+    population: 1234567,  // Northern Ireland
+    goldIncome: 82,      // Linen industry
+    industry: 52,        // Some industry
+    buildings: [],
+    resourceType: 'food' as ResourceType,
+    army: 4123,
+  },
+  {
+    id: 'Connaught',
+    name: 'Connaught',
+    path: '',
+    population: 923456,   // Rural Ireland
+    goldIncome: 52,      // Agricultural
+    industry: 22,        // Minimal industry
+    buildings: [],
+    resourceType: 'food' as ResourceType,
+    army: 3123,
+  },
+  {
+    id: 'Munster',
+    name: 'Munster',
+    path: '',
+    population: 1123456,  // Southern Ireland
+    goldIncome: 72,      // Agricultural
+    industry: 32,        // Limited industry
+    buildings: [],
+    resourceType: 'food' as ResourceType,
+    army: 4123,
+  },
+  {
+    id: 'Malta',
+    name: 'Malta',
+    path: '',
+    population: 123456,   // Mediterranean island
+    goldIncome: 42,      // Naval base
+    industry: 22,        // Limited industry
+    buildings: [],
+    resourceType: 'gold' as ResourceType,
+    army: 2123,
+  }
+];
+
 // Create France nation
 const france: Nation = {
   nationTag: 'FRA',
@@ -279,6 +437,26 @@ const belgium: Nation = {
   isAI: true
 };
 
+// Create Great Britain nation
+const greatBritain: Nation = {
+  nationTag: 'ENG',
+  name: 'Great Britain',
+  color: '#693a2a',
+  hexColor: '#693a2a',
+  provinces: britainProvinces,
+  borderProvinces: null,
+  
+  // Resources / Stats
+  gold: 5000,            // Wealthiest nation
+  researchPoints: 150,  // Leading in sciences
+  currentResearchId: 'steam_power',
+  currentResearchProgress: 50,
+  
+  // Queue
+  buildQueue: [],
+  isAI: false
+};
+
 // Create the dummy game
 export const dummyGame: Game = {
   id: 'game_1',
@@ -286,5 +464,5 @@ export const dummyGame: Game = {
   date: '1836-01-01',
   mapName: 'world_states',
   playerNationTag: 'FRA',
-  nations: [france, belgium]
+  nations: [france, belgium, greatBritain]
 }; 
