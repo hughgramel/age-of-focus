@@ -1,9 +1,76 @@
 As you complete tasks and reference relevant files update this file as our memory to help with future tasks. 
 
-
 # Core MVP Tasks: Age of Focus
 
 ## 🔧 Setup & Infrastructure
+
+## Social Media
+
+### Twitter
+- [ ] Create Twitter account
+- [ ] Create Twitter handle
+- [ ] Create Twitter bio
+- [ ] Create Twitter profile picture
+- [ ] Create Twitter banner
+- [ ] Create Twitter link in bio
+
+### Instagram
+- [ ] Create Instagram account
+- [ ] Create Instagram handle
+- [ ] Create Instagram bio
+- [ ] Create Instagram profile picture
+- [ ] Create Instagram banner
+- [ ] Create Instagram link in bio
+
+### Facebook
+- [ ] Create Facebook account
+- [ ] Create Facebook handle
+- [ ] Create Facebook bio
+- [ ] Create Facebook profile picture
+- [ ] Create Facebook banner
+- [ ] Create Facebook link in bio
+
+### LinkedIn
+- [ ] Create LinkedIn account
+- [ ] Create LinkedIn handle
+- [ ] Create LinkedIn bio
+- [ ] Create LinkedIn profile picture
+- [ ] Create LinkedIn banner
+- [ ] Create LinkedIn link in bio
+
+### YouTube
+- [ ] Create YouTube account
+- [ ] Create YouTube handle
+- [ ] Create YouTube bio
+- [ ] Create YouTube profile picture
+- [ ] Create YouTube banner
+- [ ] Create YouTube link in bio
+
+### TikTok
+- [ ] Create TikTok account
+- [ ] Create TikTok handle
+- [ ] Create TikTok bio
+- [ ] Create TikTok profile picture
+- [ ] Create TikTok banner
+- [ ] Create TikTok link in bio
+
+### Reddit
+- [ ] Create Reddit account
+- [ ] Create Reddit handle
+- [ ] Create Reddit bio
+- [ ] Create Reddit profile picture
+- [ ] Create Reddit banner
+- [ ] Create Reddit link in bio
+
+### Discord
+- [ ] Create Discord account
+- [ ] Create Discord handle
+- [ ] Create Discord bio
+- [ ] Create Discord profile picture
+- [ ] Create Discord banner
+- [ ] Create Discord link in bio
+
+
 
 ### Firebase/Supabase Setup
 - [X] Set up Firebase project
@@ -39,11 +106,11 @@ As you complete tasks and reference relevant files update this file as our memor
 ## 🎮 Game Core Features
 
 ### Country Creation
-- [ ] Create country initialization function
-- [ ] Set default country stats
-- [ ] Create initial provinces
-- [ ] Save country to Firestore
-- [ ] Load country on user login
+- [ ] Create country initialization function [DOING_TMRW]
+- [ ] Set default country stats [DOING_TMRW]
+- [ ] Create initial provinces [DOING_TMRW]
+- [ ] Save country to Firestore [DOING_TMRW]
+- [ ] Load country on user login [DOING_TMRW]
 
 ### Focus Session System
 - [ ] Create timer component
