@@ -1,7 +1,6 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import FirebaseTest from '@/components/FirebaseTest';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -27,11 +26,6 @@ export default function Dashboard() {
         >
           View Demo
         </button>
-      </div>
-      
-      {/* Temporary Firebase connection test */}
-      <div className="mt-8">
-        <FirebaseTest />
       </div>
     </div>
   );

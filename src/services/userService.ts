@@ -3,12 +3,14 @@ import {
   getDoc, 
   setDoc, 
   updateDoc,
+  deleteDoc,
   serverTimestamp 
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { 
   User, 
-  UserPreferences, 
+  UserPreferences,
+  UserProfile,
   createNewUserDocument 
 } from '@/types/user';
 
@@ -73,5 +75,33 @@ export class UserService {
       subscriptionEndDate,
       lastUpdatedAt: serverTimestamp(),
     });
+  }
+
+  static async updateProfile(
+    uid: string,
+    profile: Partial<UserProfile>
+  ): Promise<void> {
+    const userDoc = doc(db, this.COLLECTION, uid);
+    await updateDoc(userDoc, {
+      'profile.displayName': profile.displayName,
+      'profile.photoURL': profile.photoURL,
+      lastUpdatedAt: serverTimestamp(),
+    });
+  }
+
+  static async updateEmail(
+    uid: string,
+    email: string
+  ): Promise<void> {
+    const userDoc = doc(db, this.COLLECTION, uid);
+    await updateDoc(userDoc, {
+      email,
+      lastUpdatedAt: serverTimestamp(),
+    });
+  }
+
+  static async deleteUser(uid: string): Promise<void> {
+    const userDoc = doc(db, this.COLLECTION, uid);
+    await deleteDoc(userDoc);
   }
 } 

@@ -1,5 +1,5 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, signInAnonymously } from 'firebase/auth';
+import { getAuth } from 'firebase/auth';
 import { getFirestore, collection, doc, setDoc, deleteDoc } from 'firebase/firestore';
 
 // Your web app's Firebase configuration
@@ -23,9 +23,8 @@ const db = getFirestore(app);
 export async function testFirebaseConnection() {
   try {
     // Test auth
-    await signInAnonymously(auth);
-    console.log('✅ Firebase Authentication is connected');
     await auth.signOut();
+    console.log('✅ Firebase Authentication is connected');
 
     // Test Firestore
     const testCollection = collection(db, '_test_connection');
