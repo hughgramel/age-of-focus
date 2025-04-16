@@ -20,19 +20,19 @@ As you complete tasks and reference relevant files update this file as our memor
   - Create province relationships/connections
 
 ## Data Persistence
-- [ ] Save country to Firestore
+- [X] Save country to Firestore
   - Create country collection structure
   - Add proper indexing for queries
   - Implement save/update functions
 
-- [ ] Load country on user login
+- [X] Load country on user login
   - Add country loading to auth flow
   - Handle loading states
   - Add error recovery
 
 ## Testing
 - [ ] Create basic test cases for country creation
-- [ ] Verify data persistence works correctly
+- [X] Verify data persistence works correctly
 
 
 # Core MVP Tasks: Age of Focus
@@ -73,11 +73,11 @@ As you complete tasks and reference relevant files update this file as our memor
 ## 🎮 Game Core Features
 
 ### Country Creation
-- [ ] Create country initialization function
-- [ ] Set default country stats
-- [ ] Create initial provinces
-- [ ] Save country to Firestore
-- [ ] Load country on user login
+- [X] Create country initialization function
+- [X] Set default country stats
+- [X] Create initial provinces
+- [X] Save country to Firestore
+- [X] Load country on user login
 
 ### Focus Session System
 - [ ] Create timer component
