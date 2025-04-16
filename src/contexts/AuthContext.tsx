@@ -26,6 +26,7 @@ import { doc, getDoc, setDoc, updateDoc, deleteDoc, Timestamp } from 'firebase/f
 import { auth, db } from '@/lib/firebase';
 import { AuthService } from '@/services/authService';
 import { UserService } from '@/services/userService';
+import { createNewUserDocument } from '@/types/user';
 
 interface UserProfile {
   uid: string;
@@ -40,7 +41,7 @@ interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<UserCredential>;
-  signUp: (email: string, password: string, displayName: string) => Promise<void>;
+  signUp: (email: string, password: string, displayName: string) => Promise<UserCredential>;
   signInWithGoogle: () => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (displayName: string, photoURL: string | null) => Promise<void>;
@@ -69,35 +70,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser) {
-        const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          setUser({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName,
-            photoURL: firebaseUser.photoURL,
-            createdAt: userData.createdAt.toDate(),
-            lastLogin: userData.lastLogin.toDate(),
-          });
+      try {
+        if (firebaseUser) {
+          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            setUser({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email,
+              displayName: firebaseUser.displayName,
+              photoURL: firebaseUser.photoURL,
+              createdAt: userData.createdAt.toDate(),
+              lastLogin: userData.lastLoginAt.toDate(),
+            });
+            
+            // Update last login time
+            await updateDoc(doc(db, 'users', firebaseUser.uid), {
+              lastLoginAt: Timestamp.fromDate(new Date()),
+              lastUpdatedAt: Timestamp.fromDate(new Date())
+            });
+          }
         } else {
-          // If somehow the user exists in Firebase Auth but not in Firestore,
-          // create the document
-          const newUser = createUserProfile(firebaseUser);
-          await setDoc(doc(db, 'users', firebaseUser.uid), {
-            email: newUser.email,
-            displayName: newUser.displayName,
-            photoURL: newUser.photoURL,
-            createdAt: Timestamp.fromDate(newUser.createdAt),
-            lastLogin: Timestamp.fromDate(newUser.lastLogin),
-          });
-          setUser(newUser);
+          setUser(null);
         }
-      } else {
+      } catch (error) {
+        console.error("Error in auth state change:", error);
         setUser(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
@@ -107,15 +108,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     uid: string,
     data: Partial<Omit<UserProfile, 'uid'>>
   ) => {
-    const userRef = doc(db, 'users', uid);
-    const updateData: Record<string, any> = {};
-    
-    if (data.email) updateData.email = data.email;
-    if (data.displayName) updateData.displayName = data.displayName;
-    if (data.photoURL) updateData.photoURL = data.photoURL;
-    if (data.lastLogin) updateData.lastLogin = Timestamp.fromDate(data.lastLogin);
-    
-    await updateDoc(userRef, updateData);
+    try {
+      const userRef = doc(db, 'users', uid);
+      const updateData: Record<string, any> = {};
+      
+      if (data.email) updateData.email = data.email;
+      if (data.displayName) updateData.displayName = data.displayName;
+      if (data.photoURL) updateData.photoURL = data.photoURL;
+      if (data.lastLogin) updateData.lastLoginAt = Timestamp.fromDate(data.lastLogin);
+      updateData.lastUpdatedAt = Timestamp.fromDate(new Date());
+      
+      await updateDoc(userRef, updateData);
+    } catch (error) {
+      console.error("Error updating user document:", error);
+      throw error;
+    }
   };
 
   const signIn = async (email: string, password: string) => {
@@ -125,35 +132,94 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signUp = async (email: string, password: string, displayName: string) => {
-    const credential = await createUserWithEmailAndPassword(auth, email, password);
-    await updateFirebaseProfile(credential.user, { displayName });
-    
-    const newUser = createUserProfile(credential.user, { createdAt: new Date() });
-    await setDoc(doc(db, 'users', credential.user.uid), {
-      email: newUser.email,
-      displayName: newUser.displayName,
-      photoURL: newUser.photoURL,
-      createdAt: Timestamp.fromDate(newUser.createdAt),
-      lastLogin: Timestamp.fromDate(newUser.lastLogin),
-    });
+    try {
+      const credential = await createUserWithEmailAndPassword(auth, email, password);
+      
+      // Update the Firebase Auth profile first
+      await updateFirebaseProfile(credential.user, {
+        displayName: displayName,
+        photoURL: null
+      });
+      
+      // Create full user document with all fields
+      const userDoc = createNewUserDocument(
+        credential.user.uid,
+        email,
+        displayName,
+        null
+      );
+      
+      // Convert dates to Firestore Timestamps and create the document
+      const firestoreDoc = {
+        ...userDoc,
+        emailVerified: credential.user.emailVerified,
+        createdAt: Timestamp.fromDate(userDoc.createdAt),
+        lastLoginAt: Timestamp.fromDate(userDoc.lastLoginAt),
+        lastUpdatedAt: Timestamp.fromDate(userDoc.lastUpdatedAt),
+        stats: {
+          ...userDoc.stats,
+          lastSessionDate: userDoc.stats.lastSessionDate ? Timestamp.fromDate(userDoc.stats.lastSessionDate) : null
+        }
+      };
+      
+      await setDoc(doc(db, 'users', credential.user.uid), firestoreDoc);
+      
+      // Update local user state
+      setUser({
+        uid: credential.user.uid,
+        email: email,
+        displayName: displayName,
+        photoURL: null,
+        createdAt: userDoc.createdAt,
+        lastLogin: userDoc.lastLoginAt
+      });
+      
+      return credential;
+    } catch (error) {
+      console.error("Error in signUp:", error);
+      throw error;
+    }
   };
 
   const signInWithGoogle = async () => {
-    const provider = new GoogleAuthProvider();
-    const credential = await signInWithPopup(auth, provider);
-    
-    const userDoc = await getDoc(doc(db, 'users', credential.user.uid));
-    if (!userDoc.exists()) {
-      const newUser = createUserProfile(credential.user, { createdAt: new Date() });
-      await setDoc(doc(db, 'users', credential.user.uid), {
-        email: newUser.email,
-        displayName: newUser.displayName,
-        photoURL: newUser.photoURL,
-        createdAt: Timestamp.fromDate(newUser.createdAt),
-        lastLogin: Timestamp.fromDate(newUser.lastLogin),
-      });
-    } else {
-      await updateUserDocument(credential.user.uid, { lastLogin: new Date() });
+    try {
+      const provider = new GoogleAuthProvider();
+      const credential = await signInWithPopup(auth, provider);
+      
+      const userDoc = await getDoc(doc(db, 'users', credential.user.uid));
+      if (!userDoc.exists()) {
+        // Create full user document with all fields
+        const newUserDoc = createNewUserDocument(
+          credential.user.uid,
+          credential.user.email!,
+          credential.user.displayName,
+          credential.user.photoURL
+        );
+        
+        // Convert dates to Firestore Timestamps
+        const firestoreDoc = {
+          ...newUserDoc,
+          emailVerified: credential.user.emailVerified,
+          createdAt: Timestamp.fromDate(newUserDoc.createdAt),
+          lastLoginAt: Timestamp.fromDate(newUserDoc.lastLoginAt),
+          lastUpdatedAt: Timestamp.fromDate(newUserDoc.lastUpdatedAt),
+          stats: {
+            ...newUserDoc.stats,
+            lastSessionDate: newUserDoc.stats.lastSessionDate ? Timestamp.fromDate(newUserDoc.stats.lastSessionDate) : null
+          }
+        };
+        
+        await setDoc(doc(db, 'users', credential.user.uid), firestoreDoc);
+      } else {
+        // Update last login time
+        await updateDoc(doc(db, 'users', credential.user.uid), {
+          lastLoginAt: Timestamp.fromDate(new Date()),
+          lastUpdatedAt: Timestamp.fromDate(new Date())
+        });
+      }
+    } catch (error) {
+      console.error("Error in signInWithGoogle:", error);
+      throw error;
     }
   };
 

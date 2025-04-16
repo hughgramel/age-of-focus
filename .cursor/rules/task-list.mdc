@@ -11,12 +11,12 @@ As you complete tasks and reference relevant files update this file as our memor
 ## 🔧 Setup & Infrastructure
 
 ### Firebase/Supabase Setup
-- [ ] Set up Firebase project
-- [ ] Configure Firebase Authentication
-- [ ] Set up Firestore database
+- [X] Set up Firebase project
+- [X] Configure Firebase Authentication
+- [X] Set up Firestore database
 - [ ] Create security rules for Firestore
 - [ ] Set up Firebase hosting
-- [ ] Configure environment variables
+- [X] Configure environment variables
 
 ### Data Models
 - [ ] Define User interface
