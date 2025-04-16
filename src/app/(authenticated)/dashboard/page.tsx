@@ -7,8 +7,12 @@ export default function Dashboard() {
   const router = useRouter();
   const [showSaveGames, setShowSaveGames] = useState(false);
 
-  const handleSaveGameSelect = (saveNumber: number) => {
-    router.push(`/game?save=${saveNumber}`);
+  const handleSaveGameSelect = (saveNumber: number, isNew: boolean = false) => {
+    if (isNew) {
+      router.push('/scenario_select');
+    } else {
+      router.push(`/game?save=1`);
+    }
   };
 
   return (
@@ -41,23 +45,24 @@ export default function Dashboard() {
 
             <button
               onClick={() => handleSaveGameSelect(1)}
-              className="w-full px-10 py-4 bg-[#162033] text-[#FFD700] rounded-lg border border-[#FFD700]/25 hover:bg-[#1C2942] transition-colors duration-200 text-lg"
+              className="w-full px-10 py-4 bg-[#162033] text-[#FFD700] rounded-lg border border-[#FFD700]/25 hover:bg-[#1C2942] transition-colors duration-200 text-lg flex flex-col items-start"
             >
-              Save Game 1
+              <span className="text-lg">France - 1836</span>
+              <span className="text-sm text-[#FFD700]/70">Last played: Demo save</span>
             </button>
             
             <button
-              onClick={() => handleSaveGameSelect(2)}
+              onClick={() => handleSaveGameSelect(2, true)}
               className="w-full px-10 py-4 bg-[#162033] text-[#FFD700] rounded-lg border border-[#FFD700]/25 hover:bg-[#1C2942] transition-colors duration-200 text-lg"
             >
-              Save Game 2
+              New Game
             </button>
             
             <button
-              onClick={() => handleSaveGameSelect(3)}
+              onClick={() => handleSaveGameSelect(3, true)}
               className="w-full px-10 py-4 bg-[#162033] text-[#FFD700] rounded-lg border border-[#FFD700]/25 hover:bg-[#1C2942] transition-colors duration-200 text-lg"
             >
-              Save Game 3
+              New Game
             </button>
           </>
         )}

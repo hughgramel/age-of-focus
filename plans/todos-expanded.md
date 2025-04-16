@@ -9,7 +9,7 @@ As you complete tasks and reference relevant files update this file as our memor
   - Define base country stats (population, resources, etc.)
   - Add initialization logic in game creation flow
   
-- [ ] Set default country stats
+- [X] Set default country stats (Done for France and Belgium)
   - Implement starting values for treasury, industry, etc.
   - Add validation for stat ranges
 

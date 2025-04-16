@@ -458,7 +458,7 @@ const greatBritain: Nation = {
 };
 
 // Create the dummy game
-export const dummyGame: Game = {
+export const world_1836: Game = {
   id: 'game_1',
   gameName: 'Test Game 1',
   date: '1836-01-01',

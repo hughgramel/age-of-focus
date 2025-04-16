@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import GameView from '@/components/GameView';
-import { dummyGame } from '@/data/dummyGame';
+import { world_1836 } from '@/data/world_1836';
 
 export default function GamePage() {
   const router = useRouter();
@@ -11,5 +11,5 @@ export default function GamePage() {
     router.push('/dashboard');
   };
 
-  return <GameView game={dummyGame} onBack={handleBack} />;
+  return <GameView game={world_1836} onBack={handleBack} />;
 } 
