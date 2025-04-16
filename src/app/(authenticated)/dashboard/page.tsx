@@ -7,12 +7,8 @@ export default function Dashboard() {
   const router = useRouter();
   const [showSaveGames, setShowSaveGames] = useState(false);
 
-  const handleSaveGameSelect = (saveNumber: number, isNew: boolean = false) => {
-    if (isNew) {
-      router.push('/scenario_select');
-    } else {
-      router.push(`/game?save=1`);
-    }
+  const handleSaveGameSelect = (saveNumber: number) => {
+    router.push('/scenario_select');
   };
 
   return (
@@ -29,9 +25,10 @@ export default function Dashboard() {
             
             <button
               onClick={() => router.push('/demo')}
-              className="w-full px-10 py-4 bg-transparent text-[#FFD700] rounded-lg border border-[#FFD700]/25 hover:bg-[#162033] transition-colors duration-200 text-lg"
+              className="w-full px-10 py-4 bg-transparent text-[#FFD700] rounded-lg border border-[#FFD700]/25 hover:bg-[#162033] transition-colors duration-200 text-lg flex flex-col items-start"
             >
-              Tutorial
+              <span className="text-lg">Tutorial</span>
+              <span className="text-sm text-[#FFD700]/70">France - 1836 Demo</span>
             </button>
           </>
         ) : (
@@ -47,22 +44,24 @@ export default function Dashboard() {
               onClick={() => handleSaveGameSelect(1)}
               className="w-full px-10 py-4 bg-[#162033] text-[#FFD700] rounded-lg border border-[#FFD700]/25 hover:bg-[#1C2942] transition-colors duration-200 text-lg flex flex-col items-start"
             >
-              <span className="text-lg">France - 1836</span>
-              <span className="text-sm text-[#FFD700]/70">Last played: Demo save</span>
+              <span className="text-lg">Save Game 1</span>
+              <span className="text-sm text-[#FFD700]/70">Empty save slot</span>
             </button>
             
             <button
-              onClick={() => handleSaveGameSelect(2, true)}
-              className="w-full px-10 py-4 bg-[#162033] text-[#FFD700] rounded-lg border border-[#FFD700]/25 hover:bg-[#1C2942] transition-colors duration-200 text-lg"
+              onClick={() => handleSaveGameSelect(2)}
+              className="w-full px-10 py-4 bg-[#162033] text-[#FFD700] rounded-lg border border-[#FFD700]/25 hover:bg-[#1C2942] transition-colors duration-200 text-lg flex flex-col items-start"
             >
-              New Game
+              <span className="text-lg">Save Game 2</span>
+              <span className="text-sm text-[#FFD700]/70">Empty save slot</span>
             </button>
             
             <button
-              onClick={() => handleSaveGameSelect(3, true)}
-              className="w-full px-10 py-4 bg-[#162033] text-[#FFD700] rounded-lg border border-[#FFD700]/25 hover:bg-[#1C2942] transition-colors duration-200 text-lg"
+              onClick={() => handleSaveGameSelect(3)}
+              className="w-full px-10 py-4 bg-[#162033] text-[#FFD700] rounded-lg border border-[#FFD700]/25 hover:bg-[#1C2942] transition-colors duration-200 text-lg flex flex-col items-start"
             >
-              New Game
+              <span className="text-lg">Save Game 3</span>
+              <span className="text-sm text-[#FFD700]/70">Empty save slot</span>
             </button>
           </>
         )}

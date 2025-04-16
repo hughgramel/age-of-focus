@@ -26,10 +26,12 @@ export default function ScenarioSelect() {
   const router = useRouter();
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [selectedYear] = useState('1836'); // For now, only 1836 is available
+  const [startMessage, setStartMessage] = useState<string | null>(null);
 
   const handleStartGame = () => {
     if (selectedCountry) {
-      router.push(`/game?new=true&country=${selectedCountry}&year=${selectedYear}`);
+      setStartMessage(`Starting game with nation: ${selectedCountry}`);
+      // Will implement actual game start functionality later
     }
   };
 
@@ -45,6 +47,12 @@ export default function ScenarioSelect() {
 
       <div className="max-w-4xl mx-auto w-full flex flex-col gap-8">
         <h1 className="text-3xl font-bold text-[#FFD700] mb-4">New Game</h1>
+
+        {startMessage && (
+          <div className="bg-[#162033] rounded-lg p-4 border border-[#FFD700]/25">
+            <p className="text-[#FFD700]">{startMessage}</p>
+          </div>
+        )}
 
         {/* Country Selection */}
         <div className="bg-[#162033] rounded-lg p-6 border border-[#FFD700]/25">
