@@ -7,18 +7,20 @@ type Country = {
   id: string;
   name: string;
   description: string;
+  isTutorialNation?: boolean;
 };
 
 const AVAILABLE_COUNTRIES: Country[] = [
   {
     id: 'FRA',
     name: 'France',
-    description: 'A major European power with strong industrial potential and colonial ambitions.'
+    description: 'A major European power with strong industrial potential and colonial ambitions. Recommended for new players (Tutorial Scenario).',
+    isTutorialNation: true
   },
   {
     id: 'BEL',
     name: 'Belgium',
-    description: 'A newly independent nation at the heart of the industrial revolution.'
+    description: 'A newly independent nation at the heart of the industrial revolution. For players seeking a more challenging start.'
   }
 ];
 
@@ -26,12 +28,10 @@ export default function ScenarioSelect() {
   const router = useRouter();
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [selectedYear] = useState('1836'); // For now, only 1836 is available
-  const [startMessage, setStartMessage] = useState<string | null>(null);
 
   const handleStartGame = () => {
     if (selectedCountry) {
-      setStartMessage(`Starting game with nation: ${selectedCountry}`);
-      // Will implement actual game start functionality later
+      router.push(`/game?new=true&country=${selectedCountry}&year=${selectedYear}`);
     }
   };
 
@@ -48,12 +48,6 @@ export default function ScenarioSelect() {
       <div className="max-w-4xl mx-auto w-full flex flex-col gap-8">
         <h1 className="text-3xl font-bold text-[#FFD700] mb-4">New Game</h1>
 
-        {startMessage && (
-          <div className="bg-[#162033] rounded-lg p-4 border border-[#FFD700]/25">
-            <p className="text-[#FFD700]">{startMessage}</p>
-          </div>
-        )}
-
         {/* Country Selection */}
         <div className="bg-[#162033] rounded-lg p-6 border border-[#FFD700]/25">
           <h2 className="text-xl text-[#FFD700] mb-4">Select Your Nation</h2>
@@ -66,9 +60,14 @@ export default function ScenarioSelect() {
                   selectedCountry === country.id
                     ? 'border-[#FFD700] bg-[#1C2942]'
                     : 'border-[#FFD700]/25 bg-[#162033] hover:bg-[#1C2942]'
-                }`}
+                } ${country.isTutorialNation ? 'border-[#FFD700]/50' : ''}`}
               >
-                <h3 className="text-[#FFD700] text-lg font-medium">{country.name}</h3>
+                <h3 className="text-[#FFD700] text-lg font-medium flex items-center gap-2">
+                  {country.name}
+                  {country.isTutorialNation && (
+                    <span className="text-sm bg-[#FFD700]/20 px-2 py-0.5 rounded">Tutorial</span>
+                  )}
+                </h3>
                 <p className="text-gray-400 mt-2">{country.description}</p>
               </button>
             ))}
