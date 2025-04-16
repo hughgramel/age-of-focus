@@ -6,25 +6,20 @@ export default function Dashboard() {
   const router = useRouter();
 
   return (
-    <div className="w-full h-screen bg-[#0B1423] flex flex-col items-center justify-center">
-      <div className="text-center mb-12">
-        <h1 className="text-6xl font-bold text-[#FFD700] mb-4 font-serif">Age of Focus</h1>
-        <p className="text-gray-400 text-lg">Shape your nation's destiny</p>
-      </div>
-      
-      <div className="flex flex-col gap-4 w-64">
+    <div className="w-full h-screen bg-[#0B1423] flex items-center justify-end p-8 translate-x-30">
+      <div className="flex flex-col gap-6 w-80 -translate-y-20">
         <button
           onClick={() => router.push('/game')}
-          className="w-full px-8 py-3 bg-[#162033] text-[#FFD700] rounded-lg border border-[#FFD700]/25 hover:bg-[#1C2942] transition-colors duration-200"
+          className="w-full px-10 py-4 bg-[#162033] text-[#FFD700] rounded-lg border border-[#FFD700]/25 hover:bg-[#1C2942] transition-colors duration-200 text-lg"
         >
-          Start Game
+          Focus now
         </button>
         
         <button
           onClick={() => router.push('/demo')}
-          className="w-full px-8 py-3 bg-transparent text-[#FFD700] rounded-lg border border-[#FFD700]/25 hover:bg-[#162033] transition-colors duration-200"
+          className="w-full px-10 py-4 bg-transparent text-[#FFD700] rounded-lg border border-[#FFD700]/25 hover:bg-[#162033] transition-colors duration-200 text-lg"
         >
-          View Demo
+          Tutorial
         </button>
       </div>
     </div>

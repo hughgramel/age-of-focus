@@ -1,5 +1,39 @@
 As you complete tasks and reference relevant files update this file as our memory to help with future tasks. 
 
+# [TODAYS_TASK]
+
+# Today's Tasks: Country Creation 🏰
+
+## Core Setup
+- [ ] Create country initialization function
+  - Define base country stats (population, resources, etc.)
+  - Add initialization logic in game creation flow
+  
+- [ ] Set default country stats
+  - Implement starting values for treasury, industry, etc.
+  - Add validation for stat ranges
+
+## Province Management
+- [ ] Create initial provinces
+  - Define province generation algorithm
+  - Set balanced starting resources
+  - Create province relationships/connections
+
+## Data Persistence
+- [ ] Save country to Firestore
+  - Create country collection structure
+  - Add proper indexing for queries
+  - Implement save/update functions
+
+- [ ] Load country on user login
+  - Add country loading to auth flow
+  - Handle loading states
+  - Add error recovery
+
+## Testing
+- [ ] Create basic test cases for country creation
+- [ ] Verify data persistence works correctly
+
 
 # Core MVP Tasks: Age of Focus
 
