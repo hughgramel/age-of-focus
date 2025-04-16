@@ -4,183 +4,148 @@
 
 ---
 
-## 🧠 Pre-Week: Promo Landing Page & Validation (Optional but Strategic)
+## 📅 Week 1: Core Backend & Basic Task-to-Play Hookup
 
-### 🔥 Pre-MVP Marketing
-- [ ] Create a 1-page landing site with:
-  - [ ] Logo + game tagline
-  - [ ] 1–2 sentence product pitch
-  - [ ] Email capture form (Supabase or Mailchimp)
-  - [ ] Thank-you page or success message
-- [ ] Share with 5–10 friends or in niche communities
-- [ ] Add a waitlist counter (optional but engaging)
+### 🔧 Firebase Setup & Auth
+- [ ] Set up Firebase project with Firestore & Auth
+- [ ] Enable email/password and Google OAuth login
+- [ ] Create `firebase.ts` utility for secure access
+- [ ] Create protected routes for authenticated users
 
----
-
-## 📅 Week 1: Core Setup, Auth, and Country Creation
-
-### 🔧 Firebase/Supabase Setup
-- [X] Initialize frontend project (Next.js, Tailwind, TS)
-- [X] Set up Supabase or Firebase (Auth + Firestore)
-- [X] Create shared types/interfaces for user, country, and focus session
-
-### 👤 User & Game System
-- [ ] Implement OAuth login (e.g., Google)
-- [ ] On first login: generate new country with default stats
-- [ ] Store user profile and game data in Firestore
-
-### 🗂️ Data Modeling
-- [ ] Create Firestore collections:
+### 📂 Game & User Data Modeling
+- [ ] Define Firestore collections:
   - `/users/{uid}`
   - `/games/{gameId}`
   - `/todos/{todoId}`
-- [ ] Define schema for:
-  - Country (treasury, population, industry, military)
-  - Provinces (if applicable)
-  - Focus session records
-  - Action log
+- [ ] Model user profile data (name, avatar, current focus level)
+- [ ] Define and seed base game templates
+
+### ✅ Real Task-to-Play Binding
+- [ ] Build `TodoForm` UI to create tasks
+- [ ] Add dropdown to select a play (Develop, Build, etc.)
+- [ ] Add dropdown to select province
+- [ ] On task completion, trigger the assigned in-game play
 
 ---
 
-## 📅 Week 2: Focus Core Loop + Actions
+## 📅 Week 2: Action System, Turns, and Focus Logic
 
-### 🎯 Focus Session Core
-- [ ] "Start Focus Session" button (25-min Pomodoro or custom)
-- [ ] Timer UI (basic functionality)
-- [ ] When session ends:
-  - [ ] Record session in DB
-  - [ ] Increment country stats (e.g., gold, industry, XP)
-  - [ ] Save rewards to DB
-  - [ ] 🎉 Trigger sound or animation reward
+### 🕹️ Action Point System
+- [ ] Implement turn counter (1 turn per focus completed)
+- [ ] Give player 2 action points per turn
+- [ ] Ensure each play costs appropriate points (Build = 1, Conquer = 2)
 
-### 🛠️ Actions & AP System
-- [ ] Player gets 2 Action Points (AP) per focus session
-- [ ] Add 3 core plays:
-  - [ ] Build Factory (costs gold, boosts industry)
-  - [ ] Train Army (costs gold, boosts military)
-  - [ ] Research Tech (boosts future efficiency)
-- [ ] Ensure plays are locked unless user completes session
-- [ ] Action effects update country state and persist to DB
+### 📊 Province Actions
+- [ ] Add basic effects for plays:
+  - [ ] Develop: `province.goldIncome += 1`
+  - [ ] Build: `province.buildings.push(...)`
+  - [ ] Conquer: logic to move army & transfer province
+  - [ ] Research: nation.researchProgress += % boost
+
+### 🔁 Turn Progression
+- [ ] Advance game date by 1 month per completed todo
+- [ ] Update UI to reflect turns and date progression
+- [ ] Consume & reset action points each turn
 
 ---
 
-## 📅 Week 3: Game Interface & Stats Display
+## 📅 Week 3: UI/UX and Map Polish
 
-### 🖼️ UI (Functional First)
-- [ ] Dashboard layout:
-  - [ ] Header with nation name/date
-  - [ ] Stats bar: population, treasury, industry, military
-  - [ ] Action panel (buttons, tooltips)
-  - [ ] Focus timer section
-- [ ] Add basic sidebar or overlay panel for:
+### 🗺️ Map Enhancements
+- [ ] Add turn-based visual update to provinces
+- [ ] Highlight current player's owned provinces
+- [ ] Add hover tooltips for action previews
+
+### 🧭 UI Navigation
+- [ ] Create sidebar for:
   - [ ] Nation summary
-  - [ ] Remaining AP
-  - [ ] Recent actions history
+  - [ ] Current action points
+  - [ ] Play history log
+- [ ] Add confirmation modals before plays
+- [ ] Show countdown / animation when a todo is marked done
 
-### 📱 Mobile Support (MVP Scope)
-- [ ] Ensure main UI components are readable on mobile
-- [ ] Responsive layout for timer, buttons, and stats
-
----
-
-## 📅 Week 4: Task → Play Mapping + Scenarios
-
-### ✅ Task System (Todo → Game)
-- [ ] Add task form:
-  - [ ] Title
-  - [ ] Assign province (optional)
-  - [ ] Assign play (e.g., "Develop Economy")
-- [ ] On task completion:
-  - [ ] Trigger assigned play
-  - [ ] Update province or nation stats
-  - [ ] Consume AP
-  - [ ] Log play and session in history
-
-### 🗺️ Scenario Framework
-- [ ] Define scenarios like:
-  - "Waterloo"
-  - "The Sacred War"
-  - "Doom: 1789"
-- [ ] Each has:
-  - [ ] Name, start conditions, goals
-  - [ ] Unique visual or reward (badge, flag, etc.)
-  - [ ] DB record to track completion
+### 🎨 Visual Improvements
+- [ ] Add smooth transitions for province takeovers
+- [ ] Animate research/industry progress bars
+- [ ] Polish font usage and layout responsiveness
 
 ---
 
-## 📅 Week 5: Syncing, Save System & Session Logic
+## 📅 Week 4: Task System and Scenario Integration
 
-### ☁️ Cloud Persistence
-- [ ] Save full game state to Firestore after each turn
-- [ ] Allow game resumption on login
-- [ ] Auto-load last session
+### 📘 Scenario Framework
+- [ ] Create scenario templates (e.g., "Waterloo")
+- [ ] Define special win/loss goals per scenario
+- [ ] Allow user to start a game with a scenario preset
 
-### 🔁 Todo & Focus History
-- [ ] Store todos and sessions per user
-- [ ] Sync session completion to game logic
-- [ ] Handle client reconnect (resync state if needed)
+### 🧠 Task Engine Expansion
+- [ ] Add task types:
+  - [ ] Daily recurring
+  - [ ] One-time
+  - [ ] Scenario-linked
+- [ ] Tie scenario objectives to task completion (e.g., build 3 times, conquer 2 provinces)
 
-### 🧪 Testing & Recovery
-- [ ] Logout, re-login flow
-- [ ] Game reset button (for testing/debug)
-- [ ] Test for edge cases in syncing & AP usage
-
----
-
-## 📅 Week 6: Final Polish & Public Launch
-
-### ✨ Visual & UX Polish
-- [ ] Finalize visual feedback for focus success (💥)
-- [ ] Style AP bar and locked buttons
-- [ ] Add soft animations for:
-  - [ ] Stat changes
-  - [ ] Building upgrades
-  - [ ] Completed turns
-- [ ] Add keyboard accessibility (if possible)
-
-### 📢 MVP Promo + Landing Integration
-- [ ] Connect login → game → dashboard
-- [ ] Link landing page → signup → onboarding
-- [ ] Add `/how-to-play` tutorial modal or route
-
-### 🚀 Deploy & Launch
-- [ ] Deploy on Vercel
-- [ ] Set Firebase/Supabase env vars
-- [ ] Enable security rules
-- [ ] Announce launch via:
-  - [ ] Buildspace
-  - [ ] Twitter/X
-  - [ ] Discords, Reddit, niche forums
+### 🏆 Scenario Progress View
+- [ ] Show progress toward scenario completion
+- [ ] Unlock "scenario badge" on success
+- [ ] Store finished scenarios in user profile
 
 ---
 
-## 🧩 Post-MVP Roadmap (V2+ Expansion)
+## 📅 Week 5: Cloud Sync, Save/Load & Session Handling
 
-### 🗺️ Advanced Map Mechanics
-- [ ] Add SVG world map (province ownership)
-- [ ] Color territories based on player progress
-- [ ] Hover/click province to show stats popup
+### ☁️ Cloud Game State
+- [ ] Save game state after each turn
+- [ ] Auto-load game state on login
+- [ ] Allow multiple saved games per user
 
-### 🧱 Advanced Strategy Layer
-- [ ] Building tiers and production chains
-- [ ] Morale/happiness systems
-- [ ] Tech trees and branches
+### 🧾 Todo Syncing
+- [ ] Store todos in Firestore per user
+- [ ] Sync real-time completion status
+- [ ] Support offline mode + sync on reconnect
 
-### 🎮 Multiplayer & Social
-- [ ] Leaderboards (total focus hours, GDP, etc.)
-- [ ] View other players’ nations
-- [ ] Trade resources or tech with neighbors
-
-### 💰 Monetization (Premium)
-- [ ] Cosmetic upgrades (flags, map skins)
-- [ ] Premium plan: unlock extra scenarios, analytics
-- [ ] Daily streak boosts
-
-### 📈 Progress Insights
-- [ ] Focus trends over time
-- [ ] Weekly email summary
-- [ ] Achievement system (e.g., 5-day streak)
+### 🔄 Session Restore
+- [ ] Resume last open game session automatically
+- [ ] Implement logout and game reset buttons
 
 ---
 
-> Stay focused. Grow your empire. Shape history.
+## 📅 Week 6: Polish, Marketing Prep, & Launch
+
+### 🧹 Final Polish
+- [ ] Bug fixes across map, plays, and turns
+- [ ] Input validation for tasks & game creation
+- [ ] Optimize for mobile and small screens
+- [ ] Lighthouse accessibility & performance checks
+
+### 📢 Landing Page + Onboarding
+- [ ] Build `/landing` route with game overview
+- [ ] Add how-to-play tutorial / onboarding modal
+- [ ] Add testimonials or early scenario walkthrough
+
+### 🚀 MVP Launch
+- [ ] Deploy to Vercel with env setup
+- [ ] Enable Firebase security rules
+- [ ] Final scenario tuning & reward balancing
+- [ ] Announce on socials, Buildspace, or Hacker News
+
+---
+
+## 🎯 MVP Feature Recap
+
+| Feature                          | Status |
+|----------------------------------|--------|
+| User login                       | ☐      |
+| Focus → Turn system              | ☐      |
+| Task-to-Play mechanics           | ☐      |
+| Province actions (Build, Dev...)| ☐      |
+| Conquest logic                   | ☐      |
+| Scenarios & progression          | ☐      |
+| Save/load system                 | ☐      |
+| Map interactions & popups        | ☐      |
+| Visual polish & animations       | ☐      |
+| Launch + promo                   | ☐      |
+
+---
+
+> Stay focused. Conquer goals. Shape history.
