@@ -2,38 +2,30 @@ As you complete tasks and reference relevant files update this file as our memor
 
 # [TODAYS_TASK]
 
-# Today's Tasks: Country Creation 🏰
+## 1. Complete Firebase Setup
+- [ ] Create Firestore security rules to protect user data and game saves
+- [ ] Set up Firebase hosting for deployment
 
-## Core Setup
-- [ ] Create country initialization function
-  - Define base country stats (population, resources, etc.)
-  - Add initialization logic in game creation flow
-  
-- [X] Set default country stats (Done for France and Belgium)
-  - Implement starting values for treasury, industry, etc.
-  - Add validation for stat ranges
+## 2. Focus Session System (Core Gameplay Loop)
+- [ ] Create timer component for 25-minute Pomodoro sessions
+  - Basic UI with start/pause/reset
+  - Visual countdown
+  - Session completion notification
+- [ ] Implement session rewards calculation
+  - Define reward structure
+  - Link to Action Points system
 
-## Province Management
-- [ ] Create initial provinces
-  - Define province generation algorithm
-  - Set balanced starting resources
-  - Create province relationships/connections
+## 3. Action Points (AP) System
+- [ ] Create AP tracking system
+  - Display current AP
+  - Implement generation (2 per completed session)
+  - Basic validation for spending
 
-## Data Persistence
-- [X] Save country to Firestore
-  - Create country collection structure
-  - Add proper indexing for queries
-  - Implement save/update functions
-
-- [X] Load country on user login
-  - Add country loading to auth flow
-  - Handle loading states
-  - Add error recovery
-
-## Testing
-- [ ] Create basic test cases for country creation
-- [X] Verify data persistence works correctly
-
+## 4. Game Interface Essentials
+- [ ] Create main dashboard layout
+  - Population counter
+  - Treasury display
+  - Basic stats panel
 
 # Core MVP Tasks: Age of Focus
 
