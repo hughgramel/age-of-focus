@@ -10,14 +10,17 @@ export default function TimerPage() {
   const router = useRouter();
   
   const handleSessionComplete = (minutesElapsed: number) => {
-    router.push('/dashboard');
+    console.log("Session completed with", minutesElapsed, "minutes");
+    // User will navigate using the button, no automatic redirect
   };
 
   return (
-    <FocusTimer 
-      userId={user?.uid || null}
-      initialDuration={60 * 60} // 1 hour
-      onSessionComplete={handleSessionComplete}
-    />
+    <div className="container mx-auto">
+      <FocusTimer 
+        userId={user?.uid || null}
+        initialDuration={60 * 60} // 1 hour
+        onSessionComplete={handleSessionComplete}
+      />
+    </div>
   );
 } 

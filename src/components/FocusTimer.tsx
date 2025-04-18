@@ -10,10 +10,10 @@
  * 1. On initialization:
  *    - Fetches active user sessions from Firebase via SessionService.getActiveUserSessions()
  *    - If no active session exists, creates a new session via SessionService.createSession()
+ *    - If an expired session exists, automatically completes it and shows completion screen
  * 
  * 2. During focus session:
- *    - Updates break time in database when break time is earned (every 25 minutes of focus)
- *      via SessionService.updateSession()
+ *    - Sets break time as 1/6th of the planned focus duration (stored in database)
  * 
  * 3. When taking a break:
  *    - Updates session state to "break" in database via SessionService.updateSession()
@@ -45,6 +45,13 @@
  * 4. Timer is cleared and UI shows the completion screen
  * 5. If onSessionComplete callback was provided, it's called with the minutes elapsed
  * 6. User can return to dashboard from the completion screen
+ * 
+ * Expired Session Handling:
+ * -----------------------
+ * If a user returns after the scheduled focus end time:
+ * 1. The session is automatically marked as complete
+ * 2. The completion screen is shown with the full planned duration 
+ * 3. After returning to dashboard, a new session can be started
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -63,10 +70,67 @@ interface FocusTimerProps {
 interface SessionCompleteProps {
   minutesElapsed: number;
   level: string;
+  startTime: string;
+  endTime: string;
   onReturnHome?: () => void;
 }
 
-const SessionComplete = ({ minutesElapsed, level, onReturnHome }: SessionCompleteProps) => {
+// New component for session confirmation popup
+interface SessionConfirmationProps {
+  minutesElapsed: number;
+  minutesRounded: number;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+const SessionConfirmation = ({ 
+  minutesElapsed, 
+  minutesRounded, 
+  onConfirm, 
+  onCancel 
+}: SessionConfirmationProps) => {
+  const willRoundToZero = minutesRounded === 0 && minutesElapsed > 0;
+  
+  return (
+    <div className="session-confirmation-overlay">
+      <div className="session-confirmation-modal">
+        <h2>End Session?</h2>
+        
+        {willRoundToZero ? (
+          <div className="warning-message">
+            <p>Warning: Your session lasted less than 15 minutes and will be rounded down to 0 minutes.</p>
+            <p>Current time: {minutesElapsed} minutes</p>
+            <p>Rounded time: 0 minutes</p>
+          </div>
+        ) : (
+          <div className="confirmation-message">
+            <p>You've focused for {minutesElapsed} minutes.</p>
+            {minutesElapsed !== minutesRounded && (
+              <p>This will be rounded to {minutesRounded} minutes (nearest 15-minute increment).</p>
+            )}
+          </div>
+        )}
+        
+        <div className="confirmation-buttons">
+          <button className="cancel-button" onClick={onCancel}>
+            Continue Session
+          </button>
+          <button className="confirm-button" onClick={onConfirm}>
+            End Session
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const SessionComplete = ({ 
+  minutesElapsed, 
+  level, 
+  startTime, 
+  endTime, 
+  onReturnHome 
+}: SessionCompleteProps) => {
   const router = useRouter();
   
   const formatTimeElapsed = (minutes: number): string => {
@@ -84,12 +148,16 @@ const SessionComplete = ({ minutesElapsed, level, onReturnHome }: SessionComplet
     }
   };
 
+  const formatTimeStamp = (timeString: string): string => {
+    const date = new Date(timeString);
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
   const handleReturnHome = () => {
     if (onReturnHome) {
       onReturnHome();
-    } else {
-      router.push('/dashboard');
     }
+    router.push('/dashboard');
   };
 
   return (
@@ -108,15 +176,24 @@ const SessionComplete = ({ minutesElapsed, level, onReturnHome }: SessionComplet
                 <p className="stat-value">{formatTimeElapsed(minutesElapsed)}</p>
               </div>
             </div>
+            
+            <div className="stat-item">
+              <div className="stat-icon">🕒</div>
+              <div className="stat-info">
+                <h3>Session Details</h3>
+                <p className="stat-detail">Start: {formatTimeStamp(startTime)}</p>
+                <p className="stat-detail">End: {formatTimeStamp(endTime)}</p>
+              </div>
+            </div>
           </div>
           
           <div className="completion-message">
-            <p>You've completed a focus session!</p>
+            <p>Well done! You've completed a focus session!</p>
           </div>
           
           <div className="return-home-container">
             <button className="return-home-button" onClick={handleReturnHome}>
-              Return to Home
+              Return to Dashboard
             </button>
           </div>
         </div>
@@ -137,6 +214,7 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [, setRerender] = useState(0);
+  const [showConfirmation, setShowConfirmation] = useState(false);
   
   // Refs to track timer state
   const secondsRemaining = useRef(0);
@@ -145,7 +223,7 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
   const isInitializedRef = useRef(false);
   const sessionId = useRef("");
   const isBreak = useRef(false);
-  const breakTimeRemaining = useRef(5);
+  const breakTimeRemaining = useRef(0);
   const currFocusEndTime = useRef("");
   const currBreakEndTime = useRef("");
   const currFocusStartTime = useRef("");
@@ -153,7 +231,15 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const isCompleted = useRef(false);
   const totalMinutesElapsedRoundedToFifteen = useRef(0);
-  const lastBreakTimeGranted = useRef(0);
+  const actualMinutesElapsed = useRef(0);
+  
+  // Temporary storage for values while the confirmation dialog is shown
+  const pendingValues = useRef({
+    minutesElapsed: 0,
+    minutesRounded: 0,
+    startTime: "",
+    endTime: ""
+  });
 
   // Helper functions
   const convertSecondsToMinutes = (seconds: number): number => {
@@ -197,25 +283,16 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     }
   };
 
-  const calculateBreakTimeToGrant = (elapsedMinutes: number, lastGrantedMinutes: number): number => {
-    const lastGrantedSegments = Math.floor(lastGrantedMinutes / 25);
-    const currentSegments = Math.floor(elapsedMinutes / 25);
-    const newSegments = currentSegments - lastGrantedSegments;
-    return Math.max(0, newSegments) * 5;
-  };
-
-  const updateBreakTimeInDatabase = async (session: Session, breakMinutes: number) => {
-    try {
-      await SessionService.updateSession(session.id, {
-        break_minutes_remaining: breakMinutes
-      });
-    } catch (err) {
-      console.error("Error updating break time in database:", err);
-    }
+  // Calculate break time as 1/6th of planned time (replacing the old calculation logic)
+  const calculateInitialBreakTime = (plannedMinutes: number): number => {
+    return Math.floor(plannedMinutes / 6);
   };
 
   // Function to calculate and update the remaining and elapsed times based on current end times
   function calculateRemainingTimes(dummy: null = null): void {
+    // Don't recalculate times if confirmation is showing (to avoid visual jumps)
+    if (showConfirmation) return;
+    
     if (isBreak.current) {
       if (!currBreakEndTime.current || !currBreakStartTime.current) throw new Error("Break time must not be null here");
       const endTime = new Date(currBreakEndTime.current);
@@ -236,6 +313,8 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
       const startTime = new Date(currFocusStartTime.current);
       const elapsedTimeDiffInMilliseconds = now.getTime() - startTime.getTime();
       secondsElapsed.current = Math.floor(elapsedTimeDiffInMilliseconds / 1000);
+      
+      // No need to modify break time here
     }
   }
 
@@ -262,9 +341,13 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
 
       if (!ending_time) throw new Error("Failed to calculate ending time");
 
+      const plannedMinutes = convertSecondsToMinutes(FOCUS_TIME_SECONDS);
+      // Calculate break time as 1/6th of the planned time
+      const initialBreakMinutes = calculateInitialBreakTime(plannedMinutes);
+
       const newSession: SessionInsert = {
         break_end_time: null,
-        break_minutes_remaining: 5,
+        break_minutes_remaining: initialBreakMinutes,
         total_minutes_done: 0,
         break_start_time: null,
         focus_start_time: currTime.toUTCString(),
@@ -272,7 +355,7 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
         createdAt: serverTimestamp(),
         session_state: "focus",
         user_id: userId,
-        planned_minutes: convertSecondsToMinutes(FOCUS_TIME_SECONDS)
+        planned_minutes: plannedMinutes
       };
 
       const session = await SessionService.createSession(newSession);
@@ -313,15 +396,8 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
         const elapsedTimeDiffInMilliseconds = now.getTime() - startTime.getTime();
         secondsElapsed.current = Math.floor(elapsedTimeDiffInMilliseconds / 1000);
         
-        const elapsedMinutes = Math.floor(secondsElapsed.current / 60);
-        const additionalBreakMinutes = calculateBreakTimeToGrant(elapsedMinutes, lastBreakTimeGranted.current);
-        
-        if (additionalBreakMinutes > 0) {
-          breakTimeRemaining.current += additionalBreakMinutes;
-          lastBreakTimeGranted.current = elapsedMinutes;
-          
-          updateBreakTimeInDatabase(session, breakTimeRemaining.current);
-        }
+        // Store the break minutes remaining
+        breakTimeRemaining.current = session.break_minutes_remaining;
       }
     }
   };
@@ -330,34 +406,98 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     if (secondsRemaining.current <= 0) {
       const overflowSeconds = -1 * secondsRemaining.current;
       secondsElapsed.current = secondsElapsed.current - overflowSeconds;
+      
+      // Calculate minutes for completed session
+      const totalFocusMinutes = Math.floor(secondsElapsed.current / 60);
+      const totalFocusMinutesRoundedToNearestFifteenMinutes = Math.floor(totalFocusMinutes / 15) * 15;
+      
       if (isBreak.current) {
         returnToFocus();
       } else {
+        // For naturally ended sessions (through tick), directly complete without confirmation
+        console.log("Session naturally completed - directly showing completion screen");
+        
+        // Apply values directly
+        actualMinutesElapsed.current = totalFocusMinutes;
+        totalMinutesElapsedRoundedToFifteen.current = totalFocusMinutesRoundedToNearestFifteenMinutes;
+        pendingValues.current = {
+          minutesElapsed: totalFocusMinutes,
+          minutesRounded: totalFocusMinutesRoundedToNearestFifteenMinutes,
+          startTime: currFocusStartTime.current,
+          endTime: new Date().toUTCString()
+        };
+        
+        // Skip confirmation and directly end the session
         handleSessionEnd();
       }
-    } else if (!isBreak.current) {
-      const elapsedMinutes = Math.floor(secondsElapsed.current / 60);
-      const additionalBreakMinutes = calculateBreakTimeToGrant(elapsedMinutes, lastBreakTimeGranted.current);
-      
-      if (additionalBreakMinutes > 0) {
-        breakTimeRemaining.current += additionalBreakMinutes;
-        lastBreakTimeGranted.current = elapsedMinutes;
-        
-        if (sessionId.current) {
-          SessionService.updateSession(sessionId.current, {
-            break_minutes_remaining: breakTimeRemaining.current
-          });
-        }
-      }
     }
+  };
+
+  const promptSessionEnd = () => {
+    // Store current elapsed and remaining times
+    setRemainingTimesFromEndTimes(null);
+    
+    // Calculate total focus time
+    const totalFocusMinutes = Math.floor(secondsElapsed.current / 60);
+    const totalFocusMinutesRoundedToNearestFifteenMinutes = Math.floor(totalFocusMinutes / 15) * 15;
+    
+    // Save to pending values instead of directly updating the refs
+    pendingValues.current = {
+      minutesElapsed: totalFocusMinutes,
+      minutesRounded: totalFocusMinutesRoundedToNearestFifteenMinutes,
+      startTime: currFocusStartTime.current,
+      endTime: new Date().toUTCString()
+    };
+    
+    // Show confirmation without stopping the timer
+    setShowConfirmation(true);
+    setRerender(prev => prev + 1);
+  };
+
+  const cancelSessionEnd = () => {
+    // Just hide the confirmation, timer continues as normal
+    setShowConfirmation(false);
+  };
+
+  const confirmSessionEnd = () => {
+    // Now apply the saved values and end the session
+    setShowConfirmation(false);
+    actualMinutesElapsed.current = pendingValues.current.minutesElapsed;
+    totalMinutesElapsedRoundedToFifteen.current = pendingValues.current.minutesRounded;
+    handleSessionEnd();
+  };
+
+  // Add a test function to simulate a 15-minute session completion
+  const testFifteenMinutes = async () => {
+    if (!userId || !sessionId.current) return;
+    
+    // Calculate start time (15 minutes ago)
+    const fifteenMinutesAgo = new Date();
+    fifteenMinutesAgo.setMinutes(fifteenMinutesAgo.getMinutes() - 15);
+    const startTime = fifteenMinutesAgo.toUTCString();
+    
+    // Current time as end time
+    const endTime = new Date().toUTCString();
+    
+    // Store test values in pending storage, don't modify actual timer yet
+    pendingValues.current = {
+      minutesElapsed: 15,
+      minutesRounded: 15,
+      startTime: startTime,
+      endTime: endTime
+    };
+    
+    // Show the confirmation popup without changing the timer
+    setShowConfirmation(true);
+    setRerender(prev => prev + 1);
   };
 
   const handleSessionEnd = () => {
     isBreak.current = false;
     setRemainingTimesFromEndTimes(null);
 
-    const totalFocusMinutes = Math.floor(secondsElapsed.current / 60);
-    const totalFocusMinutesRoundedToNearestFifteenMinutes = Math.floor(totalFocusMinutes / 15) * 15;
+    // Calculate total focus time
+    const totalFocusMinutes = actualMinutesElapsed.current;
     
     const endSession = async () => {
       await SessionService.updateSession(sessionId.current, {
@@ -370,7 +510,6 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     secondsRemaining.current = 0;
     secondsElapsed.current = 0;
     sessionCreationInProgressRef.current = false;
-    totalMinutesElapsedRoundedToFifteen.current = totalFocusMinutesRoundedToNearestFifteenMinutes;
     
     isCompleted.current = true;
 
@@ -378,7 +517,8 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     
     // Call the optional callback if provided
     if (onSessionComplete) {
-      onSessionComplete(totalFocusMinutesRoundedToNearestFifteenMinutes);
+      console.log("Completing session with minutes:", totalMinutesElapsedRoundedToFifteen.current);
+      onSessionComplete(totalMinutesElapsedRoundedToFifteen.current);
     }
     
     setRerender((e) => e + 1);
@@ -417,39 +557,67 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
           if (newSession) {
             setRemainingAndElapsedTime(newSession);
             sessionId.current = newSession.id;
+            breakTimeRemaining.current = newSession.break_minutes_remaining;
           } else {
             throw new Error("Session was not initialized");
           }
         } else {
-          sessionId.current = existingSessions[0].id;
-          isBreak.current = existingSessions[0].session_state === "break";
+          const session = existingSessions[0];
+          sessionId.current = session.id;
+          isBreak.current = session.session_state === "break";
           
-          if (existingSessions[0].focus_end_time && existingSessions[0].focus_start_time) {
-            currFocusEndTime.current = existingSessions[0].focus_end_time;
-            currFocusStartTime.current = existingSessions[0].focus_start_time;
-          } else {
-            throw new Error("end time is null");
-          }
-          
-          breakTimeRemaining.current = existingSessions[0].break_minutes_remaining;
-          lastBreakTimeGranted.current = Math.floor(breakTimeRemaining.current / 5) * 25;
-          
-          if (existingSessions[0].break_end_time && existingSessions[0].break_start_time) {
-            currBreakEndTime.current = existingSessions[0].break_end_time;
-            currBreakStartTime.current = existingSessions[0].break_start_time;
-          } else {
-            currBreakEndTime.current = "";
+          // Check if session has end times
+          if (!session.focus_end_time || !session.focus_start_time) {
+            throw new Error("Session end time is null");
           }
 
+          // Set focus times from session
+          currFocusEndTime.current = session.focus_end_time;
+          currFocusStartTime.current = session.focus_start_time;
+          
+          // Set break time and break times if in break state
+          breakTimeRemaining.current = session.break_minutes_remaining;
+          
+          if (session.break_end_time && session.break_start_time) {
+            currBreakEndTime.current = session.break_end_time;
+            currBreakStartTime.current = session.break_start_time;
+          } else {
+            currBreakEndTime.current = "";
+            currBreakStartTime.current = "";
+          }
+
+          // Calculate time remaining
           setRemainingTimesFromEndTimes(null);
-          if (secondsRemaining.current <= 0) {
-            const overflowSeconds = -1 * secondsRemaining.current;
-            secondsElapsed.current = secondsElapsed.current - overflowSeconds;
-            if (isBreak.current) {
-              returnToFocus();
-            } else {
-              handleSessionEnd();
-            }
+          
+          // Check if the session has expired (i.e., came back after 1+ hour)
+          const now = new Date();
+          const focusEndTime = new Date(session.focus_end_time);
+          
+          // Session should be complete if the focus end time has passed
+          if (now > focusEndTime && !isBreak.current) {
+            console.log("Session expired - directly showing completion screen");
+            
+            // Calculate how much time was successfully completed
+            const focusStartTime = new Date(session.focus_start_time);
+            const totalFocusSeconds = (focusEndTime.getTime() - focusStartTime.getTime()) / 1000;
+            
+            // Calculate rounded minutes for expired session
+            const totalFocusMinutes = Math.floor(totalFocusSeconds / 60);
+            const totalFocusMinutesRoundedToNearestFifteenMinutes = Math.floor(totalFocusMinutes / 15) * 15;
+            
+            // Apply values directly without showing confirmation
+            actualMinutesElapsed.current = totalFocusMinutes;
+            totalMinutesElapsedRoundedToFifteen.current = totalFocusMinutesRoundedToNearestFifteenMinutes;
+            
+            // Handle session completion directly
+            handleSessionEnd();
+            return;
+          }
+          
+          // If in break mode and break has expired, return to focus mode
+          if (isBreak.current && secondsRemaining.current <= 0) {
+            console.log("Break expired - returning to focus");
+            await returnToFocus();
           }
         }
       } catch (error) {
@@ -553,6 +721,42 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     }
   };
 
+  // Add a function to adjust session time by -15 minutes
+  const adjustSessionTimeMinus15 = async () => {
+    if (!userId || !sessionId.current) return;
+    
+    try {
+      // Calculate new start time (15 minutes earlier)
+      const currentStartTime = new Date(currFocusStartTime.current);
+      currentStartTime.setMinutes(currentStartTime.getMinutes() - 15);
+      const newStartTime = currentStartTime.toUTCString();
+      
+      // Calculate new end time (15 minutes earlier)
+      const currentEndTime = new Date(currFocusEndTime.current);
+      currentEndTime.setMinutes(currentEndTime.getMinutes() - 15);
+      const newEndTime = currentEndTime.toUTCString();
+      
+      // Update the session in Firebase
+      await SessionService.updateSession(sessionId.current, {
+        focus_start_time: newStartTime,
+        focus_end_time: newEndTime
+      });
+      
+      // Update local state
+      currFocusStartTime.current = newStartTime;
+      currFocusEndTime.current = newEndTime;
+      
+      // Recalculate timer values
+      setRemainingTimesFromEndTimes(null);
+      setRerender(prev => prev + 1);
+      
+      console.log("Session times adjusted by -15 minutes");
+    } catch (error) {
+      console.error("Error adjusting session time:", error);
+      setError("Failed to adjust session time");
+    }
+  };
+
   if (isLoading) {
     return <div className="timer-page">Loading timer...</div>;
   }
@@ -566,11 +770,22 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
   }
 
   return (
-    <div className="timer-page">
+    <div className="timer-page timer-container-wrapper">
+      {showConfirmation && (
+        <SessionConfirmation
+          minutesElapsed={pendingValues.current.minutesElapsed}
+          minutesRounded={pendingValues.current.minutesRounded}
+          onConfirm={confirmSessionEnd}
+          onCancel={cancelSessionEnd}
+        />
+      )}
+      
       {isCompleted.current ? (
         <SessionComplete 
           minutesElapsed={totalMinutesElapsedRoundedToFifteen.current}
           level="L1"
+          startTime={pendingValues.current.startTime || currFocusStartTime.current}
+          endTime={pendingValues.current.endTime || new Date().toUTCString()}
           onReturnHome={onSessionComplete ? 
             () => onSessionComplete(totalMinutesElapsedRoundedToFifteen.current) : 
             undefined}
@@ -634,15 +849,17 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
                   onClick={setBreak} 
                   disabled={breakTimeRemaining.current === 0}
                 >
-                  Take a break ({breakTimeRemaining.current} mins left)
+                  Take a break ({breakTimeRemaining.current} mins total available)
                 </button>
               )}
             </div>
           </div>
 
           <div className="timer-actions">
-            <button className="save-button" onClick={handleSessionEnd}>Save session</button>
+            <button className="save-button" onClick={promptSessionEnd}>Save session</button>
             <button className="discard-button" onClick={deleteSession}>Discard session</button>
+            <button className="test-button" onClick={testFifteenMinutes}>Test 15 min</button>
+            <button className="adjust-time-button" onClick={adjustSessionTimeMinus15}>Adjust -15min</button>
           </div>
         </div>
       )}
