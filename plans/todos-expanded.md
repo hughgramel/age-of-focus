@@ -1,5 +1,4 @@
-As you complete tasks and reference relevant files update this file as our memory to help with future tasks. 
-
+Below each we'll create the cursor prompt for each task.
 # [TODAYS_TASK]
 
 ## 1. Complete Firebase Setup
