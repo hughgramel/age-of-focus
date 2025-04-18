@@ -29,6 +29,7 @@ const parseSessionSnapshot = (snapshot: QuerySnapshot<DocumentData, DocumentData
             session_state: data.session_state ?? null,
             total_minutes_done: data.total_minutes_done ?? null,
             createdAt: data.createdAt,
+            selected_actions: data.selected_actions ?? []
         } as Session;
     });
 };
@@ -127,10 +128,19 @@ export class SessionService {
                 session_state: sessionData.session_state ?? null,
                 total_minutes_done: sessionData.total_minutes_done ?? null,
                 createdAt: sessionData.createdAt ?? serverTimestamp(),
+                selected_actions: sessionData.selected_actions ?? []
+            };
+
+            // Create a plain object for Firestore (including selected_actions)
+            const sessionForFirestore = {
+                ...newSession,
+                selected_actions: sessionData.selected_actions ?? []
             };
 
             // Save the new session to Firestore
-            await setDoc(newDocRef, newSession);
+            await setDoc(newDocRef, sessionForFirestore);
+            
+            console.log("Session data saved to Firestore:", sessionForFirestore);
 
             return newSession;
         } catch (error) {
@@ -163,6 +173,7 @@ export class SessionService {
             if (sessionData.session_state !== undefined) updateData.session_state = sessionData.session_state;
             if (sessionData.total_minutes_done !== undefined) updateData.total_minutes_done = sessionData.total_minutes_done;
             if (sessionData.user_id !== undefined) updateData.user_id = sessionData.user_id;
+            if (sessionData.selected_actions !== undefined) updateData.selected_actions = sessionData.selected_actions;
 
             // Update the document
             await updateDoc(sessionDoc, updateData);
@@ -188,6 +199,7 @@ export class SessionService {
                 session_state: data.session_state ?? null,
                 total_minutes_done: data.total_minutes_done ?? null,
                 createdAt: data.createdAt,
+                selected_actions: data.selected_actions ?? []
             };
 
             return updatedSession;

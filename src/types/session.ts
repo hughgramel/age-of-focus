@@ -1,4 +1,5 @@
 import { FieldValue } from "firebase/firestore";
+import { ActionType } from "@/data/actions";
 
 export type SessionState = "focus" | "break" | "complete" | "complete_and_reviewed";
 
@@ -14,6 +15,7 @@ export interface Session {
     session_state: SessionState | null;
     total_minutes_done: number | null;
     createdAt: FieldValue;
+    selected_actions?: ActionType[];
 }
 
 export interface SessionInsert {
@@ -28,6 +30,7 @@ export interface SessionInsert {
     total_minutes_done?: number | null;
     user_id?: string;
     createdAt?: FieldValue;
+    selected_actions?: ActionType[];
 }
 
 export interface SessionUpdate {
@@ -41,6 +44,7 @@ export interface SessionUpdate {
     session_state?: SessionState | null;
     total_minutes_done?: number | null;
     user_id?: string;
+    selected_actions?: ActionType[];
 }
 
 export interface TimerLocationState {

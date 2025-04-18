@@ -4,8 +4,10 @@
   align-items: center;
   min-height: calc(100vh - 80px);
   padding: 2rem;
-  background-color: #0B1423;
   color: #FFFFFF;
+  background-color: transparent;
+  position: relative;
+  z-index: 10;
 }
 
 .timer-container-wrapper {
@@ -15,17 +17,20 @@
   padding: 1px;
   max-width: 650px;
   margin: 0 auto;
+  backdrop-filter: blur(4px);
+  background-color: rgba(0, 0, 0, 0.1);
 }
 
 .timer-container {
   width: 100%;
   max-width: 600px;
   text-align: center;
-  background-color: #162033;
+  background-color: rgba(22, 32, 51, 0.65);
   border-radius: 16px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   padding: 2.5rem;
   border: 1px solid rgba(255, 215, 140, 0.1);
+  backdrop-filter: blur(2px);
 }
 
 .timer-header {
@@ -33,6 +38,7 @@
   font-weight: 500;
   margin-bottom: 30px;
   color: #FFD78C;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
 }
 
 .timer-display {
@@ -43,7 +49,8 @@
   font-size: 18px;
   font-family: monospace;
   margin-bottom: 10px;
-  color: #999;
+  color: #CCC;
+  text-shadow: 0 0 8px rgba(0, 0, 0, 0.7);
 }
 
 .large-timer {
@@ -51,6 +58,7 @@
   font-family: monospace;
   font-weight: bold;
   color: #FFD78C;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.7);
 }
 
 .break-timer {
@@ -67,7 +75,7 @@
 
 .progress-bar {
   height: 8px;
-  background-color: #0B1423;
+  background-color: rgba(11, 20, 35, 0.5);
   border-radius: 4px;
   margin-bottom: 10px;
   overflow: hidden;
@@ -79,6 +87,7 @@
   background-color: #FFD78C;
   border-radius: 4px;
   transition: width 0.5s ease;
+  box-shadow: 0 0 10px rgba(255, 215, 140, 0.4);
 }
 
 .break-text {
@@ -178,19 +187,24 @@
 .timer-actions {
   display: flex;
   justify-content: center;
-  gap: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-top: 40px;
+}
+
+.timer-actions button {
+  padding: 10px 18px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+  backdrop-filter: blur(2px);
 }
 
 .save-button {
   background-color: #2A3549;
   color: #FFD78C;
   border: 1px solid rgba(255, 215, 140, 0.3);
-  padding: 12px 24px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
 }
 
 .save-button:hover {
@@ -202,11 +216,6 @@
   background-color: transparent;
   color: #999;
   border: 1px solid #2A3549;
-  padding: 12px 24px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
 }
 
 .discard-button:hover {
@@ -218,11 +227,6 @@
   background-color: #1C3A4A;
   color: #89CFF0;
   border: 1px solid #4884A7;
-  padding: 12px 24px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
 }
 
 .test-button:hover {
@@ -235,17 +239,24 @@
   background-color: #2A3C28;
   color: #90EE90;
   border: 1px solid #3C694F;
-  padding: 12px 24px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
 }
 
 .adjust-time-button:hover {
   background-color: #384D36;
   border-color: #90EE90;
   color: #B5F9B5;
+}
+
+.debug-button {
+  background-color: #3C275F;
+  color: #CC99FF;
+  border: 1px solid #6A4C93;
+}
+
+.debug-button:hover {
+  background-color: #4E3478;
+  border-color: #CC99FF;
+  color: #E5CCFF;
 }
 
 /* Session Complete styles */
@@ -255,18 +266,20 @@
   align-items: center;
   min-height: 80vh;
   padding: 2rem;
+  background-color: transparent;
 }
 
 .session-complete-card {
-  background-color: #162033;
+  background-color: rgba(22, 32, 51, 0.75);
   border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
   padding: 2.5rem;
   width: 100%;
   max-width: 600px;
   text-align: center;
   animation: fadeIn 0.8s ease-out;
   border: 2px solid rgba(255, 215, 140, 0.3);
+  backdrop-filter: blur(5px);
 }
 
 @keyframes fadeIn {

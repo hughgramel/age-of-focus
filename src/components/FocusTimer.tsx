@@ -60,11 +60,14 @@ import { SessionService } from '@/services/sessionService';
 import { Session, SessionInsert, SessionUpdate } from '@/types/session';
 import { serverTimestamp } from 'firebase/firestore';
 import '@/app/timer.css';
+import { ActionType, FOCUS_ACTIONS, executeActions, getRandomAction } from '@/data/actions';
 
 interface FocusTimerProps {
   userId: string | null;
   initialDuration?: number; // in seconds
   onSessionComplete?: (minutesElapsed: number) => void;
+  selectedActions?: ActionType[]; // Add this new prop
+  existingSessionId?: string; // Add this new prop for resuming sessions
 }
 
 interface SessionCompleteProps {
@@ -205,7 +208,9 @@ const SessionComplete = ({
 const FocusTimer: React.FC<FocusTimerProps> = ({ 
   userId, 
   initialDuration = 60 * 60, // Default to 1 hour
-  onSessionComplete 
+  onSessionComplete,
+  selectedActions = [], // Default to empty array
+  existingSessionId = undefined // Default to undefined (create new session)
 }) => {
   // Default timer durations
   const FOCUS_TIME_SECONDS = initialDuration;
@@ -345,6 +350,16 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
       // Calculate break time as 1/6th of the planned time
       const initialBreakMinutes = calculateInitialBreakTime(plannedMinutes);
 
+      // Log the received selectedActions 
+      console.log("Creating session with actions:", selectedActions);
+      
+      // Process selected actions, ensuring we don't have 'auto' actions
+      const processedActions = selectedActions.map(action => 
+        action === 'auto' ? getRandomAction().id : action
+      );
+      
+      console.log("Processed actions for Firebase:", processedActions);
+
       const newSession: SessionInsert = {
         break_end_time: null,
         break_minutes_remaining: initialBreakMinutes,
@@ -355,10 +370,13 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
         createdAt: serverTimestamp(),
         session_state: "focus",
         user_id: userId,
-        planned_minutes: plannedMinutes
+        planned_minutes: plannedMinutes,
+        selected_actions: processedActions // Store the selected actions
       };
 
+      console.log("Creating session with data:", newSession);
       const session = await SessionService.createSession(newSession);
+      console.log("Session created:", session);
       
       currFocusEndTime.current = ending_time;
       currFocusStartTime.current = currTime.toUTCString();
@@ -500,11 +518,58 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     const totalFocusMinutes = actualMinutesElapsed.current;
     
     const endSession = async () => {
-      await SessionService.updateSession(sessionId.current, {
-        session_state: 'complete',
-        total_minutes_done: totalFocusMinutes
-      });
+      try {
+        // Get current session to get selected_actions
+        const existingSessions = await SessionService.getActiveUserSessions(userId!);
+        const currentSession = existingSessions.length > 0 ? existingSessions[0] : null;
+        
+        console.log("Current session before completion:", currentSession);
+        
+        // Update the session status
+        const updatedSession = await SessionService.updateSession(sessionId.current, {
+          session_state: 'complete',
+          total_minutes_done: totalFocusMinutes,
+          // Pass the selected_actions again to ensure they're preserved
+          selected_actions: currentSession?.selected_actions || selectedActions
+        });
+        
+        console.log("Session after completion:", updatedSession);
+
+        // If the session has selected actions, execute them
+        if (updatedSession.selected_actions && updatedSession.selected_actions.length > 0) {
+          console.log("Session completed with actions:", updatedSession.selected_actions);
+          
+          // Map ActionType[] to FocusAction[]
+          const actions = updatedSession.selected_actions.map(actionType => {
+            return FOCUS_ACTIONS.find(a => a.id === actionType) || 
+              FOCUS_ACTIONS.find(a => a.id === 'build')!; // Default to build if not found
+          });
+          
+          console.log("Mapped to action objects:", actions);
+
+          // Check if session was completed fully based on the total time
+          const fullSessionMinutes = updatedSession.planned_minutes || 0;
+          const minutesCompleted = updatedSession.total_minutes_done || 0;
+          const sessionCompletionThreshold = fullSessionMinutes * 0.9; // 90% completion rate
+          const isFullyCompleted = minutesCompleted >= sessionCompletionThreshold;
+          
+          console.log("Session completion status:", {
+            fullSessionMinutes,
+            minutesCompleted,
+            threshold: sessionCompletionThreshold,
+            isFullyCompleted
+          });
+          
+          // Execute the actions
+          executeActions(actions, isFullyCompleted);
+        } else {
+          console.log("No actions to execute for this session");
+        }
+      } catch (error) {
+        console.error("Error ending session:", error);
+      }
     };
+    
     endSession();
 
     secondsRemaining.current = 0;
@@ -522,6 +587,38 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     }
     
     setRerender((e) => e + 1);
+  };
+
+  // Add function to debug session data
+  const printSessionData = async () => {
+    if (!userId) {
+      console.log("No user ID provided");
+      return;
+    }
+
+    try {
+      const sessions = await SessionService.getActiveUserSessions(userId);
+      if (sessions.length === 0) {
+        console.log("No active sessions found");
+        return;
+      }
+      
+      const activeSession = sessions[0];
+      console.log("Active Session Data:", activeSession);
+      
+      // Display in alert for easy viewing during testing
+      alert(
+        `Session ID: ${activeSession.id}\n` +
+        `State: ${activeSession.session_state}\n` +
+        `Planned Minutes: ${activeSession.planned_minutes}\n` +
+        `Actions: ${JSON.stringify(activeSession.selected_actions)}\n` +
+        `Started: ${new Date(activeSession.focus_start_time || '').toLocaleString()}\n` +
+        `Break Time Left: ${activeSession.break_minutes_remaining} minutes`
+      );
+    } catch (error) {
+      console.error("Error fetching session data:", error);
+      setError("Failed to fetch session data");
+    }
   };
 
   const tick = () => {
@@ -550,74 +647,141 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
       try {
         setIsLoading(true);
         
-        const existingSessions = await fetchUserSessions();
-        
-        if (!existingSessions || existingSessions.length === 0) {
-          const newSession = await createNewUserSession();
-          if (newSession) {
-            setRemainingAndElapsedTime(newSession);
-            sessionId.current = newSession.id;
-            breakTimeRemaining.current = newSession.break_minutes_remaining;
-          } else {
-            throw new Error("Session was not initialized");
+        // If we have an existingSessionId, use that
+        if (existingSessionId) {
+          console.log("Resuming existing session:", existingSessionId);
+          sessionId.current = existingSessionId;
+          
+          // Get the existing session data
+          const existingSessions = await fetchUserSessions();
+          if (existingSessions && existingSessions.length > 0) {
+            const session = existingSessions[0];
+            
+            isBreak.current = session.session_state === "break";
+            
+            // Check if session has end times
+            if (!session.focus_end_time || !session.focus_start_time) {
+              throw new Error("Session end time is null");
+            }
+            
+            // Set focus times from session
+            currFocusEndTime.current = session.focus_end_time;
+            currFocusStartTime.current = session.focus_start_time;
+            
+            // Set break time and break times if in break state
+            breakTimeRemaining.current = session.break_minutes_remaining;
+            
+            if (session.break_end_time && session.break_start_time) {
+              currBreakEndTime.current = session.break_end_time;
+              currBreakStartTime.current = session.break_start_time;
+            } else {
+              currBreakEndTime.current = "";
+              currBreakStartTime.current = "";
+            }
+            
+            // Calculate time remaining
+            setRemainingTimesFromEndTimes(null);
+            
+            // Check if the session has expired
+            const now = new Date();
+            const focusEndTime = new Date(session.focus_end_time);
+            
+            // Session should be complete if the focus end time has passed
+            if (now > focusEndTime && !isBreak.current) {
+              console.log("Session expired - directly showing completion screen");
+              
+              // Handle expired session
+              const focusStartTime = new Date(session.focus_start_time);
+              const totalFocusSeconds = (focusEndTime.getTime() - focusStartTime.getTime()) / 1000;
+              
+              // Calculate rounded minutes for expired session
+              const totalFocusMinutes = Math.floor(totalFocusSeconds / 60);
+              const totalFocusMinutesRoundedToNearestFifteenMinutes = Math.floor(totalFocusMinutes / 15) * 15;
+              
+              actualMinutesElapsed.current = totalFocusMinutes;
+              totalMinutesElapsedRoundedToFifteen.current = totalFocusMinutesRoundedToNearestFifteenMinutes;
+              
+              handleSessionEnd();
+              return;
+            }
+            
+            // If in break mode and break has expired, return to focus mode
+            if (isBreak.current && secondsRemaining.current <= 0) {
+              console.log("Break expired - returning to focus");
+              await returnToFocus();
+            }
           }
         } else {
-          const session = existingSessions[0];
-          sessionId.current = session.id;
-          isBreak.current = session.session_state === "break";
+          // No existingSessionId, check for active sessions or create new
+          const existingSessions = await fetchUserSessions();
           
-          // Check if session has end times
-          if (!session.focus_end_time || !session.focus_start_time) {
-            throw new Error("Session end time is null");
-          }
-
-          // Set focus times from session
-          currFocusEndTime.current = session.focus_end_time;
-          currFocusStartTime.current = session.focus_start_time;
-          
-          // Set break time and break times if in break state
-          breakTimeRemaining.current = session.break_minutes_remaining;
-          
-          if (session.break_end_time && session.break_start_time) {
-            currBreakEndTime.current = session.break_end_time;
-            currBreakStartTime.current = session.break_start_time;
+          if (!existingSessions || existingSessions.length === 0) {
+            const newSession = await createNewUserSession();
+            if (newSession) {
+              setRemainingAndElapsedTime(newSession);
+              sessionId.current = newSession.id;
+              breakTimeRemaining.current = newSession.break_minutes_remaining;
+            } else {
+              throw new Error("Session was not initialized");
+            }
           } else {
-            currBreakEndTime.current = "";
-            currBreakStartTime.current = "";
-          }
-
-          // Calculate time remaining
-          setRemainingTimesFromEndTimes(null);
-          
-          // Check if the session has expired (i.e., came back after 1+ hour)
-          const now = new Date();
-          const focusEndTime = new Date(session.focus_end_time);
-          
-          // Session should be complete if the focus end time has passed
-          if (now > focusEndTime && !isBreak.current) {
-            console.log("Session expired - directly showing completion screen");
+            const session = existingSessions[0];
+            sessionId.current = session.id;
+            isBreak.current = session.session_state === "break";
             
-            // Calculate how much time was successfully completed
-            const focusStartTime = new Date(session.focus_start_time);
-            const totalFocusSeconds = (focusEndTime.getTime() - focusStartTime.getTime()) / 1000;
+            // Check if session has end times
+            if (!session.focus_end_time || !session.focus_start_time) {
+              throw new Error("Session end time is null");
+            }
             
-            // Calculate rounded minutes for expired session
-            const totalFocusMinutes = Math.floor(totalFocusSeconds / 60);
-            const totalFocusMinutesRoundedToNearestFifteenMinutes = Math.floor(totalFocusMinutes / 15) * 15;
+            // Set focus times from session
+            currFocusEndTime.current = session.focus_end_time;
+            currFocusStartTime.current = session.focus_start_time;
             
-            // Apply values directly without showing confirmation
-            actualMinutesElapsed.current = totalFocusMinutes;
-            totalMinutesElapsedRoundedToFifteen.current = totalFocusMinutesRoundedToNearestFifteenMinutes;
+            // Set break time and break times if in break state
+            breakTimeRemaining.current = session.break_minutes_remaining;
             
-            // Handle session completion directly
-            handleSessionEnd();
-            return;
-          }
-          
-          // If in break mode and break has expired, return to focus mode
-          if (isBreak.current && secondsRemaining.current <= 0) {
-            console.log("Break expired - returning to focus");
-            await returnToFocus();
+            if (session.break_end_time && session.break_start_time) {
+              currBreakEndTime.current = session.break_end_time;
+              currBreakStartTime.current = session.break_start_time;
+            } else {
+              currBreakEndTime.current = "";
+              currBreakStartTime.current = "";
+            }
+            
+            // Calculate time remaining
+            setRemainingTimesFromEndTimes(null);
+            
+            // Check if the session has expired
+            const now = new Date();
+            const focusEndTime = new Date(session.focus_end_time);
+            
+            // Session should be complete if the focus end time has passed
+            if (now > focusEndTime && !isBreak.current) {
+              console.log("Session expired - directly showing completion screen");
+              
+              // Calculate how much time was successfully completed
+              const focusStartTime = new Date(session.focus_start_time);
+              const totalFocusSeconds = (focusEndTime.getTime() - focusStartTime.getTime()) / 1000;
+              
+              // Calculate rounded minutes for expired session
+              const totalFocusMinutes = Math.floor(totalFocusSeconds / 60);
+              const totalFocusMinutesRoundedToNearestFifteenMinutes = Math.floor(totalFocusMinutes / 15) * 15;
+              
+              // Apply values directly without showing confirmation
+              actualMinutesElapsed.current = totalFocusMinutes;
+              totalMinutesElapsedRoundedToFifteen.current = totalFocusMinutesRoundedToNearestFifteenMinutes;
+              
+              // Handle session completion directly
+              handleSessionEnd();
+              return;
+            }
+            
+            // If in break mode and break has expired, return to focus mode
+            if (isBreak.current && secondsRemaining.current <= 0) {
+              console.log("Break expired - returning to focus");
+              await returnToFocus();
+            }
           }
         }
       } catch (error) {
@@ -629,7 +793,7 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     };
 
     initializeSession();
-  }, [userId, FOCUS_TIME_SECONDS]);
+  }, [userId, FOCUS_TIME_SECONDS, existingSessionId, selectedActions]);
 
   const deleteSession = async () => {
     try {
@@ -860,6 +1024,7 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
             <button className="discard-button" onClick={deleteSession}>Discard session</button>
             <button className="test-button" onClick={testFifteenMinutes}>Test 15 min</button>
             <button className="adjust-time-button" onClick={adjustSessionTimeMinus15}>Adjust -15min</button>
+            <button className="debug-button" onClick={printSessionData}>Debug session</button>
           </div>
         </div>
       )}
