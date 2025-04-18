@@ -96,7 +96,7 @@ Completing scenario-based tasks earns unique in-game **rewards** and **cosmetic 
   ├── HomeScreen.tsx     # Start screen for demo or new game
   ├── BackButton.tsx     # UI back button
 /data
-  └── dummyGame.ts       # Test game state for prototyping
+  └── world_1836.ts       # Test game state for prototyping
 /types
   └── game.ts            # Game, Nation, Province types
 /lib

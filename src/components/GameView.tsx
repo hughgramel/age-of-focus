@@ -5,6 +5,8 @@ import MapView from './MapView';
 import Terminal from './Terminal';
 import BackButton from './BackButton';
 import { Game } from '@/types/game';
+import FocusNowButton from './FocusNowButton';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface GameViewProps {
   game?: Game;
@@ -13,6 +15,7 @@ interface GameViewProps {
 }
 
 export default function GameView({ game, isDemo = false, onBack }: GameViewProps) {
+  const { user } = useAuth();
   const selectedProvinceRef = useRef<string | null>(null);
   const provincePopupRef = useRef<HTMLDivElement | null>(null);
   const nationPopupRef = useRef<HTMLDivElement | null>(null);
@@ -205,6 +208,9 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           <span className="text-[#FFD78C] text-lg">{totalArmy.toLocaleString()} Army</span>
         </div>
       </div>
+
+      {/* Add Focus Now button */}
+      {user && <FocusNowButton userId={user.uid} />}
 
       {isDemo ? (
         // Demo view with current map implementation
