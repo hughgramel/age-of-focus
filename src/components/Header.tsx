@@ -11,7 +11,7 @@ const navigation = [
   { name: 'Library', href: '/library', icon: '📚' },
   { name: 'Party', href: '/party', icon: '👥' },
   { name: 'Profile', href: '/profile', icon: '👤' },
-  { name: 'Stack', href: '/stack', icon: '📋' },
+  { name: 'Slack', href: '/stack', icon: '📋' },
 ];
 
 export default function Header() {
@@ -30,100 +30,65 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-[#0B1423]">
-      <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-20">
-          <div className="flex">
-            {/* Logo */}
-            <div className="flex-shrink-0 flex items-center">
-              <Link href="/dashboard" className="text-2xl font-bold text-[#FFD700]">
+    <>
+      {/* Top Header for medium and large screens */}
+      <header className="bg-transparent hidden sm:block w-full z-50 relative">
+        <nav className="w-full px-4 sm:px-6 lg:px-12">
+          <div className="flex items-center justify-between h-16 sm:h-16 lg:h-20 flex-nowrap">
+            {/* Logo (Far Left) - Hidden on small screens */}
+            <div className="hidden lg:block flex-shrink-0 mr-4 lg:mr-8">
+              <Link href="/dashboard" className="text-2xl sm:text-3xl font-bold text-[#FFD700] hover:text-[#E5C063] transition-colors duration-200 font-vollkorn tracking-wide whitespace-nowrap">
                 Age of Focus
               </Link>
             </div>
 
-            {/* Navigation Links */}
-            <div className="hidden sm:ml-10 sm:flex sm:space-x-10">
-              {navigation.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <Link
-                    key={item.name}
-                    href={item.href}
-                    className={`
-                      inline-flex items-center px-3 text-base font-medium
-                      ${isActive 
-                        ? 'border-b-2 border-[#FFD700] text-[#FFD700]'
-                        : 'border-b-2 border-transparent text-gray-300 hover:border-gray-300 hover:text-white'
-                      }
-                    `}
-                  >
-                    <span className="mr-2">{item.icon}</span>
-                    {item.name}
-                  </Link>
-                );
-              })}
+            {/* Navigation Links (Center) - Medium and Large Screens */}
+            <div className="flex items-center justify-center flex-grow overflow-hidden">
+              <div className="flex items-center justify-center sm:space-x-4 lg:space-x-10 flex-nowrap">
+                {navigation.map((item) => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={`
+                        relative px-2 sm:px-2 lg:px-3 py-4 text-sm sm:text-sm lg:text-lg font-medium transition-colors duration-200 flex items-center whitespace-nowrap
+                        ${isActive 
+                          ? 'text-[#FFD700]'
+                          : 'text-gray-300 hover:text-white'
+                        }
+                        group font-lora tracking-wide
+                      `}
+                    >
+                      <span className="mr-1 sm:mr-1 lg:mr-2 text-lg lg:text-xl">{item.icon}</span>
+                      <span className="sm:inline">{item.name}</span>
+                      <span 
+                        className={`absolute bottom-0 left-0 w-full h-0.5 bg-[#FFD700] transform transition-all duration-300 ease-in-out
+                          ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-60'}`
+                        }
+                      ></span>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
-          </div>
 
-          {/* Right side buttons */}
-          <div className="flex items-center">
-            {/* Sign Out Button (Desktop) */}
-            <button
-              onClick={handleSignOut}
-              className="hidden sm:flex items-center px-4 py-2 text-base font-medium text-[#FFD700] bg-[#162033] rounded-lg border border-[#FFD700]/25 hover:bg-[#1C2942] transition-colors duration-200"
-            >
-              <span className="mr-2">🚪</span>
-              Sign Out
-            </button>
-
-            {/* Mobile menu button */}
-            <div className="sm:hidden flex items-center">
+            {/* Right side - Sign Out Button (Far Right) */}
+            <div className="flex items-center ml-2 lg:ml-8 flex-shrink-0">
               <button
-                type="button"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="inline-flex items-center justify-center p-2 rounded-md text-gray-300 hover:text-white hover:bg-[#162033] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#FFD700]"
-                aria-controls="mobile-menu"
-                aria-expanded={isMobileMenuOpen}
+                onClick={handleSignOut}
+                className="px-3 sm:px-4 lg:px-5 py-1.5 sm:py-2 lg:py-2.5 text-xs sm:text-sm lg:text-base font-medium text-[#FFD700] bg-transparent rounded border border-[#FFD700]/30 hover:bg-[#1C2942] transition-all duration-200 hover:border-[#FFD700]/60 font-lora tracking-wide hover:shadow-md whitespace-nowrap"
               >
-                <span className="sr-only">Open main menu</span>
-                {isMobileMenuOpen ? (
-                  <svg
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                ) : (
-                  <svg
-                    className="h-6 w-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 6h16M4 12h16M4 18h16"
-                    />
-                  </svg>
-                )}
+                Sign Out
               </button>
             </div>
           </div>
-        </div>
-      </nav>
+        </nav>
+      </header>
 
-      {/* Mobile menu */}
-      <div className={`sm:hidden ${isMobileMenuOpen ? 'block' : 'hidden'}`} id="mobile-menu">
-        <div className="pt-2 pb-3 space-y-1">
+      {/* Bottom Navigation Bar for mobile */}
+      <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-[#0B1423]/80 backdrop-blur-sm border-t border-gray-800 z-50">
+        <div className="flex justify-around items-center h-16">
           {navigation.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -131,28 +96,39 @@ export default function Header() {
                 key={item.name}
                 href={item.href}
                 className={`
-                  flex items-center px-3 py-2 text-base font-medium
-                  ${isActive
-                    ? 'bg-[#162033] border-l-4 border-[#FFD700] text-[#FFD700]'
-                    : 'border-l-4 border-transparent text-gray-300 hover:bg-[#162033] hover:border-gray-300 hover:text-white'
+                  flex flex-col items-center justify-center px-2 py-2 
+                  ${isActive 
+                    ? 'text-[#FFD700]'
+                    : 'text-gray-400 hover:text-gray-100'
                   }
+                  transition-colors duration-200 font-lora
                 `}
               >
-                <span className="mr-2">{item.icon}</span>
-                {item.name}
+                <span className="text-xl mb-1">{item.icon}</span>
+                <span className="text-xs">{item.name}</span>
               </Link>
             );
           })}
-          {/* Sign Out Button (Mobile) */}
+        </div>
+      </div>
+
+      {/* Mobile Top Bar with Sign Out */}
+      <header className="bg-transparent sm:hidden z-50 relative">
+        <div className="flex items-center justify-between h-16 px-4">
+          <Link href="/dashboard" className="text-xl font-bold text-[#FFD700] font-vollkorn tracking-wide">
+            Age of Focus
+          </Link>
           <button
             onClick={handleSignOut}
-            className="w-full flex items-center px-3 py-2 text-base font-medium text-gray-300 hover:bg-[#162033] hover:text-white border-l-4 border-transparent"
+            className="px-4 py-2 text-sm font-medium text-[#FFD700] bg-transparent rounded border border-[#FFD700]/30 font-lora tracking-wide"
           >
-            <span className="mr-2">🚪</span>
             Sign Out
           </button>
         </div>
-      </div>
-    </header>
+      </header>
+      
+      {/* Add padding to the bottom of the page on mobile to account for fixed navigation */}
+      <div className="sm:hidden h-16"></div>
+    </>
   );
 } 

@@ -174,36 +174,35 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
   const monthlyPopulationGrowth = Math.floor(totalPopulation * 0.005);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full overflow-x-hidden">
       <BackButton onClick={onBack} />
       
       {/* Player Nation Resource Bar */}
-      <div className="fixed top-4 left-4 z-50 flex items-center gap-6 px-6 py-3 rounded-lg" 
+      <div className="fixed top-4 left-4 z-50 flex flex-wrap items-center gap-3 px-4 py-3 rounded-lg max-w-[calc(100vw-32px)]" 
            style={{ 
              backgroundColor: 'rgba(20, 20, 20, 0.95)',
              border: '1px solid rgba(255, 215, 140, 0.3)',
              boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
              fontFamily: '"Playfair Display", serif',
-             minWidth: '600px'
            }}>
-        <div className="flex items-center gap-4 pr-4">
+        <div className="flex items-center gap-2 pr-2">
           <span className="text-[#FFD78C] font-semibold text-lg">{playerNation.nationTag}</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <span className="text-gray-400 text-xl">💰</span>
           <span className="text-[#FFD78C] text-lg">{playerNation.gold.toLocaleString()} Gold</span>
           <span className="text-green-400 text-lg">+{totalGoldIncome.toLocaleString()}</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <span className="text-gray-400 text-xl">👥</span>
           <span className="text-[#FFD78C] text-lg">{totalPopulation.toLocaleString()} Population</span>
           <span className="text-green-400 text-lg">+{monthlyPopulationGrowth.toLocaleString()}</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <span className="text-gray-400 text-xl">🏭</span>
           <span className="text-[#FFD78C] text-lg">{totalIndustry.toLocaleString()} Industry</span>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <span className="text-gray-400 text-xl">⚔️</span>
           <span className="text-[#FFD78C] text-lg">{totalArmy.toLocaleString()} Army</span>
         </div>
@@ -216,9 +215,9 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         // Demo view with current map implementation
         <MapView isDemo selectedProvinceRef={selectedProvinceRef} />
       ) : (
-        <div className="w-full h-full">
+        <div className="w-full h-full overflow-hidden">
           {/* Game details overlay */}
-          <div className="absolute top-16 right-4 z-40 bg-[#1F1F1F] p-4 rounded-lg border border-[#FFD78C20] text-[#FFD78C]">
+          <div className="absolute top-16 right-4 z-40 bg-[#1F1F1F] p-4 rounded-lg border border-[#FFD78C20] text-[#FFD78C] max-w-[300px]">
             <h2 className="text-xl font-semibold mb-3">{game.gameName}</h2>
             <div className="space-y-2 text-sm">
               <p><span className="text-gray-400">Date:</span> {game.date}</p>

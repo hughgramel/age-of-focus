@@ -54,13 +54,26 @@ const FocusNowButton: React.FC<FocusNowButtonProps> = ({ userId }) => {
 
   return (
     <>
-      {/* Focus Now button */}
-      <button 
-        className="fixed bottom-6 right-6 px-6 py-3 bg-[#1F1F1F] text-[#FFD78C] rounded-lg border border-[#FFD78C40] hover:bg-[#2A2A2A] transition-colors duration-200 font-semibold text-lg z-50 shadow-lg focus:outline-none focus:ring-2 focus:ring-[#FFD78C40]"
-        onClick={() => setShowModal(true)}
-      >
-        {hasActiveSession ? "Resume Active Session" : "Focus Now"}
-      </button>
+      {/* Center buttons with absolute positioning */}
+      <div className="flex flex-col items-center justify-center gap-4" >
+        <div className="flex flex-col gap-4 w-full">
+          {/* Focus Now button */}
+          <button 
+            className="w-full px-6 py-3 bg-[#1F1F1F] text-[#FFD78C] rounded-lg border border-[#FFD78C40] hover:bg-[#2A2A2A] transition-colors duration-200 font-semibold text-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-[#FFD78C40]"
+            onClick={() => setShowModal(true)}
+          >
+            {hasActiveSession ? "Resume Active Session" : "Focus Now"}
+          </button>
+
+          {/* Tutorial button - Positioned right below Focus Now */}
+          <button 
+            className="w-full px-6 py-3 bg-transparent text-[#FFD78C] rounded-lg border border-[#FFD78C40] hover:bg-[#1F1F1F] transition-colors duration-200 font-semibold text-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-[#FFD78C40]"
+            onClick={() => window.location.href = '/game?mode=demo'}
+          >
+            Tutorial
+          </button>
+        </div>
+      </div>
 
       {/* Focus Now modal */}
       {showModal && (

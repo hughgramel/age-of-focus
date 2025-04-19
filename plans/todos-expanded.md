@@ -1,30 +1,29 @@
 Below each we'll create the cursor prompt for each task.
 # [TODAYS_TASK]
 
-## 1. Complete Firebase Setup
-- [ ] Create Firestore security rules to protect user data and game saves
-- [ ] Set up Firebase hosting for deployment
+# Today's Tasks - Focus & Action System Implementation
 
-## 2. Focus Session System (Core Gameplay Loop)
-- [ ] Create timer component for 25-minute Pomodoro sessions
-  - Basic UI with start/pause/reset
-  - Visual countdown
-  - Session completion notification
-- [ ] Implement session rewards calculation
-  - Define reward structure
-  - Link to Action Points system
+## Focus Session System (Priority 1)
+- [ ] Add session history view
 
-## 3. Action Points (AP) System
-- [ ] Create AP tracking system
-  - Display current AP
-  - Implement generation (2 per completed session)
-  - Basic validation for spending
+## Action Points System (Priority 2)
+- [ ] Create AP spending validation
+- [ ] Add AP display component in game view
+- [ ] Track completed actions in user profile
 
-## 4. Game Interface Essentials
-- [ ] Create main dashboard layout
-  - Population counter
-  - Treasury display
-  - Basic stats panel
+## Core Actions (Priority 3)
+- [ ] Expand action effects beyond console logs
+- [ ] Update province data based on actions
+- [ ] Add visual feedback when actions complete
+
+## Bug Fixes & Enhancements
+- [ ] Add session statistics on completion
+- [ ] Improve mobile responsiveness of timer
+
+## Next Steps
+- [ ] Create province selection for actions
+- [ ] Add cooldown system for actions
+- [ ] Implement rewards visualization
 
 # Core MVP Tasks: Age of Focus
 
