@@ -64,18 +64,20 @@ export default function Dashboard() {
                 {/* 1836 Scenario Button */}
                 <div className="relative w-full h-40 sm:h-56 md:h-70 lg:h-70 xl:h-70 2xl:h-70 sm:mb-3">
                   <button
-                    onClick={() => router.push(`/scenario_select?year=1836`)}
-                    className="w-full h-full text-lg sm:text-xl font-medium text-[#FFD700] rounded-3xl transition-all duration-200 historical-game-title border-2 border-[#FFD700] hover:border-[#FFD700] overflow-hidden group"
+                    onClick={() => router.push(`/country_select`)}
+                    className="w-full h-full text-lg sm:text-xl font-medium text-[#FFD700] rounded-3xl transition-all duration-200 historical-game-title border-2 border-[#FFD700]/30 hover:border-[#FFD700]/50 overflow-hidden group"
                     style={{
                       backgroundImage: "url('/backgrounds/civil_war_background.png')",
                       backgroundSize: 'cover',
-                      backgroundPosition: 'center 50%',
+                      opacity: 1,
+                      backgroundPosition: 'center 70%',
                       backgroundRepeat: 'no-repeat',
-                      clipPath: 'inset(0 0 0 0 round 24px)'
+                      clipPath: 'inset(0 0 0 0 round 24px)',
+                      boxShadow: '0 0 15px rgba(255, 255, 255, 0.2)'
                     }}
                   >
                     {/* Gradient Overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0B1423]/50 to-[#0B1423]/80 opacity-30" />
+                    <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/30 to-white/60 opacity-27" />
                     
                     {/* Content */}
                     <div className="relative h-full flex flex-col z-10">
