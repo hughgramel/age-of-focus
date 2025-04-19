@@ -23,11 +23,57 @@ export default function AuthenticatedLayout({
       <div className="min-h-screen relative overflow-hidden">
         {/* Full-screen background with gradient overlay */}
         <div className="fixed inset-0 w-full h-full z-0">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#0B1423] via-[#1C2942] to-[#0B1423] opacity-90"></div>
+          {/* curr theme */}
+          {/* <div className="absolute inset-0 bg-gradient-to-br from-[#0B1423] via-[#1C2942] to-[#0B1423] opacity-60"></div> */}
+          
+          {/* richer blue theme */}
+          {/* <div className="absolute inset-0 bg-gradient-to-br from-[#0B1423] via-[#1C2942] to-[#0B1423] opacity-90"></div> */}
+
+          {/* dark purple royal theme */}
+          {/* <div className="absolute inset-0 bg-gradient-to-br from-[#13111C] via-[#20193A] to-[#13111C] opacity-90"></div> */}
+          {/* warm golden brown theme */}
+          {/* <div className="absolute inset-0 bg-gradient-to-br from-[#1C1408] via-[#2C2210] to-[#1C1408] opacity-40"></div> */}
+
+
+          {/* I like this one it's dark */}
+          {/* <div className="absolute inset-0 bg-gradient-to-br from-[#1C1408] via-[#2C2210] to-[#1C1408] opacity-40"></div> */}
+
+
+          {/* dark charcoal theme */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[#0F1112] via-[#1A1D21] to-[#0F1112] opacity-100"></div>
+
+          {/* slate theme */}
+          {/* <div className="absolute inset-0 bg-gradient-to-br from-[#121517] via-[#23272B] to-[#121517] opacity-95"></div> */}
+
+          {/* <div className="absolute inset-0 bg-gradient-to-br from-[#131313] via-[#222222] to-[#131313] opacity-90"></div> */}
+
+
+          {/* <div className="absolute inset-0 bg-gradient-to-br from-[#0E0E0E] via-[#1E1E1E] to-[#151515] opacity-95"></div> */}
+
+
+
+          {/* <div className="absolute inset-0 opacity-10" 
+     style={{ backgroundImage: 'radial-gradient(#AAAAAA 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div> */}
+
+
+
+
+          {/* emerald theme */}
+
+          {/* black theme */}
+
+
+          {/* main yellow color we use theme */}
+
+
+          {/* dynamic theme */}
+          {/* <div className="absolute inset-0 opacity-15" style={{ backgroundImage: 'radial-gradient(#FFD700 1.5px, transparent 1.5px), radial-gradient(#FFD700 0.5px, transparent 0.5px)', backgroundSize: '40px 40px, 20px 20px', backgroundPosition: '0 0, 20px 20px' }}></div> */}
+
+
           
           {/* Subtle pattern overlay */}
-          <div className="absolute inset-0 opacity-10" 
-               style={{ backgroundImage: 'radial-gradient(#FFD700 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div>
+          {/* <div className="absolute inset-0 opacity-10" 
+               style={{ backgroundImage: 'radial-gradient(#FFD700 1px, transparent 1px)', backgroundSize: '30px 30px' }}></div> */}
           
           {/* Optional: Keep the image but with much lower opacity */}
           <Image 

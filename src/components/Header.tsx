@@ -7,11 +7,8 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const navigation = [
   { name: 'Home', href: '/dashboard', icon: '🏠' },
-  { name: 'Timer', href: '/timer', icon: '⏱️' },
-  { name: 'Library', href: '/library', icon: '📚' },
-  { name: 'Party', href: '/party', icon: '👥' },
+  { name: 'Statistics', href: '/statistics', icon: '📚' },
   { name: 'Profile', href: '/profile', icon: '👤' },
-  { name: 'Slack', href: '/stack', icon: '📋' },
 ];
 
 export default function Header() {
@@ -34,16 +31,18 @@ export default function Header() {
       {/* Top Header for medium and large screens */}
       <header className="bg-transparent hidden sm:block w-full z-50 relative">
         <nav className="w-full px-4 sm:px-6 lg:px-12">
-          <div className="flex items-center justify-between h-16 sm:h-16 lg:h-20 flex-nowrap">
-            {/* Logo (Far Left) - Hidden on small screens */}
-            <div className="hidden lg:block flex-shrink-0 mr-4 lg:mr-8">
-              <Link href="/dashboard" className="text-2xl sm:text-3xl font-bold text-[#FFD700] hover:text-[#E5C063] transition-colors duration-200 font-vollkorn tracking-wide whitespace-nowrap">
-                Age of Focus
+          <div className="flex items-center justify-center h-16 sm:h-16 lg:h-20 flex-nowrap">
+            {/* Logo (Left) */}
+            <div className="flex-shrink-0 mr-4 lg:mr-8 absolute left-4 sm:left-6 lg:left-12">
+              <Link href="/dashboard" className="font-bold text-[#FFD700] hover:text-[#E5C063] transition-colors duration-200 whitespace-nowrap historical-game-title flex items-baseline">
+                <span className="text-4xl sm:text-5xl">Age</span>
+                <span className="text-3xl sm:text-4xl mx-1">of</span>
+                <span className="text-4xl sm:text-5xl">Focus</span>
               </Link>
             </div>
 
             {/* Navigation Links (Center) - Medium and Large Screens */}
-            <div className="flex items-center justify-center flex-grow overflow-hidden">
+            <div className="flex items-center justify-center">
               <div className="flex items-center justify-center sm:space-x-4 lg:space-x-10 flex-nowrap">
                 {navigation.map((item) => {
                   const isActive = pathname === item.href;
@@ -71,16 +70,6 @@ export default function Header() {
                   );
                 })}
               </div>
-            </div>
-
-            {/* Right side - Sign Out Button (Far Right) */}
-            <div className="flex items-center ml-2 lg:ml-8 flex-shrink-0">
-              <button
-                onClick={handleSignOut}
-                className="px-3 sm:px-4 lg:px-5 py-1.5 sm:py-2 lg:py-2.5 text-xs sm:text-sm lg:text-base font-medium text-[#FFD700] bg-transparent rounded border border-[#FFD700]/30 hover:bg-[#1C2942] transition-all duration-200 hover:border-[#FFD700]/60 font-lora tracking-wide hover:shadow-md whitespace-nowrap"
-              >
-                Sign Out
-              </button>
             </div>
           </div>
         </nav>
@@ -112,18 +101,14 @@ export default function Header() {
         </div>
       </div>
 
-      {/* Mobile Top Bar with Sign Out */}
+      {/* Mobile Top Bar with title only */}
       <header className="bg-transparent sm:hidden z-50 relative">
-        <div className="flex items-center justify-between h-16 px-4">
-          <Link href="/dashboard" className="text-xl font-bold text-[#FFD700] font-vollkorn tracking-wide">
-            Age of Focus
+        <div className="flex items-center justify-center h-16 px-4">
+          <Link href="/dashboard" className="font-bold text-[#FFD700] historical-game-title flex items-baseline">
+            <span className="text-3xl">Age</span>
+            <span className="text-2xl mx-1">of</span>
+            <span className="text-3xl">Focus</span>
           </Link>
-          <button
-            onClick={handleSignOut}
-            className="px-4 py-2 text-sm font-medium text-[#FFD700] bg-transparent rounded border border-[#FFD700]/30 font-lora tracking-wide"
-          >
-            Sign Out
-          </button>
         </div>
       </header>
       
