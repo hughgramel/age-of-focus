@@ -39,19 +39,19 @@ export default function Dashboard() {
 
   return (
     <div className="w-full h-full flex items-center justify-center">
-      <div className="flex flex-col items-center gap-8 w-96 -mt-16">
+      <div className="flex flex-col items-center gap-8 w-80 -mt-16">
         {!showSaveGames ? (
           <div className="w-full flex flex-col items-center">
             <button
               onClick={() => setShowSaveGames(true)}
-              className="w-full mb-4 px-5 py-2.5 text-base font-medium text-[#FFD700] bg-transparent rounded-lg border border-[#FFD700]/30 hover:bg-[#1C2942] transition-all duration-200 hover:border-[#FFD700]/60 font-lora tracking-wide hover:shadow-md"
+              className="w-full mb-4 px-5 py-2.5 text-base font-medium text-[#FFD700] bg-[#141618] rounded-lg border border-[#FFD700]/60 hover:bg-[#1a1d20] transition-all duration-200 font-lora tracking-wide hover:shadow-md"
             >
               Focus now
             </button>
             
             <button
               onClick={() => router.push('/game?mode=demo')}
-              className="w-full px-5 py-2.5 text-base font-medium text-[#FFD700] bg-transparent rounded-lg border border-[#FFD700]/30 hover:bg-[#1C2942] transition-all duration-200 hover:border-[#FFD700]/60 font-lora tracking-wide hover:shadow-md"
+              className="w-full px-5 py-2.5 text-base font-medium text-[#FFD700] bg-[#141618] rounded-lg border border-[#FFD700]/60 hover:bg-[#1a1d20] transition-all duration-200 font-lora tracking-wide hover:shadow-md"
             >
               Tutorial
             </button>

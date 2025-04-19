@@ -36,7 +36,7 @@ export default function Header() {
             <div className="flex-shrink-0 mr-4 lg:mr-8 absolute left-4 sm:left-6 lg:left-12">
               <Link href="/dashboard" className="font-bold text-[#FFD700] hover:text-[#E5C063] transition-colors duration-200 whitespace-nowrap historical-game-title flex items-baseline">
                 <span className="text-4xl sm:text-5xl">Age</span>
-                <span className="text-3xl sm:text-4xl mx-1">of</span>
+                <span className="text-3xl sm:text-4xl mx-1.5">of</span>
                 <span className="text-4xl sm:text-5xl">Focus</span>
               </Link>
             </div>
@@ -106,7 +106,7 @@ export default function Header() {
         <div className="flex items-center justify-center h-16 px-4">
           <Link href="/dashboard" className="font-bold text-[#FFD700] historical-game-title flex items-baseline">
             <span className="text-3xl">Age</span>
-            <span className="text-2xl mx-1">of</span>
+            <span className="text-2xl mx-2">of</span>
             <span className="text-3xl">Focus</span>
           </Link>
         </div>

@@ -42,7 +42,7 @@ export default function Statistics() {
           <button
             key={timeframe.id}
             onClick={() => setSelectedTimeframe(timeframe.id)}
-            className={`px-4 py-2 rounded-lg transition-all duration-200 font-lora tracking-wide
+            className={`px-2 py-2 rounded-lg transition-all duration-200 font-lora tracking-wide text-base 
               ${selectedTimeframe === timeframe.id 
                 ? 'bg-[#1C2942] text-[#FFD700] border border-[#FFD700]/60' 
                 : 'text-gray-300 border border-[#FFD700]/30 hover:border-[#FFD700]/60 hover:bg-[#1C2942]/70'
