@@ -3,7 +3,54 @@ Below each we'll create the cursor prompt for each task.
 
 # Today's Tasks - Focus & Action System Implementation
 
-## Focus Session System (Priority 1)
+
+# Today's Development Plan - Focus & Action System Implementation
+
+## 1. Focus Session System (High Priority)
+- [ ] Implement session history view
+  - Create a component to display completed focus sessions
+  - Add filtering/sorting capabilities
+  - Show key metrics per session
+  - Integrate with existing Firebase data
+
+## 2. Action Points (AP) System (Medium Priority)
+- [ ] AP Validation & Display
+  - Implement validation logic for AP spending
+  - Create AP display component for game view
+  - Add AP tracking to user profile
+  - Ensure proper AP deduction on actions
+
+## 3. Core Actions Enhancement (Lower Priority)
+- [ ] Improve action feedback
+  - Add visual feedback for action completion
+  - Implement province data updates
+  - Expand action effects beyond console logs
+
+## 4. Quality of Life Improvements
+- [ ] Session completion enhancements
+  - Add detailed statistics on session completion
+  - Improve mobile responsiveness of timer
+
+## Development Approach
+1. Start with session history view as it's highest priority
+2. Move to AP system improvements once session history is functional
+3. If time permits, enhance core actions and add QoL improvements
+
+## Testing Checklist
+- [ ] Test session history data loading
+- [ ] Verify AP validation logic
+- [ ] Check mobile responsiveness
+- [ ] Test action feedback system
+
+## Notes
+- Focus on completing one system fully before moving to the next
+- Prioritize user-facing features
+- Ensure mobile compatibility throughout development
+- Document any API changes or new components
+
+Remember to commit frequently and test thoroughly as you implement each feature!
+
+<!-- ## Focus Session System (Priority 1)
 - [ ] Add session history view
 
 ## Action Points System (Priority 2)
@@ -23,7 +70,7 @@ Below each we'll create the cursor prompt for each task.
 ## Next Steps
 - [ ] Create province selection for actions
 - [ ] Add cooldown system for actions
-- [ ] Implement rewards visualization
+- [ ] Implement rewards visualization -->
 
 # Core MVP Tasks: Age of Focus
 
@@ -98,7 +145,16 @@ Below each we'll create the cursor prompt for each task.
   - [ ] Define cost and effects
   - [ ] Implement validation
   - [ ] Create success handler
-
+- [ ] Create military campaign action
+  - [ ] Will take place over x hours to be dedicated in a user project like "Study math"
+  - [ ] As you work on Math, the military campaign will progress
+  - [ ] If you complete the project, the military campaign will succeed
+  - [ ] If you don't complete the project, the military campaign will fail
+  - [ ] If you cancel the project, the military campaign will fail
+  - [ ] If you cancel the military campaign, you will lose resources
+  - [ ] If the military campaign succeeds, you will gain resources
+  - [ ] If the military campaign fails, you will lose resources
+  
 ## 📊 Game Interface
 
 ### Dashboard
@@ -175,4 +231,6 @@ Below each we'll create the cursor prompt for each task.
 - [ ] Load testing
 - [ ] Documentation review
 - [ ] Backup system setup
+
+
 

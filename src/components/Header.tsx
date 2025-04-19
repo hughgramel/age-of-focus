@@ -51,15 +51,15 @@ export default function Header() {
                       key={item.name}
                       href={item.href}
                       className={`
-                        relative px-2 sm:px-2 lg:px-3 py-4 text-sm sm:text-sm lg:text-lg font-medium transition-colors duration-200 flex items-center whitespace-nowrap
+                        relative px-2 sm:px-3 lg:px-4 py-5 text-base sm:text-lg lg:text-xl font-medium transition-colors duration-200 flex items-center whitespace-nowrap historical-game-title
                         ${isActive 
-                          ? 'text-[#FFD700]'
+                          ? 'text-white'
                           : 'text-gray-300 hover:text-white'
                         }
-                        group font-lora tracking-wide
+                        group tracking-wide
                       `}
                     >
-                      <span className="mr-1 sm:mr-1 lg:mr-2 text-lg lg:text-xl">{item.icon}</span>
+                      <span className="mr-1 sm:mr-2 lg:mr-3 text-xl lg:text-2xl">{item.icon}</span>
                       <span className="sm:inline">{item.name}</span>
                       <span 
                         className={`absolute bottom-0 left-0 w-full h-0.5 bg-[#FFD700] transform transition-all duration-300 ease-in-out
@@ -85,16 +85,16 @@ export default function Header() {
                 key={item.name}
                 href={item.href}
                 className={`
-                  flex flex-col items-center justify-center px-2 py-2 
+                  flex flex-col items-center justify-center px-3 py-3 
                   ${isActive 
-                    ? 'text-[#FFD700]'
+                    ? 'text-white'
                     : 'text-gray-400 hover:text-gray-100'
                   }
                   transition-colors duration-200 font-lora
                 `}
               >
-                <span className="text-xl mb-1">{item.icon}</span>
-                <span className="text-xs">{item.name}</span>
+                <span className="text-2xl mb-1">{item.icon}</span>
+                <span className="text-sm">{item.name}</span>
               </Link>
             );
           })}

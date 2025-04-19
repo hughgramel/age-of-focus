@@ -125,8 +125,8 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-3xl mx-auto p-6">
-      <div className="backdrop-blur-sm bg-[#0B1423]/70 rounded-xl p-8 border border-[#FFD700]/30 shadow-2xl mb-8">
-        <h1 className="text-3xl font-serif font-bold text-[#FFD700] text-center mb-6">Account Settings</h1>
+      <div className="backdrop-blur-sm bg-[#0B1423]/90 rounded-xl p-8 border border-[#FFD700]/30 shadow-2xl mb-8">
+        <h1 className="text-3xl font-bold text-[#FFD700] text-center mb-6 historical-game-title">Account Settings</h1>
 
         {error && (
           <div className="bg-red-900/30 backdrop-blur-sm border border-red-500/50 text-red-200 px-6 py-3 rounded-lg mb-6">
@@ -141,11 +141,11 @@ export default function ProfilePage() {
         )}
 
         {/* Profile Section */}
-        <section className="bg-[#162033]/90 p-6 rounded-lg border border-[#FFD700]/40 shadow-lg mb-6">
-          <h2 className="text-xl font-serif font-semibold mb-4 text-[#FFD700]">Profile Information</h2>
+        <section className="bg-[#0B1423]/90 p-6 rounded-lg border border-[#FFD700]/30 shadow-lg mb-6">
+          <h2 className="text-xl font-semibold mb-4 text-[#FFD700] historical-game-title">Profile Information</h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Display Name</label>
+              <label className="block text-sm font-medium text-white/70 mb-1">Display Name</label>
               <input
                 type="text"
                 value={displayName}
@@ -153,14 +153,14 @@ export default function ProfilePage() {
                 className="block w-full rounded-md bg-[#0B1423]/80 border border-[#FFD700]/30 text-white px-4 py-2.5 focus:border-[#FFD700]/60 focus:outline-none focus:ring-1 focus:ring-[#FFD700]/50 transition-all"
               />
             </div>
-            <div className="text-gray-300 text-sm mt-4 border-t border-gray-700/50 pt-4">
-              <p><span className="text-gray-400">Email:</span> {user.email}</p>
-              <p><span className="text-gray-400">Account created:</span> {user.createdAt.toLocaleDateString()}</p>
-              <p><span className="text-gray-400">Last login:</span> {user.lastLogin.toLocaleDateString()}</p>
+            <div className="text-white/70 text-sm mt-4 border-t border-[#FFD700]/20 pt-4">
+              <p><span className="text-white/50">Email:</span> {user.email}</p>
+              <p><span className="text-white/50">Account created:</span> {user.createdAt.toLocaleDateString()}</p>
+              <p><span className="text-white/50">Last login:</span> {user.lastLogin.toLocaleDateString()}</p>
             </div>
             <button
               onClick={handleUpdateProfile}
-              className="px-6 py-2.5 bg-[#1C2942]/90 text-[#FFD700] rounded-lg border border-[#FFD700]/40 hover:bg-[#243756] transition-all duration-200 font-serif tracking-wide hover:border-[#FFD700]/70 hover:translate-y-[-1px] shadow-md"
+              className="px-6 py-2.5 bg-[#0B1423] text-[#FFD700] rounded-lg border border-[#FFD700]/40 hover:bg-[#162033] transition-all duration-200 historical-game-title tracking-wide hover:border-[#FFD700]/70 hover:translate-y-[-1px] shadow-md"
             >
               Update Profile
             </button>
@@ -168,11 +168,11 @@ export default function ProfilePage() {
         </section>
 
         {/* Email Section */}
-        <section className="bg-[#162033]/90 p-6 rounded-lg border border-[#FFD700]/40 shadow-lg mb-6">
-          <h2 className="text-xl font-serif font-semibold mb-4 text-[#FFD700]">Update Email</h2>
+        <section className="bg-[#0B1423]/90 p-6 rounded-lg border border-[#FFD700]/30 shadow-lg mb-6">
+          <h2 className="text-xl font-semibold mb-4 text-[#FFD700] historical-game-title">Change Email</h2>
           <form onSubmit={handleUpdateEmail} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">New Email</label>
+              <label className="block text-sm font-medium text-white/70 mb-1">New Email</label>
               <input
                 type="email"
                 value={emailForm.newEmail}
@@ -182,18 +182,18 @@ export default function ProfilePage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Current Password</label>
+              <label className="block text-sm font-medium text-white/70 mb-1">Password</label>
               <input
                 type="password"
                 value={emailForm.password}
                 onChange={(e) => setEmailForm({ ...emailForm, password: e.target.value })}
                 className="block w-full rounded-md bg-[#0B1423]/80 border border-[#FFD700]/30 text-white px-4 py-2.5 focus:border-[#FFD700]/60 focus:outline-none focus:ring-1 focus:ring-[#FFD700]/50 transition-all"
-                placeholder="Enter your current password"
+                placeholder="Enter your password"
               />
             </div>
             <button
               type="submit"
-              className="px-6 py-2.5 bg-[#1C2942]/90 text-[#FFD700] rounded-lg border border-[#FFD700]/40 hover:bg-[#243756] transition-all duration-200 font-serif tracking-wide hover:border-[#FFD700]/70 hover:translate-y-[-1px] shadow-md"
+              className="px-6 py-2.5 bg-[#0B1423] text-[#FFD700] rounded-lg border border-[#FFD700]/40 hover:bg-[#162033] transition-all duration-200 historical-game-title tracking-wide hover:border-[#FFD700]/70 hover:translate-y-[-1px] shadow-md"
             >
               Update Email
             </button>
@@ -201,11 +201,11 @@ export default function ProfilePage() {
         </section>
 
         {/* Password Section */}
-        <section className="bg-[#162033]/90 p-6 rounded-lg border border-[#FFD700]/40 shadow-lg mb-6">
-          <h2 className="text-xl font-serif font-semibold mb-4 text-[#FFD700]">Change Password</h2>
+        <section className="bg-[#0B1423]/90 p-6 rounded-lg border border-[#FFD700]/30 shadow-lg mb-6">
+          <h2 className="text-xl font-semibold mb-4 text-[#FFD700] historical-game-title">Change Password</h2>
           <form onSubmit={handleUpdatePassword} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Current Password</label>
+              <label className="block text-sm font-medium text-white/70 mb-1">Current Password</label>
               <input
                 type="password"
                 value={passwordForm.currentPassword}
@@ -215,7 +215,7 @@ export default function ProfilePage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">New Password</label>
+              <label className="block text-sm font-medium text-white/70 mb-1">New Password</label>
               <input
                 type="password"
                 value={passwordForm.newPassword}
@@ -225,7 +225,7 @@ export default function ProfilePage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Confirm New Password</label>
+              <label className="block text-sm font-medium text-white/70 mb-1">Confirm New Password</label>
               <input
                 type="password"
                 value={passwordForm.confirmPassword}
@@ -234,10 +234,9 @@ export default function ProfilePage() {
                 placeholder="Confirm your new password"
               />
             </div>
-            <p className="text-sm text-gray-400 italic">Password must be at least 6 characters long</p>
             <button
               type="submit"
-              className="px-6 py-2.5 bg-[#1C2942]/90 text-[#FFD700] rounded-lg border border-[#FFD700]/40 hover:bg-[#243756] transition-all duration-200 font-serif tracking-wide hover:border-[#FFD700]/70 hover:translate-y-[-1px] shadow-md"
+              className="px-6 py-2.5 bg-[#0B1423] text-[#FFD700] rounded-lg border border-[#FFD700]/40 hover:bg-[#162033] transition-all duration-200 historical-game-title tracking-wide hover:border-[#FFD700]/70 hover:translate-y-[-1px] shadow-md"
             >
               Update Password
             </button>
@@ -246,13 +245,13 @@ export default function ProfilePage() {
 
         {/* Delete Account Section */}
         <section className="bg-[#2C1B1B]/90 p-6 rounded-lg border border-red-500/40 shadow-lg">
-          <h2 className="text-xl font-serif font-semibold mb-4 text-red-400">Delete Account</h2>
-          <p className="text-gray-300 mb-4">
+          <h2 className="text-xl font-semibold mb-4 text-red-400 historical-game-title">Delete Account</h2>
+          <p className="text-white/70 mb-4">
             This action cannot be undone. Please type "DELETE" to confirm.
           </p>
           <form onSubmit={handleDeleteAccount} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Your Password</label>
+              <label className="block text-sm font-medium text-white/70 mb-1">Your Password</label>
               <input
                 type="password"
                 value={deleteForm.password}
@@ -262,7 +261,7 @@ export default function ProfilePage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Type "DELETE" to confirm</label>
+              <label className="block text-sm font-medium text-white/70 mb-1">Type "DELETE" to confirm</label>
               <input
                 type="text"
                 value={deleteForm.confirmation}
@@ -273,7 +272,7 @@ export default function ProfilePage() {
             </div>
             <button
               type="submit"
-              className="px-6 py-2.5 bg-red-900/80 text-white rounded-lg border border-red-500/40 hover:bg-red-800 transition-all duration-200 font-serif tracking-wide hover:border-red-500/70 shadow-md"
+              className="px-6 py-2.5 bg-red-900/80 text-[#FFD700] rounded-lg border border-red-500/40 hover:bg-red-800 transition-all duration-200 historical-game-title tracking-wide hover:border-red-500/70 shadow-md"
             >
               Delete Account
             </button>
