@@ -10,6 +10,13 @@ import FocusNowModal from './FocusNowModal';
 import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { GameService } from '@/services/gameService';
+import MapCanvas, { StateData } from './MapCanvas';
+
+// Create a globals object to store persistent map state
+const globalMapState = {
+  mapCanvas: null as HTMLDivElement | null,
+  initialized: false,
+};
 
 interface GameViewProps {
   game?: Game;
@@ -24,6 +31,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
   const nationPopupRef = useRef<HTMLDivElement | null>(null);
   const [fadeIn, setFadeIn] = useState(false);
   const [playerGold, setPlayerGold] = useState<number | undefined>(undefined);
+  const mapCanvasContainerRef = useRef<HTMLDivElement>(null);
 
   // Add fade-in effect on mount
   useEffect(() => {
@@ -49,11 +57,6 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
 
   // Prevent standard scrolling
   useEffect(() => {
-      console.log('Printing game state');
-      console.log(game);
-
-
-
     const preventScroll = (e: WheelEvent) => {
       if (e.ctrlKey) {
         // Prevent browser zoom on Ctrl+Wheel
@@ -251,18 +254,67 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
     }
   };
 
-  useEffect(() => {
-    console.log('Initial Selected Province:', selectedProvinceRef.current);
-  }, []);
-
-  useEffect(() => {
-    const loadGame = () => {
-      console.log('Loading game:', game);
-      // Initialize game state here
-    };
-
-    loadGame();
-  }, [game]);
+  // Function to add gold to player nation
+  const addGold = async () => {
+    if (!user || !game) return;
+    
+    try {
+      // Find the save slot containing this game
+      const allSaves = await GameService.getSaveGames(user.uid);
+      let slotNumber: number | null = null;
+      
+      for (const [slot, save] of Object.entries(allSaves)) {
+        if (save && save.game.id === game.id) {
+          slotNumber = parseInt(slot);
+          break;
+        }
+      }
+      
+      if (slotNumber === null) {
+        console.error('Could not find save slot for this game');
+        return;
+      }
+      
+      // Create a deep copy of the game
+      const updatedGame = JSON.parse(JSON.stringify(game));
+      
+      // Update the gold in the player nation
+      const playerNationIndex = updatedGame.nations.findIndex(
+        (nation: Nation) => nation.nationTag === updatedGame.playerNationTag
+      );
+      
+      if (playerNationIndex !== -1) {
+        // Update the gold value
+        updatedGame.nations[playerNationIndex].gold += 100;
+        
+        // Update the local gold state without refreshing the map
+        setPlayerGold(prev => (prev !== undefined ? prev + 100 : updatedGame.nations[playerNationIndex].gold));
+        
+        // Update Firebase in the background
+        await GameService.saveGame(
+          user.uid, 
+          slotNumber, 
+          updatedGame,
+          'debug-update' // Scenario ID (required but not important for debug)
+        );
+        
+        console.log('Added 100 gold to player nation!');
+        
+        // Show feedback
+        const feedback = document.createElement('div');
+        feedback.textContent = '+100 Gold Added!';
+        feedback.className = 'fixed bottom-24 left-4 z-50 bg-[#0B1423] p-3 rounded-lg border border-[#FFD700] text-[#FFD700] historical-game-title';
+        document.body.appendChild(feedback);
+        
+        // Remove feedback after 2 seconds
+        setTimeout(() => {
+          feedback.remove();
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Error adding gold:', error);
+    }
+  };
 
   if (!game) {
     return <div>Error: No game data provided</div>;
@@ -328,68 +380,6 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
       case 'NET': return '🇳🇱';
       case 'BEL': return '🇧🇪';
       default: return '🏳️';
-    }
-  };
-
-  // Function to add gold to player nation
-  const addGold = async () => {
-    if (!user || !game) return;
-    
-    try {
-      // Find the save slot containing this game
-      const allSaves = await GameService.getSaveGames(user.uid);
-      let slotNumber: number | null = null;
-      
-      for (const [slot, save] of Object.entries(allSaves)) {
-        if (save && save.game.id === game.id) {
-          slotNumber = parseInt(slot);
-          break;
-        }
-      }
-      
-      if (slotNumber === null) {
-        console.error('Could not find save slot for this game');
-        return;
-      }
-      
-      // Create a deep copy of the game
-      const updatedGame = JSON.parse(JSON.stringify(game));
-      
-      // Update the gold in the player nation
-      const playerNationIndex = updatedGame.nations.findIndex(
-        (nation: Nation) => nation.nationTag === updatedGame.playerNationTag
-      );
-      
-      if (playerNationIndex !== -1) {
-        // Update the gold value
-        updatedGame.nations[playerNationIndex].gold += 100;
-        
-        // Update the local gold state without refreshing the map
-        setPlayerGold(prev => (prev !== undefined ? prev + 100 : updatedGame.nations[playerNationIndex].gold));
-        
-        // Update Firebase in the background
-        await GameService.saveGame(
-          user.uid, 
-          slotNumber, 
-          updatedGame,
-          'debug-update' // Scenario ID (required but not important for debug)
-        );
-        
-        console.log('Added 100 gold to player nation!');
-        
-        // Show feedback
-        const feedback = document.createElement('div');
-        feedback.textContent = '+100 Gold Added!';
-        feedback.className = 'fixed bottom-24 left-4 z-50 bg-[#0B1423] p-3 rounded-lg border border-[#FFD700] text-[#FFD700] historical-game-title';
-        document.body.appendChild(feedback);
-        
-        // Remove feedback after 2 seconds
-        setTimeout(() => {
-          feedback.remove();
-        }, 2000);
-      }
-    } catch (error) {
-      console.error('Error adding gold:', error);
     }
   };
 
@@ -513,22 +503,24 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         )}
       </div>
 
-      {isDemo ? (
-        // Demo view with current map implementation
-        <div className={`absolute inset-0 z-0 transition-all duration-1000 ease-in-out ${fadeIn ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}>
+      {/* Map container */}
+      <div 
+        className={`absolute inset-0 z-0 transition-all duration-1000 ease-in-out ${fadeIn ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}
+        ref={mapCanvasContainerRef}
+      >
+        {isDemo ? (
+          // Demo view with demo map
           <MapView isDemo selectedProvinceRef={selectedProvinceRef} />
-        </div>
-      ) : (
-        <div className={`absolute inset-0 z-0 transition-all duration-1000 ease-in-out ${fadeIn ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}>
-          {/* Render the map using game.mapName and pass nations */}
+        ) : (
+          // Real game with actual map and nations
           <MapView 
             mapName={game.mapName} 
             nations={game.nations}
             selectedProvinceRef={selectedProvinceRef}
             onProvinceSelect={handleProvinceSelect}
           />
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 } 

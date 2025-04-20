@@ -3,16 +3,82 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { countries_1836, Country1836 } from '@/data/countries_1836';
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { GameService } from '@/services/gameService';
+import { world_1836 } from '@/data/world_1836';
 
 export default function CountrySelect() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { user } = useAuth();
   const [selectedCountry, setSelectedCountry] = useState<Country1836 | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleCountrySelect = (country: Country1836) => {
+  const handleCountrySelect = async (country: Country1836) => {
+    if (!user) {
+      setError('You must be logged in to create a game');
+      return;
+    }
+
     setSelectedCountry(country);
-    // TODO: Create new game with selected country
-    router.push(`/game?country=${country.id}`);
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Find an empty save slot
+      const saves = await GameService.getSaveGames(user.uid);
+      console.log('Current saves:', saves);
+      
+      const emptySlot = Object.entries(saves).find(([_, save]) => !save)?.[0];
+      
+      if (!emptySlot) {
+        setError('No empty save slots available');
+        return;
+      }
+
+      console.log('Found empty slot:', emptySlot);
+
+      // Map country ID to nation tag
+      let nationTag = '';
+      switch (country.id) {
+        case 'france':
+          nationTag = 'FRA';
+          break;
+        case 'prussia':
+          nationTag = 'PRU';
+          break;
+        case 'usa':
+          // USA not implemented yet
+          setError('United States not implemented yet');
+          return;
+        default:
+          setError('Invalid country selected');
+          return;
+      }
+
+      // Create new game based on world_1836 but with selected country
+      const newGame = {
+        ...world_1836,
+        id: `game_${Date.now()}`,
+        gameName: `${country.name} - 1836`,
+        playerNationTag: nationTag
+      };
+
+      console.log('Creating new game:', newGame);
+
+      // Save the game
+      await GameService.saveGame(user.uid, parseInt(emptySlot), newGame, 'world_1836');
+      console.log('Game saved successfully');
+
+      // Navigate to the game
+      router.push(`/game?save=${emptySlot}`);
+    } catch (err) {
+      console.error('Error starting game:', err);
+      setError('Failed to start game');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -22,12 +88,19 @@ export default function CountrySelect() {
           Choose Your Nation
         </h1>
 
+        {error && (
+          <div className="mb-8 p-4 bg-red-900/50 border border-red-500 rounded-lg text-red-200">
+            {error}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-12 sm:gap-16 w-full max-w-[1600px] px-4 sm:px-8">
           {countries_1836.map((country) => (
             <button
               key={country.id}
               onClick={() => handleCountrySelect(country)}
-              className="w-full aspect-[1] text-lg sm:text-xl font-medium text-[#FFD700] rounded-3xl transition-all duration-200 historical-game-title border-2 border-[#FFD700]/30 hover:border-[#FFD700]/50 overflow-hidden group relative"
+              disabled={loading}
+              className={`w-full aspect-[1] text-lg sm:text-xl font-medium text-[#FFD700] rounded-3xl transition-all duration-200 historical-game-title border-2 border-[#FFD700]/30 hover:border-[#FFD700]/50 overflow-hidden group relative ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
               style={{
                 backgroundImage: `url('${country.backgroundImage}')`,
                 backgroundSize: 'cover',
@@ -50,14 +123,14 @@ export default function CountrySelect() {
                   <span className="text-xl sm:text-2xl text-white/90 drop-shadow-lg font-medium">
                     {country.description}
                   </span>
-                  {/* <span className={`text-lg sm:text-xl font-medium drop-shadow-lg
+                  <span className={`text-lg sm:text-xl font-medium drop-shadow-lg
                     ${country.difficulty === 'Easy' ? 'text-green-400' :
                       country.difficulty === 'Medium' ? 'text-yellow-400' :
                       country.difficulty === 'Hard' ? 'text-orange-400' :
                       'text-red-400'}`}
                   >
                     {country.difficulty} Difficulty
-                  </span> */}
+                  </span>
                 </div>
               </div>
             </button>
@@ -66,7 +139,7 @@ export default function CountrySelect() {
 
         <div className="mt-25 text-center">
           <span className="text-[#FFD700]/70 text-2xl sm:text-3xl historical-game-title">
-            More nations coming soon... // todo: images, better layout
+            More nations coming soon...
           </span>
         </div>
       </div>

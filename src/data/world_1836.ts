@@ -397,6 +397,272 @@ const britainProvinces: Province[] = [
   }
 ];
 
+// Prussian provinces with 1836 data
+const prussiaProvinces: Province[] = [
+  {
+    id: 'Brandenburg',
+    name: 'Brandenburg',
+    path: '',
+    population: 2123456,  // Berlin and surroundings
+    goldIncome: 180,     // Administrative center
+    industry: 150,       // Growing industrial center
+    buildings: [],
+    resourceType: 'gold' as ResourceType,
+    army: 25172,  // Major garrison in Berlin
+  },
+  {
+    id: 'East_Prussia',
+    name: 'East Prussia',
+    path: '',
+    population: 1523456,
+    goldIncome: 100,
+    industry: 70,
+    buildings: [],
+    resourceType: 'food' as ResourceType,
+    army: 15000,
+  },
+  {
+    id: 'West_Prussia',
+    name: 'West Prussia',
+    path: '',
+    population: 1623456,
+    goldIncome: 110,
+    industry: 80,
+    buildings: [],
+    resourceType: 'food' as ResourceType,
+    army: 18000,
+  },
+  {
+    id: 'Pomerania',
+    name: 'Pomerania',
+    path: '',
+    population: 1423456,
+    goldIncome: 90,
+    industry: 60,
+    buildings: [],
+    resourceType: 'food' as ResourceType,
+    army: 12000,
+  },
+  {
+    id: 'Silesia',
+    name: 'Silesia',
+    path: '',
+    population: 2023456,
+    goldIncome: 160,
+    industry: 140,
+    buildings: [],
+    resourceType: 'coal' as ResourceType,
+    army: 20000,
+  },
+  {
+    id: 'Posen',
+    name: 'Posen',
+    path: '',
+    population: 1323456,
+    goldIncome: 80,
+    industry: 50,
+    buildings: [],
+    resourceType: 'food' as ResourceType,
+    army: 10000,
+  },
+  {
+    id: 'Rhineland',
+    name: 'Rhineland',
+    path: '',
+    population: 1923456,
+    goldIncome: 170,
+    industry: 160,
+    buildings: [],
+    resourceType: 'coal' as ResourceType,
+    army: 22000,
+  },
+  {
+    id: 'Westphalia',
+    name: 'Westphalia',
+    path: '',
+    population: 1823456,
+    goldIncome: 150,
+    industry: 130,
+    buildings: [],
+    resourceType: 'coal' as ResourceType,
+    army: 18000,
+  },
+  {
+    id: 'Ruhr',
+    name: 'Ruhr',
+    path: '',
+    population: 1723456,
+    goldIncome: 190,
+    industry: 180,
+    buildings: [],
+    resourceType: 'coal' as ResourceType,
+    army: 16500,
+  }
+];
+
+// Bavarian provinces with 1836 data
+const bavariaProvinces: Province[] = [
+  {
+    id: 'Bavaria',
+    name: 'Bavaria',
+    path: '',
+    population: 2423456,  // Munich and surroundings
+    goldIncome: 160,     // Rich agricultural region
+    industry: 100,
+    buildings: [],
+    resourceType: 'food' as ResourceType,
+    army: 20000,
+  },
+  {
+    id: 'Franconia',
+    name: 'Franconia',
+    path: '',
+    population: 1523456,
+    goldIncome: 110,
+    industry: 80,
+    buildings: [],
+    resourceType: 'food' as ResourceType,
+    army: 15000,
+  }
+];
+
+// Württemberg provinces with 1836 data
+const wurttembergProvinces: Province[] = [
+  {
+    id: 'Wurttemberg',
+    name: 'Württemberg',
+    path: '',
+    population: 1623456,
+    goldIncome: 120,
+    industry: 90,
+    buildings: [],
+    resourceType: 'food' as ResourceType,
+    army: 12000,
+  }
+];
+
+// Baden provinces with 1836 data
+const badenProvinces: Province[] = [
+  {
+    id: 'Baden',
+    name: 'Baden',
+    path: '',
+    population: 1423456,
+    goldIncome: 110,
+    industry: 85,
+    buildings: [],
+    resourceType: 'food' as ResourceType,
+    army: 10000,
+  }
+];
+
+// Saxony provinces with 1836 data
+const saxonyProvinces: Province[] = [
+  {
+    id: 'Saxony',
+    name: 'Saxony',
+    path: '',
+    population: 1823456,
+    goldIncome: 140,
+    industry: 120,
+    buildings: [],
+    resourceType: 'coal' as ResourceType,
+    army: 15000,
+  },
+  {
+    id: 'Elbe',
+    name: 'Elbe',
+    path: '',
+    population: 1123456,
+    goldIncome: 95,
+    industry: 85,
+    buildings: [],
+    resourceType: 'food' as ResourceType,
+    army: 8234,
+  },
+  {
+    id: 'North_Rhine',
+    name: 'North Rhine',
+    path: '',
+    population: 1323456,
+    goldIncome: 105,
+    industry: 95,
+    buildings: [],
+    resourceType: 'coal' as ResourceType,
+    army: 9234,
+  },
+  {
+    id: 'Hesse',
+    name: 'Hesse',
+    path: '',
+    population: 923456,
+    goldIncome: 75,
+    industry: 65,
+    buildings: [],
+    resourceType: 'food' as ResourceType,
+    army: 6123,
+  }
+];
+
+// Hannover provinces with 1836 data
+const hannoverProvinces: Province[] = [
+  {
+    id: 'Hannover',
+    name: 'Hannover',
+    path: '',
+    population: 1723456,
+    goldIncome: 120,
+    industry: 80,
+    buildings: [],
+    resourceType: 'food' as ResourceType,
+    army: 12000,
+  },
+  {
+    id: 'Brunswick',
+    name: 'Brunswick',
+    path: '',
+    population: 823456,
+    goldIncome: 70,
+    industry: 60,
+    buildings: [],
+    resourceType: 'food' as ResourceType,
+    army: 6000,
+  },
+  {
+    id: 'Schleswig_Holstein',
+    name: 'Schleswig-Holstein',
+    path: '',
+    population: 923456,
+    goldIncome: 85,
+    industry: 65,
+    buildings: [],
+    resourceType: 'food' as ResourceType,
+    army: 7123,
+  },
+  {
+    id: 'Mecklenburg',
+    name: 'Mecklenburg',
+    path: '',
+    population: 723456,
+    goldIncome: 65,
+    industry: 55,
+    buildings: [],
+    resourceType: 'food' as ResourceType,
+    army: 5123,
+  },
+  {
+    id: 'Anhalt',
+    name: 'Anhalt',
+    path: '',
+    population: 523456,
+    goldIncome: 55,
+    industry: 45,
+    buildings: [],
+    resourceType: 'food' as ResourceType,
+    army: 4123,
+  }
+];
+
 // Create France nation
 const france: Nation = {
   nationTag: 'FRA',
@@ -457,6 +723,116 @@ const greatBritain: Nation = {
   isAI: false
 };
 
+// Create Prussia nation
+const prussia: Nation = {
+  nationTag: 'PRU',
+  name: 'Prussia',
+  color: '#2a4163',  // Dark Prussian blue
+  hexColor: '#2a4163',
+  provinces: prussiaProvinces,
+  borderProvinces: null,
+  
+  // Resources / Stats
+  gold: 3000,            // Wealthy and industrialized
+  researchPoints: 120,   // Leading in sciences
+  currentResearchId: 'military_science',
+  currentResearchProgress: 40,
+  
+  // Queue
+  buildQueue: [],
+  isAI: false
+};
+
+// Create Bavaria nation
+const bavaria: Nation = {
+  nationTag: 'BAV',
+  name: 'Bavaria',
+  color: '#4a7a9c',  // Light blue
+  hexColor: '#4a7a9c',
+  provinces: bavariaProvinces,
+  borderProvinces: null,
+  
+  gold: 1500,
+  researchPoints: 60,
+  currentResearchId: null,
+  currentResearchProgress: 0,
+  
+  buildQueue: null,
+  isAI: true
+};
+
+// Create Württemberg nation
+const wurttemberg: Nation = {
+  nationTag: 'WUR',
+  name: 'Württemberg',
+  color: '#8b2d3d',  // Maroon
+  hexColor: '#8b2d3d',
+  provinces: wurttembergProvinces,
+  borderProvinces: null,
+  
+  gold: 800,
+  researchPoints: 40,
+  currentResearchId: null,
+  currentResearchProgress: 0,
+  
+  buildQueue: null,
+  isAI: true
+};
+
+// Create Baden nation
+const baden: Nation = {
+  nationTag: 'BAD',
+  name: 'Baden',
+  color: '#1a4a4d',  // Dark blue-green
+  hexColor: '#1a4a4d',
+  provinces: badenProvinces,
+  borderProvinces: null,
+  
+  gold: 700,
+  researchPoints: 35,
+  currentResearchId: null,
+  currentResearchProgress: 0,
+  
+  buildQueue: null,
+  isAI: true
+};
+
+// Create Saxony nation
+const saxony: Nation = {
+  nationTag: 'SAX',
+  name: 'Saxony',
+  color: '#2d5a27',  // Green
+  hexColor: '#2d5a27',
+  provinces: saxonyProvinces,
+  borderProvinces: null,
+  
+  gold: 1000,
+  researchPoints: 50,
+  currentResearchId: null,
+  currentResearchProgress: 0,
+  
+  buildQueue: null,
+  isAI: true
+};
+
+// Create Hannover nation
+const hannover: Nation = {
+  nationTag: 'HAN',
+  name: 'Hannover',
+  color: '#7d6c55',  // Light brown parchment
+  hexColor: '#7d6c55',
+  provinces: hannoverProvinces,
+  borderProvinces: null,
+  
+  gold: 900,
+  researchPoints: 45,
+  currentResearchId: null,
+  currentResearchProgress: 0,
+  
+  buildQueue: null,
+  isAI: true
+};
+
 // Create the dummy game
 export const world_1836: Game = {
   id: 'game_1',
@@ -464,5 +840,5 @@ export const world_1836: Game = {
   date: '1836-01-01',
   mapName: 'world_states',
   playerNationTag: 'FRA',
-  nations: [france, belgium, greatBritain]
+  nations: [france, belgium, greatBritain, prussia, bavaria, wurttemberg, baden, saxony, hannover]
 }; 

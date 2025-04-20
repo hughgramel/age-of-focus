@@ -25,38 +25,80 @@ interface SaveGames {
   [key: string]: GameData | null;
 }
 
+interface DeleteConfirmationProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: () => void;
+  gameName: string;
+}
+
+function DeleteConfirmation({ isOpen, onClose, onConfirm, gameName }: DeleteConfirmationProps) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-[#0B1423] border-2 border-[#FFD700]/30 rounded-lg p-6 max-w-md w-full mx-4">
+        <h2 className="text-2xl text-[#FFD700] historical-game-title mb-4">Delete Save Game?</h2>
+        <p className="text-[#FFD700]/90 mb-6">
+          Are you sure you want to delete your {gameName} save game? This action cannot be undone.
+        </p>
+        <div className="flex justify-end gap-4">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-[#FFD700] historical-game-title hover:text-[#FFD700]/80 transition-colors duration-200"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="px-4 py-2 bg-red-900/50 text-red-200 historical-game-title border border-red-500/50 rounded hover:bg-red-900/70 transition-colors duration-200"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LoadGame() {
   const router = useRouter();
   const { user } = useAuth();
   const [games, setGames] = useState<GameData[]>([]);
   const [saveSlots, setSaveSlots] = useState<Record<string, GameData | null>>({});
   const [loading, setLoading] = useState(true);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{
+    isOpen: boolean;
+    gameId?: string;
+    gameName?: string;
+    slot?: string;
+  }>({ isOpen: false });
+
+  const loadGames = async () => {
+    if (user) {
+      try {
+        const savedGames = await GameService.getSaveGames(user.uid);
+        // Convert the object into an array of non-null games
+        const gamesArray = Object.entries(savedGames)
+          .filter(([_, game]) => game !== null)
+          .map(([_, game]) => game as GameData);
+
+        // Sort by savedAt date
+        gamesArray.sort((a, b) => 
+          new Date(b.metadata.savedAt).getTime() - new Date(a.metadata.savedAt).getTime()
+        );
+        
+        setGames(gamesArray);
+        // Store mapping of game IDs to save slots
+        setSaveSlots(savedGames);
+      } catch (error) {
+        console.error('Error loading games:', error);
+      }
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const loadGames = async () => {
-      if (user) {
-        try {
-          const savedGames = await GameService.getSaveGames(user.uid);
-          // Convert the object into an array of non-null games
-          const gamesArray = Object.entries(savedGames)
-            .filter(([_, game]) => game !== null)
-            .map(([_, game]) => game as GameData);
-
-          // Sort by savedAt date
-          gamesArray.sort((a, b) => 
-            new Date(b.metadata.savedAt).getTime() - new Date(a.metadata.savedAt).getTime()
-          );
-          
-          setGames(gamesArray);
-          // Store mapping of game IDs to save slots
-          setSaveSlots(savedGames);
-        } catch (error) {
-          console.error('Error loading games:', error);
-        }
-      }
-      setLoading(false);
-    };
-
     loadGames();
   }, [user]);
 
@@ -70,6 +112,38 @@ export default function LoadGame() {
     }
     // Fallback - this shouldn't happen but just in case
     router.push('/dashboard');
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, game: GameData) => {
+    e.stopPropagation(); // Prevent triggering the game load
+    
+    // Find the slot for this game
+    const slot = Object.entries(saveSlots).find(([_, savedGame]) => 
+      savedGame && savedGame.game.id === game.game.id
+    )?.[0];
+
+    if (slot) {
+      setDeleteConfirmation({
+        isOpen: true,
+        gameId: game.game.id,
+        gameName: getNationName(game.game.playerNationTag),
+        slot
+      });
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!user || !deleteConfirmation.slot) return;
+
+    try {
+      await GameService.deleteSaveGame(user.uid, parseInt(deleteConfirmation.slot));
+      // Refresh the games list
+      await loadGames();
+    } catch (error) {
+      console.error('Error deleting game:', error);
+    } finally {
+      setDeleteConfirmation({ isOpen: false });
+    }
   };
 
   const handleBack = () => {
@@ -124,13 +198,23 @@ export default function LoadGame() {
                   
                   {/* Content */}
                   <div className="absolute inset-0 p-6 flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-3xl text-[#FFD700] font-bold historical-game-title mb-2">
-                        {getNationName(game.game.playerNationTag)}
-                      </h3>
-                      <p className="text-xl text-[#FFD700]/90 historical-game-title">
-                        {game.game.date.substring(0, 4)}
-                      </p>
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h3 className="text-3xl text-[#FFD700] font-bold historical-game-title mb-2">
+                          {getNationName(game.game.playerNationTag)}
+                        </h3>
+                        <p className="text-xl text-[#FFD700]/90 historical-game-title">
+                          {game.game.date.substring(0, 4)}
+                        </p>
+                      </div>
+                      <button
+                        onClick={(e) => handleDeleteClick(e, game)}
+                        className="p-2 text-[#FFD700]/50 hover:text-red-500 transition-colors duration-200"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                     <div className="flex items-center justify-between">
                       <div className="text-sm text-[#FFD700]/70">
@@ -149,6 +233,13 @@ export default function LoadGame() {
           </div>
         )}
       </div>
+
+      <DeleteConfirmation
+        isOpen={deleteConfirmation.isOpen}
+        onClose={() => setDeleteConfirmation({ isOpen: false })}
+        onConfirm={handleDeleteConfirm}
+        gameName={deleteConfirmation.gameName || ''}
+      />
     </div>
   );
 } 

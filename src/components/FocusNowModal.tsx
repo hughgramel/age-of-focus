@@ -83,12 +83,14 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
   // Start focus session
   const startFocusSession = async () => {
     // Process 'auto' selections before starting
-    const actions = selectedActions.map(action => 
+    const processedActionsList = selectedActions.map(action => 
       action === 'auto' ? getRandomAction().id : action
     );
     
     // Save processed actions to state so they can be passed to the FocusTimer
-    setProcessedActions(actions);
+    setProcessedActions(processedActionsList);
+    
+    console.log("Starting focus session with actions:", processedActionsList);
     
     try {
       // Check for existing sessions
@@ -257,13 +259,15 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
             </div>
           ) : null}
           
-          <FocusTimer 
-            userId={userId} 
-            initialDuration={duration * 60} // Convert to seconds
-            onSessionComplete={handleSessionComplete}
-            selectedActions={processedActions.length > 0 ? processedActions : selectedActions}
-            existingSessionId={activeSession?.id}
-          />
+          {sessionStarted && (
+            <FocusTimer 
+              userId={userId}
+              initialDuration={duration * 60}
+              onSessionComplete={handleSessionComplete}
+              selectedActions={processedActions}
+              existingSessionId={activeSession?.id}
+            />
+          )}
         </div>
       )}
     </div>

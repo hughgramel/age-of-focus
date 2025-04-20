@@ -343,68 +343,125 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
   // Set alias to avoid changing all call sites
   const setRemainingTimesFromEndTimes = calculateRemainingTimes;
 
+  const handleSessionEnd = () => {
+    if (!sessionId.current) {
+      console.error("No active session to end");
+      return;
+    }
+
+    const endSession = async () => {
+      try {
+        // Calculate total minutes, rounded to nearest 15
+        const totalMinutes = Math.floor(secondsElapsed.current / 60);
+        const roundedMinutes = Math.round(totalMinutes / 15) * 15;
+        totalMinutesElapsedRoundedToFifteen.current = roundedMinutes;
+
+        console.log("Session ending with actions:", selectedActions);
+        console.log("Total minutes:", totalMinutes, "Rounded minutes:", roundedMinutes);
+
+        // Update session in Firebase
+        await SessionService.updateSession(sessionId.current, {
+          session_state: 'complete',
+          total_minutes_done: roundedMinutes,
+          selected_actions: selectedActions // Ensure actions are saved on completion
+        });
+
+        // Clear the timer
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
+
+        // Execute actions based on completed time
+        if (selectedActions && selectedActions.length > 0) {
+          console.log("Executing actions:", selectedActions);
+          // Calculate if session was completed fully (90% threshold)
+          const sessionCompletionThreshold = initialDuration * 0.9;
+          const isFullyCompleted = secondsElapsed.current >= sessionCompletionThreshold;
+          
+          // Convert action types to FocusAction objects
+          const actionObjects = selectedActions.map(actionType => {
+            const action = FOCUS_ACTIONS.find(a => a.id === actionType);
+            if (!action) {
+              console.warn(`Action type ${actionType} not found, defaulting to build`);
+              return FOCUS_ACTIONS.find(a => a.id === 'build')!;
+            }
+            return action;
+          });
+          
+          executeActions(actionObjects, isFullyCompleted);
+        }
+
+        // Set completion state
+        isCompleted.current = true;
+        setRerender(prev => prev + 1);
+
+        // Trigger completion callback
+        if (onSessionComplete) {
+          onSessionComplete(roundedMinutes);
+        }
+      } catch (error) {
+        console.error("Error ending session:", error);
+        setError("Failed to end session");
+      }
+    };
+
+    endSession();
+  };
+
   const createNewUserSession = async () => {
     if (!userId || sessionCreationInProgressRef.current) {
-      return null;
+      return;
     }
-    
+
     try {
       sessionCreationInProgressRef.current = true;
-      setIsLoading(true);
-      setError(null);
-      
-      const latestSessions = await SessionService.getActiveUserSessions(userId);
-      if (latestSessions && latestSessions.length > 0) {
-        return null;
-      }
-      
-      const currTime = new Date();
-      const ending_time = adjustDateTime(currTime, convertSecondsToMinutes(FOCUS_TIME_SECONDS))?.toUTCString();
+      console.log("Creating new session with actions:", selectedActions);
 
-      if (!ending_time) throw new Error("Failed to calculate ending time");
+      // Calculate focus end time
+      const focusEndTime = new Date();
+      focusEndTime.setSeconds(focusEndTime.getSeconds() + FOCUS_TIME_SECONDS);
 
-      const plannedMinutes = convertSecondsToMinutes(FOCUS_TIME_SECONDS);
-      // Calculate break time as 1/6th of the planned time
-      const initialBreakMinutes = calculateInitialBreakTime(plannedMinutes);
-
-      // Log the received selectedActions 
-      console.log("Creating session with actions:", selectedActions);
-      
-      // Process selected actions, ensuring we don't have 'auto' actions
-      const processedActions = selectedActions.map(action => 
-        action === 'auto' ? getRandomAction().id : action
-      );
-      
-      console.log("Processed actions for Firebase:", processedActions);
-
-      const newSession: SessionInsert = {
-        break_end_time: null,
-        break_minutes_remaining: initialBreakMinutes,
-        total_minutes_done: 0,
-        break_start_time: null,
-        focus_start_time: currTime.toUTCString(),
-        focus_end_time: ending_time,
-        createdAt: serverTimestamp(),
-        session_state: "focus",
+      // Create new session
+      const sessionData: SessionInsert = {
         user_id: userId,
-        planned_minutes: plannedMinutes,
-        selected_actions: processedActions // Store the selected actions
+        focus_start_time: new Date().toISOString(),
+        focus_end_time: focusEndTime.toISOString(),
+        planned_minutes: Math.floor(FOCUS_TIME_SECONDS / 60),
+        session_state: 'focus',
+        break_minutes_remaining: calculateInitialBreakTime(Math.floor(FOCUS_TIME_SECONDS / 60)),
+        selected_actions: selectedActions, // Pass the selected actions
+        createdAt: serverTimestamp()
       };
 
-      console.log("Creating session with data:", newSession);
-      const session = await SessionService.createSession(newSession);
-      console.log("Session created:", session);
-      
-      currFocusEndTime.current = ending_time;
-      currFocusStartTime.current = currTime.toUTCString();
-      return session;
-    } catch (err) {
-      console.error("Error creating session:", err);
+      try {
+        const sessionResult = await SessionService.createSession(sessionData);
+        console.log("New session created:", sessionResult);
+
+        if (sessionResult && sessionResult.id) {
+          sessionId.current = sessionResult.id;
+          breakTimeRemaining.current = sessionResult.break_minutes_remaining;
+
+          // Initialize timer state
+          setRemainingAndElapsedTime(sessionResult);
+          isInitializedRef.current = true;
+
+          // Start the timer
+          if (!intervalRef.current) {
+            intervalRef.current = setInterval(tick, 1000);
+          }
+        } else {
+          throw new Error("Invalid session result");
+        }
+      } catch (sessionError) {
+        console.error("Error creating session:", sessionError);
+        throw sessionError;
+      }
+    } catch (error) {
+      console.error("Error in createNewUserSession:", error);
       setError("Failed to create session");
-      return null;
     } finally {
       sessionCreationInProgressRef.current = false;
-      setIsLoading(false);
     }
   };
 
@@ -525,85 +582,6 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     // Show the confirmation popup without changing the timer
     setShowConfirmation(true);
     setRerender(prev => prev + 1);
-  };
-
-  const handleSessionEnd = () => {
-    isBreak.current = false;
-    setRemainingTimesFromEndTimes(null);
-
-    // Calculate total focus time
-    const totalFocusMinutes = actualMinutesElapsed.current;
-    
-    const endSession = async () => {
-      try {
-        // Get current session to get selected_actions
-        const existingSessions = await SessionService.getActiveUserSessions(userId!);
-        const currentSession = existingSessions.length > 0 ? existingSessions[0] : null;
-        
-        console.log("Current session before completion:", currentSession);
-        
-        // Update the session status
-        const updatedSession = await SessionService.updateSession(sessionId.current, {
-          session_state: 'complete',
-          total_minutes_done: totalFocusMinutes,
-          // Pass the selected_actions again to ensure they're preserved
-          selected_actions: currentSession?.selected_actions || selectedActions
-        });
-        
-        console.log("Session after completion:", updatedSession);
-
-        // If the session has selected actions, execute them
-        if (updatedSession.selected_actions && updatedSession.selected_actions.length > 0) {
-          console.log("Session completed with actions:", updatedSession.selected_actions);
-          
-          // Map ActionType[] to FocusAction[]
-          const actions = updatedSession.selected_actions.map(actionType => {
-            return FOCUS_ACTIONS.find(a => a.id === actionType) || 
-              FOCUS_ACTIONS.find(a => a.id === 'build')!; // Default to build if not found
-          });
-          
-          console.log("Mapped to action objects:", actions);
-
-          // Check if session was completed fully based on the total time
-          const fullSessionMinutes = updatedSession.planned_minutes || 0;
-          const minutesCompleted = updatedSession.total_minutes_done || 0;
-          const sessionCompletionThreshold = fullSessionMinutes * 0.9; // 90% completion rate
-          const isFullyCompleted = minutesCompleted >= sessionCompletionThreshold;
-          
-          console.log("Session completion status:", {
-            fullSessionMinutes,
-            minutesCompleted,
-            threshold: sessionCompletionThreshold,
-            isFullyCompleted
-          });
-          
-          // Execute the actions
-          executeActions(actions, isFullyCompleted);
-        } else {
-          console.log("No actions to execute for this session");
-        }
-      } catch (error) {
-        console.error("Error ending session:", error);
-      }
-    };
-    
-    endSession();
-
-    secondsRemaining.current = 0;
-    secondsElapsed.current = 0;
-    sessionCreationInProgressRef.current = false;
-    
-    isCompleted.current = true;
-
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    
-    // Call the optional callback if provided
-    if (onSessionComplete) {
-      console.log("Completing session with minutes:", totalMinutesElapsedRoundedToFifteen.current);
-      onSessionComplete(totalMinutesElapsedRoundedToFifteen.current);
-    }
-    
-    setRerender((e) => e + 1);
   };
 
   // Add function to debug session data

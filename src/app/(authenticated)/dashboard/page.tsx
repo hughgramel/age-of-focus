@@ -169,7 +169,7 @@ export default function Dashboard() {
                   <div className="relative h-full flex flex-col z-10">
                     <div className="flex flex-col items-top justify-start h-full mt-4 px-6 pl-13">
                       <span className="text-4xl sm:text-4xl font-bold text-[#FFD700] drop-shadow-lg">
-                        {previousGames.length > 0 ? 'Load Game' : 'No Other Games'}
+                        {previousGames.length != 0 ? 'Load Game' : 'No Other Games'}
                       </span>
                     </div>
                   </div>
