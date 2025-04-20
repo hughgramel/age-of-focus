@@ -59,7 +59,7 @@ import { useRouter } from 'next/navigation';
 import { SessionService } from '@/services/sessionService';
 import { Session, SessionInsert, SessionUpdate } from '@/types/session';
 import { serverTimestamp } from 'firebase/firestore';
-import '@/app/timer.css';
+
 import { ActionType, FOCUS_ACTIONS, executeActions, getRandomAction } from '@/data/actions';
 
 interface FocusTimerProps {
@@ -95,30 +95,36 @@ const SessionConfirmation = ({
   const willRoundToZero = minutesRounded === 0 && minutesElapsed > 0;
   
   return (
-    <div className="session-confirmation-overlay">
-      <div className="session-confirmation-modal">
-        <h2>End Session?</h2>
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[1000]">
+      <div className="bg-[#0B1423] rounded-xl border-20 border-[#FFD700]/60 p-8 w-[90%] max-w-[500px] shadow-lg">
+        <h2 className="text-[#FFD700] text-[1.8rem] mb-6 text-center historical-game-title">End Session?</h2>
         
         {willRoundToZero ? (
-          <div className="warning-message">
-            <p>Warning: Your session lasted less than 15 minutes and will be rounded down to 0 minutes.</p>
-            <p>Current time: {minutesElapsed} minutes</p>
-            <p>Rounded time: 0 minutes</p>
+          <div className="mb-8 border-l-4 border-[#DC2626]/70 pl-4 bg-[#DC2626]/10 p-4 rounded-lg">
+            <p className="text-[#FFD700]/80 mb-2 text-center">Warning: Your session lasted less than 15 minutes and will be rounded down to 0 minutes.</p>
+            <p className="text-[#FFD700]/80 mb-2 text-center">Current time: {minutesElapsed} minutes</p>
+            <p className="text-[#FFD700]/80 mb-2 text-center">Rounded time: 0 minutes</p>
           </div>
         ) : (
-          <div className="confirmation-message">
-            <p>You've focused for {minutesElapsed} minutes.</p>
+          <div className="mb-8">
+            <p className="text-[#FFD700]/80 mb-2 text-center">You've focused for {minutesElapsed} minutes.</p>
             {minutesElapsed !== minutesRounded && (
-              <p>This will be rounded to {minutesRounded} minutes (nearest 15-minute increment).</p>
+              <p className="text-[#FFD700]/80 mb-2 text-center">This will be rounded to {minutesRounded} minutes (nearest 15-minute increment).</p>
             )}
           </div>
         )}
         
-        <div className="confirmation-buttons">
-          <button className="cancel-button" onClick={onCancel}>
+        <div className="flex justify-between gap-4 mt-6">
+          <button 
+            className="bg-[#15223A] text-[#FFD700] border border-[#FFD700]/50 py-3 px-0 rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 flex-1 text-center hover:bg-[#1D2C4A]" 
+            onClick={onCancel}
+          >
             Continue Session
           </button>
-          <button className="confirm-button" onClick={onConfirm}>
+          <button 
+            className="bg-[rgba(153,27,27,0.2)] text-[#FFD700] border border-[#DC2626]/50 py-3 px-0 rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 flex-1 text-center hover:bg-[rgba(153,27,27,0.3)]" 
+            onClick={onConfirm}
+          >
             End Session
           </button>
         </div>
@@ -160,42 +166,45 @@ const SessionComplete = ({
     if (onReturnHome) {
       onReturnHome();
     }
-    router.push('/dashboard');
+    // Remove the router navigation to just close the modal
   };
 
   return (
-    <div className="session-complete-container">
-      <div className="session-complete-card">
-        <div className="session-complete-header">
-          <h1>Session Complete!</h1>
+    <div className="w-full max-w-[700px] mx-auto">
+      <div className="bg-[#0B1423] rounded-xl border-2 border-[#FFD700]/60 overflow-hidden shadow-lg">
+        <div className="bg-[#15223A] py-6 px-6 text-center border-b border-[#FFD700]/30">
+          <h1 className="text-[2.5rem] text-[#FFD700] m-0 font-bold historical-game-title">Session Complete!</h1>
         </div>
         
-        <div className="session-complete-content">
-          <div className="session-stats">
-            <div className="stat-item">
-              <div className="stat-icon">⏱️</div>
-              <div className="stat-info">
-                <h3>Focused for</h3>
-                <p className="stat-value">{formatTimeElapsed(minutesElapsed)}</p>
+        <div className="p-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <div className="flex items-center gap-4">
+              <div className="text-[2.5rem] text-[#FFD700]">⏱️</div>
+              <div>
+                <h3 className="text-[1.2rem] text-[#FFD700]/80 mb-2 historical-game-title">Focused for</h3>
+                <p className="text-[1.5rem] text-[#FFD700] font-semibold historical-game-title">{formatTimeElapsed(minutesElapsed)}</p>
               </div>
             </div>
             
-            <div className="stat-item">
-              <div className="stat-icon">🕒</div>
-              <div className="stat-info">
-                <h3>Session Details</h3>
-                <p className="stat-detail">Start: {formatTimeStamp(startTime)}</p>
-                <p className="stat-detail">End: {formatTimeStamp(endTime)}</p>
+            <div className="flex items-center gap-4">
+              <div className="text-[2.5rem] text-[#FFD700]">🕒</div>
+              <div>
+                <h3 className="text-[1.2rem] text-[#FFD700]/80 mb-2 historical-game-title">Session Details</h3>
+                <p className="text-base text-[#FFD700]/80 my-1 historical-game-title">Start: {formatTimeStamp(startTime)}</p>
+                <p className="text-base text-[#FFD700]/80 my-1 historical-game-title">End: {formatTimeStamp(endTime)}</p>
               </div>
             </div>
           </div>
           
-          <div className="completion-message">
-            <p>Well done! You've completed a focus session!</p>
+          <div className="text-center my-8">
+            <p className="text-[1.2rem] text-[#FFD700]/90 historical-game-title">Well done! You've completed a focus session!</p>
           </div>
           
-          <div className="return-home-container">
-            <button className="return-home-button" onClick={handleReturnHome}>
+          <div className="flex justify-center mt-6">
+            <button 
+              className="bg-[#15223A] text-[#FFD700] border border-[#FFD700]/50 py-3 px-8 rounded-lg text-[1.2rem] font-semibold cursor-pointer transition-all duration-200 hover:bg-[#1D2C4A] historical-game-title" 
+              onClick={handleReturnHome}
+            >
               Return to Dashboard
             </button>
           </div>
@@ -264,11 +273,16 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     const numMinutes = Math.floor((seconds / 60) % 60);
     const numSeconds = Math.floor(seconds % 60);
 
-    const hoursStr = numHours < 10 ? `0${numHours}` : numHours;
-    const minutesStr = numMinutes < 10 ? `0${numMinutes}` : numMinutes;
+    // Only include hours if > 0
+    const hoursStr = numHours > 0 ? `${numHours}:` : '';
+    
+    // Add leading zero to minutes only if there are hours
+    const minutesStr = numHours > 0 && numMinutes < 10 ? `0${numMinutes}` : numMinutes;
+    
+    // Always add leading zero to seconds if < 10
     const secondsStr = numSeconds < 10 ? `0${numSeconds}` : numSeconds;
 
-    return `${hoursStr}:${minutesStr}:${secondsStr}`;
+    return `${hoursStr}${minutesStr}:${secondsStr}`;
   };
 
   const fetchUserSessions = async () => {
@@ -921,6 +935,14 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     }
   };
 
+  // Handle session completion
+  const handleSessionComplete = (minutesElapsed: number) => {
+    // Just close the modal without redirecting
+    if (onSessionComplete) {
+      onSessionComplete(minutesElapsed);
+    }
+  };
+
   if (isLoading) {
     return <div className="timer-page">Loading timer...</div>;
   }
@@ -934,7 +956,7 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
   }
 
   return (
-    <div className="timer-page timer-container-wrapper">
+    <div className="h-full w-full flex justify-center items-center p-5 historical-game-title">
       {showConfirmation && (
         <SessionConfirmation
           minutesElapsed={pendingValues.current.minutesElapsed}
@@ -955,76 +977,109 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
             undefined}
         />
       ) : (
-        <div className="timer-container">
+        <div className="bg-[#0B1423] rounded-xl p-8 w-full max-w-[700px] mx-auto shadow-lg text-[#FFD700]">
+          {/* Close button */}
+          <button 
+            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full border border-[#FFD700]/50 text-[#FFD700] hover:bg-[#1D2C4A] hover:border-[#FFD700] transition-all duration-200"
+            onClick={onSessionComplete ? () => onSessionComplete(0) : undefined}
+          >
+            ✕
+          </button>
+          
           <div>
-            <h1 className="timer-header">
-              {isBreak.current ? "" : "L1: "}
-              {isBreak.current ? "Break" : "Focus"} Session (
+            <h1 className="text-center text-2xl mb-6 font-semibold text-[#FFD700] historical-game-title">
+              {isBreak.current ? "Taking a Break for " : "Focusing for "} 
               {isBreak.current 
                 ? getMinutesOrHoursIfOverSixty(BREAK_TIME_SECONDS) 
                 : getMinutesOrHoursIfOverSixty(FOCUS_TIME_SECONDS)
-              })
+              }
             </h1>
           </div>
 
-          <div className="timer-display">
-            <div className="small-timer">
-              {convertSecondsToTimeFormat(
-                secondsRemaining.current < 0 
-                  ? secondsElapsed.current - (-1 * secondsRemaining.current) 
-                  : secondsElapsed.current
-              )}
-            </div>
-          </div>
-
-          <div className="timer-display">
-            <div className="large-timer">
+          <div className="my-6 flex justify-center">
+            <div className="text-[4rem] font-bold text-[#FFD700] ">
               {convertSecondsToTimeFormat(secondsRemaining.current < 0 ? 0 : secondsRemaining.current)}
             </div>
           </div>
 
-          <div className="timer-progress">
-            <div className="progress-bar">
+          <div className="my-8">
+            <div className="h-3 bg-[#15223A] rounded-lg overflow-hidden border border-[#FFD700]/30 mb-6">
               <div
-                className="progress-fill"
+                className="h-full bg-gradient-to-r from-[#FFD700] to-[#FFC107] rounded-lg transition-all duration-500"
                 style={{ 
                   width: `${(secondsElapsed.current / (secondsElapsed.current + secondsRemaining.current)) * 100}%` 
                 }}
               ></div>
             </div>
 
-            <div className="break-text">
+            {/* Main action buttons row */}
+            <div className="flex justify-between items-center mt-10 mb-12">
+              {/* Save button */}
+              <button 
+                className="bg-[#15223A] text-[#FFD700] border border-[#FFD700]/80 py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-200 hover:bg-[#1D2C4A] historical-game-title w-[32%]" 
+                onClick={promptSessionEnd}
+              >
+                Save session
+              </button>
+              
+              {/* Break button - center and highlighted */}
               {isBreak.current ? (
-                <div>
-                  <button className='take-break-btn' onClick={returnToFocus}>
-                    Go back to focus
+                <div className="flex flex-col items-center w-[32%] gap-2">
+                  <button 
+                    className="bg-[#1A3959] text-[#FFD700] border border-[#FFD700]/80 py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-200 hover:bg-[#254670] w-full text-center historical-game-title" 
+                    onClick={returnToFocus}
+                  >
+                    Resume Focus
                   </button>
                   <button 
-                    className='take-break-btn' 
+                    className="bg-[#15223A] text-[#FFD700] border border-[#FFD700]/50 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-[#1D2C4A] disabled:opacity-50 disabled:cursor-not-allowed historical-game-title" 
                     onClick={setBreak} 
                     disabled={breakTimeRemaining.current === 0}
                   >
-                    Extend your break ({breakTimeRemaining.current} mins left)
+                    Extend break ({breakTimeRemaining.current}m left)
                   </button>
                 </div>
               ) : (
                 <button 
-                  className='take-break-btn' 
+                  className="bg-[#1A3959] text-[#FFD700] border border-[#FFD700]/80 py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-200 hover:bg-[#254670] w-[32%] text-center historical-game-title" 
                   onClick={setBreak} 
                   disabled={breakTimeRemaining.current === 0}
                 >
-                  Take a break ({breakTimeRemaining.current} mins total available)
+                  5m break
                 </button>
               )}
+              
+              {/* Discard button */}
+              <button 
+                className="bg-[rgba(153,27,27,0.2)] text-[#FFD700] border border-[#FFD700]/80 py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-200 hover:bg-[rgba(153,27,27,0.3)] historical-game-title w-[32%]" 
+                onClick={deleteSession}
+              >
+                Discard session
+              </button>
             </div>
           </div>
 
-          <div className="timer-actions">
-            <button className="save-button" onClick={promptSessionEnd}>Save session</button>
-            <button className="discard-button" onClick={deleteSession}>Discard session</button>
-            <button className="test-button" onClick={testFifteenMinutes}>Test 15 min</button>
-            <button className="adjust-time-button" onClick={adjustSessionTimeMinus15}>Adjust -15min</button>
-            <button className="debug-button" onClick={printSessionData}>Debug session</button>
+          {/* Debug buttons section - separated at the bottom */}
+          <div className="flex justify-center flex-wrap gap-3 mt-12 pt-6 border-t border-[#FFD700]/20 opacity-70 hover:opacity-100 transition-opacity">
+            <p className="w-full text-center text-[#FFD700]/60 text-sm mb-2 historical-game-title">Debug Tools</p>
+            <button 
+              className="bg-[#15223A] text-[#FFD700] border border-[#FFD700]/30 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-[#1D2C4A] historical-game-title" 
+              onClick={testFifteenMinutes}
+            >
+              Test 15 min
+            </button>
+            <button 
+              className="bg-[#15223A] text-[#FFD700] border border-[#FFD700]/30 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-[#1D2C4A] historical-game-title" 
+              onClick={adjustSessionTimeMinus15}
+            >
+              Adjust -15min
+            </button>
+            <button 
+              className="bg-[#15223A] text-[#FFD700] border border-[#FFD700]/30 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-[#1D2C4A] historical-game-title" 
+              onClick={printSessionData}
+            >
+              Debug session
+            </button>
           </div>
         </div>
       )}

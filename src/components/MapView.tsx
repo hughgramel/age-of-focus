@@ -621,6 +621,8 @@ export default function MapView({
         // Set up SVG for proper display
         svg.style.width = '100%';
         svg.style.height = '100%';
+        svg.style.border = 'none';
+        svg.style.outline = 'none';
         svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
         // Initialize zoom functionality
@@ -931,7 +933,8 @@ export default function MapView({
 
       <div 
         ref={svgContainerRef}
-        className="w-full h-full overflow-hidden"
+        className="w-full h-full overflow-hidden border-0"
+        style={{ border: 'none !important' }}
       />
     </div>
   );

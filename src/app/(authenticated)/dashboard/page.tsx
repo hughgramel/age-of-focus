@@ -140,17 +140,17 @@ export default function Dashboard() {
                   onClick={() => router.push('/load_game')}
                   className={`w-full h-40 sm:h-56 md:h-70 lg:h-70 xl:h-70 2xl:h-70 text-lg sm:text-xl font-medium text-[#FFD700] rounded-3xl transition-all duration-200 historical-game-title border-2 ${previousGames.length === 0 ? 'border-[#FFD700]/10 opacity-50 cursor-not-allowed' : 'border-[#FFD700]/30 hover:border-[#FFD700]/50 cursor-pointer'} overflow-hidden group relative`}
                   style={{
-                    backgroundImage: "url('/backgrounds/civil_war_background.png')",
+                    backgroundImage: "url('/backgrounds/redcoats_background.png')",
                     backgroundSize: 'cover',
-                    opacity: previousGames.length > 0 ? 1 : 0.5,
-                    backgroundPosition: 'center 70%',
+                    opacity: previousGames.length > 0 ? 1 : 0.4,
+                    backgroundPosition: 'center 40%',
                     backgroundRepeat: 'no-repeat',
                     clipPath: 'inset(0 0 0 0 round 24px)',
                     boxShadow: '0 0 15px rgba(255, 255, 255, 0.2)'
                   }}
                 >
                   {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/30 to-white/60 opacity-27" />
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#1A1A1A]/40 to-[#1A1A1A]/70 opacity-40" />
                   
                   {/* Content */}
                   <div className="relative h-full flex flex-col z-10">

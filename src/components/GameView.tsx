@@ -1,10 +1,12 @@
 'use client';
 
-import { ReactNode, useEffect, useRef } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import MapView from './MapView';
 import Terminal from './Terminal';
 import BackButton from './BackButton';
 import { Game } from '@/types/game';
+import { useAuth } from '@/contexts/AuthContext';
+import FocusNowModal from './FocusNowModal';
 
 interface GameViewProps {
   game?: Game;
@@ -13,6 +15,7 @@ interface GameViewProps {
 }
 
 export default function GameView({ game, isDemo = false, onBack }: GameViewProps) {
+  const { user } = useAuth();
   const selectedProvinceRef = useRef<string | null>(null);
   const provincePopupRef = useRef<HTMLDivElement | null>(null);
   const nationPopupRef = useRef<HTMLDivElement | null>(null);
@@ -305,6 +308,41 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             </span>
           </div>
         </div>
+      </div>
+
+      {/* Focus Now Floating Button */}
+      <button
+        onClick={() => {
+          if (user && document.getElementById('focus-now-modal')) {
+            document.getElementById('focus-now-modal')!.style.display = 'block';
+          }
+        }}
+        className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 px-8 py-6 rounded-lg text-[#FFD700] hover:bg-[#0F1C2F] transition-colors duration-200"
+        style={{ 
+          backgroundColor: 'rgba(11, 20, 35, 0.95)',
+          border: '2px solid rgba(255, 215, 0, 0.4)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+        }}
+      >
+        <div className="flex items-center gap-5">
+          <span className="text-5xl">⏱️</span>
+          <span className="text-2xl font-semibold historical-game-title">Focus Now</span>
+        </div>
+      </button>
+
+      {/* Focus Now Modal - always render but hide with CSS */}
+      <div id="focus-now-modal" style={{ display: 'none' }}>
+        {user && (
+          <FocusNowModal
+            userId={user.uid}
+            onClose={() => {
+              if (document.getElementById('focus-now-modal')) {
+                document.getElementById('focus-now-modal')!.style.display = 'none';
+              }
+            }}
+            hasActiveSession={false}
+          />
+        )}
       </div>
 
       {isDemo ? (
