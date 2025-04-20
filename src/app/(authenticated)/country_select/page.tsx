@@ -66,7 +66,7 @@ export default function CountrySelect() {
 
         <div className="mt-25 text-center">
           <span className="text-[#FFD700]/70 text-2xl sm:text-3xl historical-game-title">
-            More nations coming soon...
+            More nations coming soon... // todo: images, better layout
           </span>
         </div>
       </div>
