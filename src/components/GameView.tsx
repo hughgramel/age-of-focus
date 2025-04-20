@@ -11,6 +11,7 @@ import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { GameService } from '@/services/gameService';
 import MapCanvas, { StateData } from './MapCanvas';
+import { SessionService } from '@/services/sessionService';
 
 // Create a globals object to store persistent map state
 const globalMapState = {
@@ -33,6 +34,9 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
   const [fadeIn, setFadeIn] = useState(false);
   const [playerGold, setPlayerGold] = useState<number | undefined>(undefined);
   const mapCanvasContainerRef = useRef<HTMLDivElement>(null);
+  const [hasActiveSession, setHasActiveSession] = useState(false);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
+  const [isLoadingSession, setIsLoadingSession] = useState(true);
 
   // Add fade-in effect on mount
   useEffect(() => {
@@ -339,6 +343,32 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
     }
   };
 
+  // Check for active sessions when component mounts
+  useEffect(() => {
+    const checkActiveSession = async () => {
+      if (!user) return;
+      
+      try {
+        setIsLoadingSession(true);
+        const activeSessions = await SessionService.getActiveUserSessions(user.uid);
+        
+        if (activeSessions && activeSessions.length > 0) {
+          setHasActiveSession(true);
+          setActiveSessionId(activeSessions[0].id);
+        } else {
+          setHasActiveSession(false);
+          setActiveSessionId(null);
+        }
+      } catch (error) {
+        console.error("Error checking active session:", error);
+      } finally {
+        setIsLoadingSession(false);
+      }
+    };
+    
+    checkActiveSession();
+  }, [user]);
+
   if (!game) {
     return <div>Error: No game data provided</div>;
   }
@@ -491,23 +521,66 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         </button>
       )}
 
-      {/* Focus Now Floating Button */}
+      {/* Task List Button - Top Left */}
+      <button
+        onClick={() => {
+          // TODO: Implement task list functionality
+        }}
+        className={`fixed top-4 left-305 top-4.5 z-50 px-8 py-4 rounded-xl text-[#FFD700] hover:bg-[#0F1C2F] transition-all duration-300 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}
+        style={{ 
+          backgroundColor: 'rgba(11, 20, 35, 0.95)',
+          border: '2px solid rgba(255, 215, 0, 0.4)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+          minWidth: '220px'
+        }}
+      >
+        <div className="flex items-center gap-4">
+          <span className="text-3xl">📋</span>
+          <span className="text-xl font-semibold historical-game-title">Task List</span>
+        </div>
+      </button>
+
+      {/* National Path Button - Top Left */}
+      <button
+        onClick={() => {
+          // TODO: Implement national path functionality
+        }}
+        className={`fixed top-4 left-240 top-4.5 z-50 px-8 py-4 rounded-xl text-[#FFD700] hover:bg-[#0F1C2F] transition-all duration-300 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}
+        style={{ 
+          backgroundColor: 'rgba(11, 20, 35, 0.95)',
+          border: '2px solid rgba(255, 215, 0, 0.4)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+          minWidth: '220px'
+        }}
+      >
+        <div className="flex items-center gap-4">
+          <span className="text-3xl">🗺️</span>
+          <span className="text-xl font-semibold historical-game-title">National Path</span>
+        </div>
+      </button>
+
+      {/* Focus Now Floating Button - Center Bottom */}
       <button
         onClick={() => {
           if (user && document.getElementById('focus-now-modal')) {
             document.getElementById('focus-now-modal')!.style.display = 'block';
           }
         }}
-        className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 px-8 py-6 rounded-lg text-[#FFD700] hover:bg-[#0F1C2F] transition-all duration-1000 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+        className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 px-10 py-6 rounded-xl text-[#FFD700] hover:bg-[#0F1C2F] transition-all duration-300 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
         style={{ 
-          backgroundColor: 'rgba(11, 20, 35, 0.95)',
-          border: '2px solid rgba(255, 215, 0, 0.4)',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+          backgroundColor: hasActiveSession ? 'rgba(15, 60, 35, 1)' : 'rgba(11, 20, 35, 0.95)',
+          border: hasActiveSession ? '2px solid rgba(255, 215, 0, 0.6)' : '2px solid rgba(255, 215, 0, 0.4)',
+          boxShadow: hasActiveSession ? 
+            '0 4px 12px rgba(0,0,0,0.5), 0 0 0px rgba(255, 215, 0, 0.15)' : 
+            '0 4px 12px rgba(0,0,0,0.5)',
+          minWidth: '300px'
         }}
       >
-        <div className="flex items-center gap-5">
-          <span className="text-5xl">⏱️</span>
-          <span className="text-2xl font-semibold historical-game-title">Focus Now</span>
+        <div className="flex items-center gap-4">
+          <span className="text-4xl">⏱️</span>
+          <span className={`text-2xl font-semibold historical-game-title ${hasActiveSession ? 'text-[#FFD700]' : 'text-[#FFD700]'}`}>
+            {hasActiveSession ? 'Active focus session' : 'Focus Now'}
+          </span>
         </div>
       </button>
 
@@ -521,7 +594,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
                 document.getElementById('focus-now-modal')!.style.display = 'none';
               }
             }}
-            hasActiveSession={false}
+            hasActiveSession={hasActiveSession}
           />
         )}
       </div>

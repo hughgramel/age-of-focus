@@ -27,36 +27,38 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
   
   // Load active session if hasActiveSession is true
   useEffect(() => {
-    if (hasActiveSession) {
-      const loadActiveSession = async () => {
-        try {
-          setIsLoadingSession(true);
-          const activeSessions = await SessionService.getActiveUserSessions(userId);
+    const loadActiveSession = async () => {
+      try {
+        setIsLoadingSession(true);
+        const activeSessions = await SessionService.getActiveUserSessions(userId);
+        
+        if (activeSessions && activeSessions.length > 0) {
+          const session = activeSessions[0];
+          setActiveSession(session);
           
-          if (activeSessions && activeSessions.length > 0) {
-            const session = activeSessions[0];
-            setActiveSession(session);
-            
-            // Set duration based on active session
-            if (session.planned_minutes) {
-              setDuration(session.planned_minutes);
-            }
-            
-            // Set session as started (show timer directly)
-            setSessionStarted(true);
+          // Set duration based on active session
+          if (session.planned_minutes) {
+            setDuration(session.planned_minutes);
           }
-        } catch (error) {
-          console.error("Error loading active session:", error);
-        } finally {
-          setIsLoadingSession(false);
+          
+          // Set session as started (show timer directly)
+          setSessionStarted(true);
+          
+          // Set selected actions if they exist
+          if (session.selected_actions && session.selected_actions.length > 0) {
+            setProcessedActions(session.selected_actions);
+          }
         }
-      };
-      
-      loadActiveSession();
-    } else {
-      setIsLoadingSession(false);
-    }
-  }, [hasActiveSession, userId]);
+      } catch (error) {
+        console.error("Error loading active session:", error);
+      } finally {
+        setIsLoadingSession(false);
+      }
+    };
+    
+    // Always try to load active session, regardless of hasActiveSession prop
+    loadActiveSession();
+  }, [userId]);
   
   // Initialize selected actions array
   useEffect(() => {
