@@ -6,14 +6,23 @@ import { FOCUS_ACTIONS, ActionType, calculateActionsFromDuration, getRandomActio
 import FocusTimer from './FocusTimer';
 import { SessionService } from '@/services/sessionService';
 import { Session } from '@/types/session';
+import { ActionUpdate } from '@/services/actionService';
 
+interface playerNationResourceTotals {
+  playerGold: number;
+  playerIndustry: number;
+  playerPopulation: number;
+  playerArmy: number;
+}
 interface FocusNowModalProps {
   userId: string;
   onClose: () => void;
   hasActiveSession?: boolean;
+  executeActionUpdate: (action: Omit<ActionUpdate, 'target'>) => void;
+  playerNationResourceTotals: playerNationResourceTotals;
 }
 
-const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiveSession = false }) => {
+const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiveSession = false, executeActionUpdate, playerNationResourceTotals }) => {
   const router = useRouter();
   const [sessionStarted, setSessionStarted] = useState(false);
   const [duration, setDuration] = useState(60); // Default: 60 minutes
@@ -323,6 +332,8 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
               selectedActions={processedActions}
               existingSessionId={activeSession?.id}
               handleModalClose={handleModalClose}
+              executeActionUpdate={executeActionUpdate}
+              playerNationResourceTotals={playerNationResourceTotals}
             />
           )}
         </div>

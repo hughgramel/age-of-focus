@@ -12,6 +12,9 @@ import { db } from '@/lib/firebase';
 import { GameService } from '@/services/gameService';
 import MapCanvas, { StateData } from './MapCanvas';
 import { SessionService } from '@/services/sessionService';
+import { ActionService } from '@/services/actionService';
+import type { ActionUpdate } from '@/services/actionService';
+import ResourceBar from './ResourceBar';
 
 // Create a globals object to store persistent map state
 const globalMapState = {
@@ -23,6 +26,13 @@ interface GameViewProps {
   game?: Game;
   isDemo?: boolean;
   onBack: () => void;
+}
+
+export interface playerNationResourceTotals {
+  playerGold: number;
+  playerIndustry: number;
+  playerPopulation: number;
+  playerArmy: number;
 }
 
 export default function GameView({ game, isDemo = false, onBack }: GameViewProps) {
@@ -38,6 +48,13 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [localTotalPopulation, setLocalTotalPopulation] = useState<number | null>(null);
+  const [playerNationResourceTotals, setPlayerNationResourceTotals] = useState<playerNationResourceTotals>({
+    playerGold: 0,
+    playerIndustry: 0,
+    playerPopulation: 0,
+    playerArmy: 0
+  });
 
   // Add fade-in effect on mount
   useEffect(() => {
@@ -49,7 +66,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
     return () => clearTimeout(timer);
   }, []);
 
-  // Initialize playerGold when game changes
+  // Initialize playerGold and resource totals when game changes
   useEffect(() => {
     if (game) {
       const playerNation = game.nations.find(
@@ -57,9 +74,47 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
       );
       if (playerNation) {
         setPlayerGold(playerNation.gold);
+        
+        // Initialize total population
+        const totalPop = playerNation.provinces.reduce((sum, province) => sum + province.population, 0);
+        setLocalTotalPopulation(totalPop);
+
+        // Update resource totals
+        const totalIndustry = playerNation.provinces.reduce((sum, province) => sum + province.industry, 0);
+        const totalArmy = playerNation.provinces.reduce((sum, province) => sum + province.army, 0);
+        
+        setPlayerNationResourceTotals({
+          playerGold: playerNation.gold,
+          playerIndustry: totalIndustry,
+          playerPopulation: totalPop,
+          playerArmy: totalArmy
+        });
       }
     }
   }, [game]);
+
+  // Update resource totals when relevant values change
+  useEffect(() => {
+    if (game) {
+      const playerNation = game.nations.find(
+        (nation: Nation) => nation.nationTag === game.playerNationTag
+      );
+      if (playerNation) {
+        const totalIndustry = playerNation.provinces.reduce((sum, province) => sum + province.industry, 0);
+        const totalArmy = playerNation.provinces.reduce((sum, province) => sum + province.army, 0);
+        const population = localTotalPopulation !== null ? localTotalPopulation : 
+          playerNation.provinces.reduce((sum, province) => sum + province.population, 0);
+        const gold = playerGold !== undefined ? playerGold : playerNation.gold;
+
+        setPlayerNationResourceTotals({
+          playerGold: gold,
+          playerIndustry: totalIndustry,
+          playerPopulation: population,
+          playerArmy: totalArmy
+        });
+      }
+    }
+  }, [game, playerGold, localTotalPopulation]);
 
   // Prevent standard scrolling
   useEffect(() => {
@@ -370,6 +425,203 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
     checkActiveSession();
   }, [user]);
 
+  // Add test action function
+  const testAction = async () => {
+    if (!game || !user) return;
+
+    try {
+      // Find the player nation
+      const playerNation = game.nations.find(nation => nation.nationTag === game.playerNationTag);
+      if (!playerNation || playerNation.provinces.length === 0) {
+        console.error('Player nation or provinces not found');
+        return;
+      }
+
+      // Select a random province
+      const randomIndex = Math.floor(Math.random() * playerNation.provinces.length);
+      const randomProvince = playerNation.provinces[randomIndex];
+
+      console.log(`Selected province ${randomProvince.name} for population increase`);
+
+      // Find the save slot containing this game
+      const allSaves = await GameService.getSaveGames(user.uid);
+      let slotNumber: number | null = null;
+      
+      for (const [slot, save] of Object.entries(allSaves)) {
+        if (save && save.game.id === game.id) {
+          slotNumber = parseInt(slot);
+          break;
+        }
+      }
+      
+      if (slotNumber === null) {
+        console.error('Could not find save slot for this game');
+        return;
+      }
+
+      const action: ActionUpdate = {
+        type: 'resources',
+        target: {
+          type: 'province',
+          id: randomProvince.id
+        },
+        updates: [
+          { resource: 'population', amount: 10000 }
+        ]
+      };
+
+      // Create a deep copy of the game for local state update
+      const updatedGame = JSON.parse(JSON.stringify(game));
+      const updatedPlayerNation = updatedGame.nations.find(
+        (nation: Nation) => nation.nationTag === updatedGame.playerNationTag
+      );
+      
+      if (updatedPlayerNation) {
+        // Find and update the province in the local state
+        const provinceToUpdate = updatedPlayerNation.provinces.find((p: { id: string }) => p.id === randomProvince.id);
+        if (provinceToUpdate) {
+          // Update the province population
+          provinceToUpdate.population += 10000;
+          
+          // Calculate the new total population
+          const newTotalPopulation = updatedPlayerNation.provinces.reduce(
+            (sum: number, province: { population: number }) => sum + province.population, 
+            0
+          );
+          
+          // Update the local total population state
+          setLocalTotalPopulation(newTotalPopulation);
+          
+          // Update the game state to reflect the changes
+          game.nations = updatedGame.nations;
+          
+          // Force a re-render of the ResourceBar
+          setPlayerGold(prev => prev); // Trigger re-render without changing value
+          
+          console.log(`Updated population for ${randomProvince.name} to ${provinceToUpdate.population}`);
+          console.log(`New total population: ${newTotalPopulation}`);
+        }
+      }
+
+      // Process the action and update Firebase in the background
+      await ActionService.processActions(user.uid, slotNumber, game, [action]);
+      
+      // Show feedback
+      const feedback = document.createElement('div');
+      feedback.textContent = `+10,000 Population in ${randomProvince.name}!`;
+      feedback.className = 'fixed bottom-24 left-4 z-50 bg-[#0B1423] p-3 rounded-lg border border-[#FFD700] text-[#FFD700] historical-game-title';
+      document.body.appendChild(feedback);
+      
+      // Remove feedback after 2 seconds
+      setTimeout(() => {
+        feedback.remove();
+      }, 2000);
+
+      console.log('Test action completed');
+    } catch (error) {
+      console.error('Error in test action:', error);
+    }
+  };
+
+  const executeActionUpdate = async (action: Omit<ActionUpdate, 'target'>) => {
+    if (!game || !user) return;
+
+    try {
+      // Find the player nation
+      const playerNation = game.nations.find(nation => nation.nationTag === game.playerNationTag);
+      if (!playerNation || playerNation.provinces.length === 0) {
+        console.error('Player nation or provinces not found');
+        return;
+      }
+
+      // Select a random province
+      const randomIndex = Math.floor(Math.random() * playerNation.provinces.length);
+      const randomProvince = playerNation.provinces[randomIndex];
+
+      
+      let actionWithTarget: ActionUpdate = {
+        ...action,
+        target: {
+          type: 'province',
+          id: randomProvince.id
+        }
+      };
+
+
+
+
+
+      console.log(`Selected province ${randomProvince.name} for population increase`);
+
+      // Find the save slot containing this game
+      const allSaves = await GameService.getSaveGames(user.uid);
+      let slotNumber: number | null = null;
+      
+      for (const [slot, save] of Object.entries(allSaves)) {
+        if (save && save.game.id === game.id) {
+          slotNumber = parseInt(slot);
+          break;
+        }
+      }
+      
+      if (slotNumber === null) {
+        console.error('Could not find save slot for this game');
+        return;
+      }
+
+      // Create a deep copy of the game for local state update
+      const updatedGame = JSON.parse(JSON.stringify(game));
+      const updatedPlayerNation = updatedGame.nations.find(
+        (nation: Nation) => nation.nationTag === updatedGame.playerNationTag
+      );
+      
+      if (updatedPlayerNation) {
+        // Find and update the province in the local state
+        const provinceToUpdate = updatedPlayerNation.provinces.find((p: { id: string }) => p.id === randomProvince.id);
+        if (provinceToUpdate) {
+          // Update the province population
+          provinceToUpdate.population += 10000;
+          
+          // Calculate the new total population
+          const newTotalPopulation = updatedPlayerNation.provinces.reduce(
+            (sum: number, province: { population: number }) => sum + province.population, 
+            0
+          );
+          
+          // Update the local total population state
+          setLocalTotalPopulation(newTotalPopulation);
+          
+          // Update the game state to reflect the changes
+          game.nations = updatedGame.nations;
+          
+          // Force a re-render of the ResourceBar
+          setPlayerGold(prev => prev); // Trigger re-render without changing value
+          
+          console.log(`Updated population for ${randomProvince.name} to ${provinceToUpdate.population}`);
+          console.log(`New total population: ${newTotalPopulation}`);
+        }
+      }
+
+      // Process the action and update Firebase in the background
+      await ActionService.processActions(user.uid, slotNumber, game, [actionWithTarget]);
+      
+      // Show feedback
+      const feedback = document.createElement('div');
+      feedback.textContent = `+10,000 Population in ${randomProvince.name}!`;
+      feedback.className = 'fixed bottom-24 left-4 z-50 bg-[#0B1423] p-3 rounded-lg border border-[#FFD700] text-[#FFD700] historical-game-title';
+      document.body.appendChild(feedback);
+      
+      // Remove feedback after 2 seconds
+      setTimeout(() => {
+        feedback.remove();
+      }, 2000);
+
+      console.log('Test action completed');
+    } catch (error) {
+      console.error('Error in test action:', error);
+    }
+  }
+  
   if (!game) {
     return <div>Error: No game data provided</div>;
   }
@@ -381,7 +633,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
   }
 
   // Calculate total stats for the player nation
-  const totalPopulation = playerNation.provinces.reduce((sum, province) => sum + province.population, 0);
+  const totalPopulation = localTotalPopulation !== null ? localTotalPopulation : playerNation.provinces.reduce((sum, province) => sum + province.population, 0);
   const totalIndustry = playerNation.provinces.reduce((sum, province) => sum + province.industry, 0);
   const totalGoldIncome = playerNation.provinces.reduce((sum, province) => sum + province.goldIncome, 0);
   const totalArmy = playerNation.provinces.reduce((sum, province) => sum + province.army, 0);
@@ -441,68 +693,16 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
     <div className={`fixed inset-0 overflow-hidden bg-[#0B1423] transition-opacity ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
       <BackButton onClick={onBack} />
       
-      {/* Player Nation Resource Bar */}
-      <div className={`fixed top-4 left-20 z-50 flex items-center gap-5 px-6 py-4 rounded-lg transition-all duration-1000 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`} 
-           style={{ 
-             backgroundColor: 'rgba(11, 20, 35, 0.95)',
-             border: '2px solid rgba(255, 215, 0, 0.4)',
-             boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-           }}>
-        <div className="flex items-center gap-4 pr-4 border-r border-[#FFD700]/30">
-          <div className="flex items-center border-r border-[#FFD700]/30 pr-4">
-            <div className="relative" style={{ width: '40px', height: '40px' }}>
-              <span className="absolute left-1/2  top-1/2 transform -translate-x-7/12 -translate-y-1/2 text-6xl" style={{ 
-                textShadow: `
-                  -1.5px -1.5px 0px rgba(255, 255, 255, 1),
-                  1.5px -1.5px 0px rgba(255, 255, 255, 1),
-                  -1.5px  1.5px 0px rgba(255, 255, 255, 1),
-                  1.5px  1.5px 0px rgba(255, 255, 255, 1),
-                  1.5px  1.5px 0px rgba(255, 255, 255, 1)
-                `
-              }}>
-                {getNationFlag(game.playerNationTag)}
-              </span>
-            </div>
-          </div>
-          <span className="text-[#FFD700] font-semibold text-xl historical-game-title">
-            {formatDate(game.date)}
-          </span>
-        </div>
-        
-        <div className="flex items-center gap-8">
-          {/* Gold */}
-          <div className="flex items-center gap-3">
-            <span className="text-4xl">💰</span>
-            <span className="text-[#FFD700] text-xl historical-game-title">
-              {formatNumber(playerGold !== undefined ? playerGold : playerNation.gold)}
-            </span>
-          </div>
-          
-          {/* Population */}
-          <div className="flex items-center gap-3">
-            <span className="text-4xl">👥</span>
-            <span className="text-[#FFD700] text-xl historical-game-title">
-              {formatNumber(totalPopulation)}
-            </span>
-          </div>
-          
-          {/* Industry */}
-          <div className="flex items-center gap-3">
-            <span className="text-4xl">🏭</span>
-            <span className="text-[#FFD700] text-xl historical-game-title">
-              {formatNumber(totalIndustry)}
-            </span>
-          </div>
-          
-          {/* Army */}
-          <div className="flex items-center gap-3">
-            <span className="text-4xl">⚔️</span>
-            <span className="text-[#FFD700] text-xl historical-game-title">
-              {formatNumber(totalArmy)}
-            </span>
-          </div>
-        </div>
-      </div>
+      {/* Resource Bar */}
+      <ResourceBar
+        playerGold={playerGold !== undefined ? playerGold : playerNation.gold}
+        totalPopulation={totalPopulation}
+        totalIndustry={totalIndustry}
+        totalArmy={totalArmy}
+        playerNationTag={game.playerNationTag}
+        gameDate={game.date}
+        fadeIn={fadeIn}
+      />
 
       {/* Debug Button */}
       {!isDemo && (
@@ -516,7 +716,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           }}
         >
           <div className="flex items-center gap-3">
-            <span className="text-2xl">🔧</span>
+            <span className="text-2xl">��</span>
             <span className="text-lg font-semibold historical-game-title">+100 Gold</span>
           </div>
         </button>
@@ -606,6 +806,8 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         {user && (
           <FocusNowModal
             userId={user.uid}
+            executeActionUpdate={executeActionUpdate}
+            playerNationResourceTotals={playerNationResourceTotals}
             onClose={async () => {
               // Check for active sessions when modal is closed
               try {
@@ -626,6 +828,19 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           />
         )}
       </div>
+
+      {/* Test Action Button */}
+      <button
+        onClick={testAction}
+        className="fixed bottom-8 left-8 z-50 px-6 py-3 rounded-lg text-[#FFD700] hover:bg-[#0F1C2F] transition-all duration-300 ease-in-out"
+        style={{ 
+          backgroundColor: 'rgba(11, 20, 35, 0.95)',
+          border: '2px solid rgba(255, 215, 0, 0.4)',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+        }}
+      >
+        Test Action (+10,000 Population)
+      </button>
 
       {/* Map container */}
       <div 

@@ -60,9 +60,16 @@ import { SessionService } from '@/services/sessionService';
 import { Session, SessionInsert, SessionUpdate } from '@/types/session';
 import { serverTimestamp } from 'firebase/firestore';
 import { useGame } from '@/contexts/GameContext';
-
+import { Game } from '@/types/game';  
 import { ActionType, FOCUS_ACTIONS, executeActions, getRandomAction } from '@/data/actions';
+import { ActionUpdate } from '@/services/actionService';
 
+interface playerNationResourceTotals {
+  playerGold: number;
+  playerIndustry: number;
+  playerPopulation: number;
+  playerArmy: number;
+}
 interface FocusTimerProps {
   userId: string | null;
   initialDuration?: number; // in seconds
@@ -70,6 +77,8 @@ interface FocusTimerProps {
   selectedActions?: ActionType[]; // Add this new prop
   existingSessionId?: string; // Add this new prop for resuming sessions
   handleModalClose?: () => void;
+  executeActionUpdate: (action: Omit<ActionUpdate, 'target'>) => void;
+  playerNationResourceTotals: playerNationResourceTotals;
 }
 
 interface SessionCompleteProps {
@@ -225,7 +234,9 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
   onSessionComplete,
   selectedActions = [], // Default to empty array
   existingSessionId = undefined, // Default to undefined (create new session)
-  handleModalClose
+  handleModalClose,
+  executeActionUpdate,
+  playerNationResourceTotals
 }) => {
   // Default timer durations
   const FOCUS_TIME_SECONDS = initialDuration;
@@ -411,19 +422,6 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
         console.log("Session ending with actions:", selectedActions);
         console.log("Total minutes:", totalMinutes, "Rounded minutes:", roundedMinutes);
 
-        // Update session in Firebase
-        await SessionService.updateSession(sessionId.current, {
-          session_state: 'complete',
-          total_minutes_done: roundedMinutes,
-          selected_actions: selectedActions // Ensure actions are saved on completion
-        });
-
-        // Clear the timer
-        if (intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
-        }
-
         // Execute actions based on completed time
         if (selectedActions && selectedActions.length > 0) {
           console.log("Executing actions:", selectedActions);
@@ -436,12 +434,31 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
             const action = FOCUS_ACTIONS.find(a => a.id === actionType);
             if (!action) {
               console.warn(`Action type ${actionType} not found, defaulting to build`);
-              return FOCUS_ACTIONS.find(a => a.id === 'build')!;
+              return FOCUS_ACTIONS.find(a => a.id === 'population_growth')!;
             }
             return action;
           });
           
-          executeActions(actionObjects, isFullyCompleted);
+          executeActions(actionObjects, isFullyCompleted, executeActionUpdate, playerNationResourceTotals);  
+        }
+
+        // Update session in Firebase AFTER executing actions
+
+        if (!sessionId.current) {
+          console.error("❌ No active session to update");
+          throw new Error("No active session to update");
+        }
+
+        await SessionService.updateSession(sessionId.current, {
+          session_state: 'complete',
+          total_minutes_done: roundedMinutes,
+          selected_actions: [] // Clear selected actions to prevent re-execution
+        });
+
+        // Clear the timer
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
         }
 
         // Set completion state
@@ -696,11 +713,10 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     //   secondsRemaining: secondsRemaining.current
     // });
     
-    intervalRef.current = setInterval(() => {
-      setRemainingTimesFromEndTimes(null);
-      checkTime();
-      setRerender((e) => e + 1);
-    }, 1000);
+    // Remove the nested setInterval and just update the times directly
+    setRemainingTimesFromEndTimes(null);
+    checkTime();
+    setRerender((e) => e + 1);
   };
 
   useEffect(() => {
@@ -779,6 +795,14 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     };
 
     initializeSession();
+
+    // Cleanup function to clear interval when component unmounts
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
   }, [userId, FOCUS_TIME_SECONDS, existingSessionId, selectedActions]);
 
   const deleteSession = async () => {

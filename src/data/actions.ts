@@ -1,38 +1,93 @@
+import { Game } from "@/types/game";
+import { ActionUpdate } from "@/services/actionService";
 // Available focus actions for the Age of Focus game
-export type ActionType = 'build' | 'invest' | 'expand' | 'auto';
+export type ActionType = 'develop' | 'invest' | 'expand' | 'improve_army' | 'population_growth' | 'auto';
 
 // Define interface for action options
 export interface FocusAction {
   id: ActionType;
   name: string;
   description: string;
-  execute: () => void;
+  execute: (executeActionUpdate: (action: Omit<ActionUpdate, 'target'>) => void, playerNationResourceTotals: playerNationResourceTotals) => void;
 }
+
+
+interface playerNationResourceTotals {
+  playerGold: number;
+  playerIndustry: number;
+  playerPopulation: number;
+  playerArmy: number;
+}
+
+
+
+
+
+
+
+
 
 // Create the list of available actions
 export const FOCUS_ACTIONS: FocusAction[] = [
   {
-    id: 'build',
-    name: 'Build in Galicia',
-    description: 'Build infrastructure in your territories',
-    execute: () => {
-      console.log('Executing build action');
-    }
-  },
-  {
     id: 'invest',
-    name: 'Invest in Lusatia',
-    description: 'Invest in economy and production',
-    execute: () => {
-      console.log('Executing invest action');
+    name: 'Invest in the Economy',
+    description: 'Invest in the economy and production',
+    execute: (executeActionUpdate: (action: Omit<ActionUpdate, 'target'>) => void, playerNationResourceTotals: playerNationResourceTotals) => {
+      console.log('Executing Invest in the Economy action');
+      const goldToInvest = playerNationResourceTotals.playerGold * 0.15;
+      const industryToInvest = playerNationResourceTotals.playerIndustry * 0.1;
+      const populationToInvest = playerNationResourceTotals.playerPopulation * 0.005;
+      const armyToInvest = playerNationResourceTotals.playerArmy * 0.0024;
+      console.log('Investing in the Economy:', goldToInvest, industryToInvest, populationToInvest, armyToInvest);
+      console.log('Player Nation Resource Totals:', playerNationResourceTotals);
+
+      // Invest in the Economy adds (gold * 0.15) gold to the player's gold
+      const action = {
+        type: 'resources',
+        updates: [
+          { resource: 'population', amount: 10000 }
+        ]
+      };
+      executeActionUpdate(action as Omit<ActionUpdate, 'target'>);
     }
   },
   {
-    id: 'expand',
-    name: 'Expand in Brittany',
-    description: 'Expand your influence and territories',
-    execute: () => {
-      console.log('Executing expand action');
+    id: 'develop',
+    name: 'Develop Industry',
+    description: 'Develop industry and production',
+    execute: (executeActionUpdate: (action: ActionUpdate) => void) => {
+      console.log('Executing develop action');
+      // -  develop industry adds (industry * 0.1) industry and (gold * 0.03) gold. 
+
+    }
+  },
+  // {
+  //   id: 'expand',
+  //   name: 'Expand to a new province',
+  //   description: 'Expand your influence and territories',
+  //   execute: (game: Game) => {
+  //     console.log('Executing expand action');
+  //   }
+  // },
+  {
+    id: 'improve_army',
+    name: 'Improve the Army',
+    description: 'Improve the army and military',
+    execute: (executeActionUpdate: (action: ActionUpdate) => void) => {
+      console.log('Executing improve army action');
+      // - Expand the army will add (total population * 0.0024) soldiers to the players tag
+
+    }
+  },
+  {
+    id: 'population_growth',
+    name: 'Encourage Population Growth',
+    description: 'Encourage population growth in a province',
+    execute: (executeActionUpdate: (action: ActionUpdate) => void) => {
+      console.log('Executing population growth action');
+      // - Encourage population growth will add (total population * 0.005) population to the players tag
+
     }
   }
 ];
@@ -52,14 +107,16 @@ export const calculateActionsFromDuration = (durationMinutes: number): number =>
 };
 
 // Execute focus actions
-export const executeActions = (actions: FocusAction[], completedFully: boolean): void => {
+export const executeActions = (actions: FocusAction[], completedFully: boolean, executeActionUpdate: (action: Omit<ActionUpdate, 'target'>) => void, playerNationResourceTotals: playerNationResourceTotals): void => {
+  console.log('Executing actions:', actions);
+  console.log('Completed fully:', completedFully);
   if (completedFully) {
     // Execute all actions
-    actions.forEach(action => action.execute());
+    actions.forEach(action => action.execute(executeActionUpdate, playerNationResourceTotals));
   } else {
     // Execute only the first action
     if (actions.length > 0) {
-      actions[0].execute();
+      actions[0].execute(executeActionUpdate, playerNationResourceTotals);
     }
   }
 }; 
