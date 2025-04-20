@@ -5,8 +5,6 @@ import MapView from './MapView';
 import Terminal from './Terminal';
 import BackButton from './BackButton';
 import { Game } from '@/types/game';
-import FocusNowButton from './FocusNowButton';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface GameViewProps {
   game?: Game;
@@ -15,10 +13,31 @@ interface GameViewProps {
 }
 
 export default function GameView({ game, isDemo = false, onBack }: GameViewProps) {
-  const { user } = useAuth();
   const selectedProvinceRef = useRef<string | null>(null);
   const provincePopupRef = useRef<HTMLDivElement | null>(null);
   const nationPopupRef = useRef<HTMLDivElement | null>(null);
+
+  // Prevent standard scrolling
+  useEffect(() => {
+    const preventScroll = (e: WheelEvent) => {
+      if (e.ctrlKey) {
+        // Prevent browser zoom on Ctrl+Wheel
+        e.preventDefault();
+      }
+    };
+
+    // Add event listener with passive: false to allow preventDefault
+    document.addEventListener('wheel', preventScroll, { passive: false });
+    
+    // Disable document body scrolling
+    const originalStyle = window.getComputedStyle(document.body).overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.removeEventListener('wheel', preventScroll);
+      document.body.style.overflow = originalStyle;
+    };
+  }, []);
 
   const handleProvinceSelect = (provinceId: string | null) => {
     selectedProvinceRef.current = provinceId;
@@ -174,7 +193,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
   const monthlyPopulationGrowth = Math.floor(totalPopulation * 0.005);
 
   return (
-    <div className="flex flex-col h-full overflow-x-hidden">
+    <div className="fixed inset-0 overflow-hidden bg-[#0B1423]">
       <BackButton onClick={onBack} />
       
       {/* Player Nation Resource Bar */}
@@ -208,14 +227,13 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         </div>
       </div>
 
-      {/* Add Focus Now button */}
-      {user && <FocusNowButton userId={user.uid} />}
-
       {isDemo ? (
         // Demo view with current map implementation
-        <MapView isDemo selectedProvinceRef={selectedProvinceRef} />
+        <div className="absolute inset-0 z-0">
+          <MapView isDemo selectedProvinceRef={selectedProvinceRef} />
+        </div>
       ) : (
-        <div className="w-full h-full overflow-hidden">
+        <div className="absolute inset-0 z-0">
           {/* Game details overlay */}
           <div className="absolute top-16 right-4 z-40 bg-[#1F1F1F] p-4 rounded-lg border border-[#FFD78C20] text-[#FFD78C] max-w-[300px]">
             <h2 className="text-xl font-semibold mb-3">{game.gameName}</h2>

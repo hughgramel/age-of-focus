@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import panzoom, { PanZoomOptions } from 'panzoom';
-import Terminal from './Terminal';
 
 interface StateData {
   id: string;
@@ -623,7 +622,6 @@ export default function MapView({
         svg.style.width = '100%';
         svg.style.height = '100%';
         svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-        svg.style.border = '2px solid #d1d5db';
 
         // Initialize zoom functionality
         const panzoomInstance = initializeZoom(svg);
@@ -758,7 +756,7 @@ export default function MapView({
   };
 
   return (
-    <div className="w-full h-full bg-white relative">
+    <div className="w-full h-full bg-white relative overflow-hidden">
       {isLoading && (
         <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-50">
           <div className="text-lg text-gray-600">Loading map...</div>
@@ -933,11 +931,8 @@ export default function MapView({
 
       <div 
         ref={svgContainerRef}
-        className="w-full h-full border-[6px] border-blue-500"
+        className="w-full h-full overflow-hidden"
       />
-
-      {/* Terminal */}
-      <Terminal />
     </div>
   );
 } 

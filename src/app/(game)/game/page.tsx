@@ -7,6 +7,21 @@ import { world_1836 } from '@/data/world_1836';
 import { useAuth } from '@/contexts/AuthContext';
 import { GameService } from '@/services/gameService';
 
+// CSS to hide unwanted UI elements
+const hideFocusAndTutorial = `
+  /* Hide the Focus Now and Tutorial buttons */
+  button:has(span:contains("Focus Now")),
+  button:contains("Tutorial"),
+  div:contains("Tutorial"):not(:has(*)) {
+    display: none !important;
+  }
+
+  /* Adding a custom selector to hide Tutorial text */
+  .tutorial-text {
+    display: none !important;
+  }
+`;
+
 export default function GamePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -14,6 +29,39 @@ export default function GamePage() {
   const [game, setGame] = useState<typeof world_1836 | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // Add stylesheet to hide unwanted UI elements
+    const styleEl = document.createElement('style');
+    styleEl.innerHTML = hideFocusAndTutorial;
+    document.head.appendChild(styleEl);
+
+    // Find and hide Tutorial text with a safer approach
+    const hideElements = () => {
+      try {
+        const tutorialElements = document.querySelectorAll('div');
+        tutorialElements.forEach(el => {
+          if (el.textContent === 'Tutorial' && el.children.length === 0) {
+            el.style.display = 'none';
+          }
+        });
+      } catch (err) {
+        console.error('Error hiding elements:', err);
+      }
+    };
+
+    // Try a few times with increasing delays
+    setTimeout(hideElements, 100);
+    setTimeout(hideElements, 500);
+    setTimeout(hideElements, 1000);
+
+    // Cleanup the style element on unmount
+    return () => {
+      if (styleEl && document.head.contains(styleEl)) {
+        document.head.removeChild(styleEl);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const loadGame = async () => {
