@@ -117,8 +117,18 @@ export default function GamePage() {
 
   if (loading) {
     return (
-      <div className="w-full h-screen bg-[#0B1423] flex items-center justify-center">
-        <div className="text-[#FFD700] text-xl">Loading game...</div>
+      <div className="w-full h-screen bg-[#0B1423] flex items-center justify-center overflow-hidden">
+        <div className="flex flex-col items-center gap-8 w-64 sm:w-96">
+          {/* Match the style of the dashboard but keep it clean and simple */}
+          <div className="relative w-full h-56 overflow-hidden"
+            style={{
+              backgroundSize: 'cover',
+              backgroundPosition: 'center 70%',
+            }}
+          >
+            {/* Dashboard-style gradient overlay */}
+          </div>
+        </div>
       </div>
     );
   }

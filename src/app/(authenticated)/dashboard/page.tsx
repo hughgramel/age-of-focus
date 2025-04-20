@@ -35,6 +35,7 @@ export default function Dashboard() {
   const [previousGames, setPreviousGames] = useState<GameData[]>([]);
   const [loading, setLoading] = useState(true);
   const [saveGames, setSaveGames] = useState<SaveGames>({});
+  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
     const loadGames = async () => {
@@ -67,32 +68,44 @@ export default function Dashboard() {
 
   const handleContinueGame = () => {
     if (recentGame) {
-      // Find the save slot number for this game
-      for (const [slot, game] of Object.entries(saveGames)) {
-        if (game && game.game.id === recentGame.game.id) {
-          router.push(`/game?save=${slot}`);
-          return;
+      // Start transition animation
+      setIsNavigating(true);
+      
+      // Add a slight delay for the animation
+      setTimeout(() => {
+        // Find the save slot number for this game
+        for (const [slot, game] of Object.entries(saveGames)) {
+          if (game && game.game.id === recentGame.game.id) {
+            router.push(`/game?save=${slot}`);
+            return;
+          }
         }
-      }
-      // If we can't find it in the slots, use the first slot as fallback
-      router.push(`/game?save=1`);
+        // If we can't find it in the slots, use the first slot as fallback
+        router.push(`/game?save=1`);
+      }, 500);
     }
   };
 
   const handleLoadGame = (game: GameData) => {
-    // Find the save slot number for this game
-    for (const [slot, savedGame] of Object.entries(saveGames)) {
-      if (savedGame && savedGame.game.id === game.game.id) {
-        router.push(`/game?save=${slot}`);
-        return;
+    // Start transition animation
+    setIsNavigating(true);
+    
+    // Add a slight delay for the animation
+    setTimeout(() => {
+      // Find the save slot number for this game
+      for (const [slot, savedGame] of Object.entries(saveGames)) {
+        if (savedGame && savedGame.game.id === game.game.id) {
+          router.push(`/game?save=${slot}`);
+          return;
+        }
       }
-    }
-    // If we can't find it in the slots, use fallback
-    router.push(`/game?save=1`);
+      // If we can't find it in the slots, use fallback
+      router.push(`/game?save=1`);
+    }, 500);
   };
 
   return (
-    <div className="w-full h-full flex items-center justify-center">
+    <div className={`w-full h-full flex items-center justify-center transition-opacity duration-500 ${isNavigating ? 'opacity-0' : 'opacity-100'}`}>
       <div className="flex flex-col items-center gap-8 w-64 sm:w-96 -mt-16">
         <div className="w-full flex flex-col items-center">
           <div className="w-full relative">
@@ -154,7 +167,7 @@ export default function Dashboard() {
                   
                   {/* Content */}
                   <div className="relative h-full flex flex-col z-10">
-                    <div className="flex flex-col items-top justify-start h-full mt-4 px-6">
+                    <div className="flex flex-col items-top justify-start h-full mt-4 px-6 pl-13">
                       <span className="text-4xl sm:text-4xl font-bold text-[#FFD700] drop-shadow-lg">
                         {previousGames.length > 0 ? 'Load Game' : 'No Other Games'}
                       </span>

@@ -19,6 +19,17 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
   const selectedProvinceRef = useRef<string | null>(null);
   const provincePopupRef = useRef<HTMLDivElement | null>(null);
   const nationPopupRef = useRef<HTMLDivElement | null>(null);
+  const [fadeIn, setFadeIn] = useState(false);
+
+  // Add fade-in effect on mount
+  useEffect(() => {
+    // Short delay to ensure the fade effect is visible
+    const timer = setTimeout(() => {
+      setFadeIn(true);
+    }, 50);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   // Prevent standard scrolling
   useEffect(() => {
@@ -244,11 +255,11 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
   };
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-[#0B1423]">
+    <div className={`fixed inset-0 overflow-hidden bg-[#0B1423] transition-opacity ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
       <BackButton onClick={onBack} />
       
       {/* Player Nation Resource Bar */}
-      <div className="fixed top-4 left-20 z-50 flex items-center gap-5 px-6 py-4 rounded-lg" 
+      <div className={`fixed top-4 left-20 z-50 flex items-center gap-5 px-6 py-4 rounded-lg transition-all duration-1000 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`} 
            style={{ 
              backgroundColor: 'rgba(11, 20, 35, 0.95)',
              border: '2px solid rgba(255, 215, 0, 0.4)',
@@ -317,7 +328,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             document.getElementById('focus-now-modal')!.style.display = 'block';
           }
         }}
-        className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 px-8 py-6 rounded-lg text-[#FFD700] hover:bg-[#0F1C2F] transition-colors duration-200"
+        className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 px-8 py-6 rounded-lg text-[#FFD700] hover:bg-[#0F1C2F] transition-all duration-1000 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
         style={{ 
           backgroundColor: 'rgba(11, 20, 35, 0.95)',
           border: '2px solid rgba(255, 215, 0, 0.4)',
@@ -347,11 +358,11 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
 
       {isDemo ? (
         // Demo view with current map implementation
-        <div className="absolute inset-0 z-0">
+        <div className={`absolute inset-0 z-0 transition-all duration-1000 ease-in-out ${fadeIn ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}>
           <MapView isDemo selectedProvinceRef={selectedProvinceRef} />
         </div>
       ) : (
-        <div className="absolute inset-0 z-0">
+        <div className={`absolute inset-0 z-0 transition-all duration-1000 ease-in-out ${fadeIn ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}>
           {/* Render the map using game.mapName and pass nations */}
           <MapView 
             mapName={game.mapName} 
