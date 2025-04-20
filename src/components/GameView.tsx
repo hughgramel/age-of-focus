@@ -563,6 +563,20 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
       <button
         onClick={() => {
           if (user && document.getElementById('focus-now-modal')) {
+            // Log the current game state
+            console.log('Current Game State:', {
+              gameId: game?.id,
+              date: game?.date,
+              playerNation: game?.nations.find(n => n.nationTag === game?.playerNationTag),
+              totalPopulation,
+              totalIndustry,
+              totalGoldIncome,
+              totalArmy,
+              playerGold,
+              hasActiveSession,
+              activeSessionId
+            });
+            
             document.getElementById('focus-now-modal')!.style.display = 'block';
           }
         }}

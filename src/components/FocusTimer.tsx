@@ -238,7 +238,7 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
   const secondsElapsed = useRef(0);
   const sessionCreationInProgressRef = useRef(false);
   const isInitializedRef = useRef(false);
-  const sessionId = useRef("");
+  const sessionId = useRef<string | undefined>("");
   const isBreak = useRef(false);
   const breakTimeRemaining = useRef(0);
   const currFocusEndTime = useRef("");
@@ -427,7 +427,8 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
 
   const createNewUserSession = async () => {
     if (!userId || sessionCreationInProgressRef.current) {
-      return null; // Return null explicitly when we can't create a session
+      console.warn("Cannot create session: " + (!userId ? "No user ID" : "Session creation in progress"));
+      return null;
     }
 
     try {
@@ -453,34 +454,35 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
       const sessionResult = await SessionService.createSession(sessionData);
       console.log("New session created:", sessionResult);
 
-      if (sessionResult && sessionResult.id) {
-        sessionId.current = sessionResult.id;
-        breakTimeRemaining.current = sessionResult.break_minutes_remaining;
-        
-        // Initialize focus times with type checking
-        if (sessionData.focus_start_time && sessionData.focus_end_time) {
-          currFocusStartTime.current = sessionData.focus_start_time;
-          currFocusEndTime.current = sessionData.focus_end_time;
-        } else {
-          throw new Error("Focus times are missing from session data");
-        }
-
-        // Initialize timer state
-        setRemainingAndElapsedTime(sessionResult);
-        isInitializedRef.current = true;
-
-        // Start the timer
-        if (!intervalRef.current) {
-          intervalRef.current = setInterval(tick, 1000);
-        }
-        
-        return sessionResult;
-      } else {
-        throw new Error("Invalid session result");
+      if (!sessionResult || !sessionResult.id) {
+        throw new Error("Invalid session result - missing session ID");
       }
+
+      sessionId.current = sessionResult.id;
+      breakTimeRemaining.current = sessionResult.break_minutes_remaining;
+      
+      // Initialize focus times with type checking
+      if (!sessionData.focus_start_time || !sessionData.focus_end_time) {
+        throw new Error("Focus times are missing from session data");
+      }
+      
+      currFocusStartTime.current = sessionData.focus_start_time;
+      currFocusEndTime.current = sessionData.focus_end_time;
+
+      // Initialize timer state
+      setRemainingAndElapsedTime(sessionResult);
+      isInitializedRef.current = true;
+
+      // Start the timer
+      if (!intervalRef.current) {
+        intervalRef.current = setInterval(tick, 1000);
+      }
+      
+      return sessionResult;
     } catch (error) {
       console.error("Error in createNewUserSession:", error);
-      setError("Failed to create session");
+      setError(error instanceof Error ? error.message : "Failed to create session");
+      isInitializedRef.current = false; // Reset initialization flag to allow retry
       return null;
     } finally {
       sessionCreationInProgressRef.current = false;
@@ -672,82 +674,61 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     }
 
     const initializeSession = async () => {
+      if (!userId) {
+        console.warn("No user ID provided");
+        return;
+      }
+
       try {
-        setIsLoading(true);
-        
-        // If we have an existingSessionId, use that
-        if (existingSessionId) {
-          console.log("Resuming existing session:", existingSessionId);
-          sessionId.current = existingSessionId;
+        if (isInitializedRef.current) {
+          console.log("Session already initialized");
+          return;
+        }
+
+        console.log("Initializing session...");
+        const existingSessions = await SessionService.getActiveUserSessions(userId);
+
+        if (existingSessions.length > 0) {
+          console.log("Found existing session");
+          const session = existingSessions[0];
+          sessionId.current = session.id;
+          breakTimeRemaining.current = session.break_minutes_remaining;
           
-          // Get the existing session data
-          const existingSessions = await fetchUserSessions();
-          if (existingSessions && existingSessions.length > 0) {
-            const session = existingSessions[0];
-            
-            if (!session.focus_end_time || !session.focus_start_time) {
-              throw new Error("Session times are missing");
-            }
-            
-            isBreak.current = session.session_state === "break";
-            currFocusEndTime.current = session.focus_end_time;
+          // Initialize focus times with type checking
+          if (session.focus_start_time && session.focus_end_time) {
             currFocusStartTime.current = session.focus_start_time;
-            breakTimeRemaining.current = session.break_minutes_remaining;
-            
-            if (session.break_end_time && session.break_start_time) {
-              currBreakEndTime.current = session.break_end_time;
-              currBreakStartTime.current = session.break_start_time;
-            }
-            
-            setRemainingTimesFromEndTimes(null);
-            isInitializedRef.current = true;
-            
-            // Start the timer
-            if (!intervalRef.current) {
-              intervalRef.current = setInterval(tick, 1000);
-            }
+            currFocusEndTime.current = session.focus_end_time;
+          }
+
+          // Initialize timer state
+          setRemainingAndElapsedTime(session);
+          isInitializedRef.current = true;
+
+          // Start the timer
+          if (!intervalRef.current) {
+            intervalRef.current = setInterval(tick, 1000);
           }
         } else {
-          // No existingSessionId, check for active sessions or create new
-          const existingSessions = await fetchUserSessions();
+          console.log("No active session found, creating new session");
+          const newSession = await createNewUserSession();
           
-          if (!existingSessions || existingSessions.length === 0) {
-            const newSession = await createNewUserSession();
-            if (!newSession) {
-              throw new Error("Failed to create new session");
-            }
-          } else {
-            const session = existingSessions[0];
-            if (!session.focus_end_time || !session.focus_start_time) {
-              throw new Error("Session times are missing");
-            }
-            
-            sessionId.current = session.id;
-            isBreak.current = session.session_state === "break";
-            currFocusEndTime.current = session.focus_end_time;
-            currFocusStartTime.current = session.focus_start_time;
-            breakTimeRemaining.current = session.break_minutes_remaining;
-            
-            if (session.break_end_time && session.break_start_time) {
-              currBreakEndTime.current = session.break_end_time;
-              currBreakStartTime.current = session.break_start_time;
-            }
-            
-            setRemainingTimesFromEndTimes(null);
-            isInitializedRef.current = true;
-            
-            // Start the timer
-            if (!intervalRef.current) {
-              intervalRef.current = setInterval(tick, 1000);
-            }
+          if (!newSession) {
+            throw new Error("Failed to create new session");
           }
         }
       } catch (error) {
-        console.error("Error initializing session:", error);
-        setError("Failed to initialize session");
-        isInitializedRef.current = false; // Reset initialization flag to allow retry
-      } finally {
-        setIsLoading(false);
+        console.error("Error in initializeSession:", error);
+        setError(error instanceof Error ? error.message : "Failed to initialize session");
+        
+        // Reset initialization state to allow for retry
+        isInitializedRef.current = false;
+        sessionId.current = undefined;
+        
+        // Clear any existing interval
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
+        }
       }
     };
 
