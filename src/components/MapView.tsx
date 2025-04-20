@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import MapCanvas, { StateData } from './MapCanvas';
 
 interface Nation {
@@ -26,15 +26,6 @@ interface Nation {
   currentResearchProgress: number;
   buildQueue: any[] | null;
   isAI: boolean;
-}
-
-interface ResourceStats {
-  gold: number;
-  population: number;
-  industry: number;
-  research: number;
-  buildings: number;
-  military: number;
 }
 
 // SVG Icon Components
@@ -199,6 +190,7 @@ interface MapViewProps {
   nations?: Nation[];
   onProvinceSelect?: (provinceId: string | null) => void;
   selectedProvinceRef: React.RefObject<string | null>;
+  onMapReady?: (stateMap: Map<string, StateData>) => void;
 }
 
 export default function MapView({ 
@@ -206,70 +198,15 @@ export default function MapView({
   isDemo = false, 
   nations, 
   onProvinceSelect,
-  selectedProvinceRef 
+  selectedProvinceRef,
+  onMapReady
 }: MapViewProps) {
-  const selectedOriginalColorRef = useRef<string | null>(null);
   const [openSections, setOpenSections] = useState({
     markets: true,
     army: true,
     research: true,
     industry: true
   });
-  
-  // Example resource stats - in a real app these would be dynamic
-  const [resources] = useState<ResourceStats>({
-    gold: 145,
-    population: 32.5,
-    industry: 62,
-    research: 321,
-    buildings: 68,
-    military: 55
-  });
-
-  const handleStateClick = useCallback((stateId: string | null) => {
-    // If clicking the same province or clicking outside, just deselect
-    if (!stateId || stateId === selectedProvinceRef.current) {
-      selectedProvinceRef.current = null;
-      selectedOriginalColorRef.current = null;
-      onProvinceSelect?.(null);
-      return;
-    }
-
-    // Check if this province belongs to a nation
-    const belongsToNation = nations?.some(nation => 
-      nation.provinces.some(province => province.id === stateId)
-    );
-
-    // Only allow selection of provinces that belong to nations
-    if (!belongsToNation) {
-      return;
-    }
-
-    // Update selection refs and notify parent
-    selectedProvinceRef.current = stateId;
-    onProvinceSelect?.(stateId);
-  }, [nations, onProvinceSelect, selectedProvinceRef]);
-
-  // Color provinces when map is ready
-  const handleMapReady = useCallback((stateMap: Map<string, StateData>) => {
-    if (!nations) return;
-    
-    nations.forEach(nation => {
-      nation.provinces.forEach(province => {
-        const provinceId = province.id;
-        const stateData = stateMap.get(provinceId);
-        
-        if (stateData) {
-          // Apply nation color
-          stateData.path.style.fill = nation.color;
-          stateData.path.style.transition = 'fill 0.2s ease';
-          
-          // Store nation association
-          stateData.nationId = nation.nationTag;
-        }
-      });
-    });
-  }, [nations]);
 
   useEffect(() => {
     // Add Victorian-style font
@@ -293,8 +230,8 @@ export default function MapView({
   return (
     <MapCanvas 
       mapName={mapName}
-      onStateClick={handleStateClick}
-      onMapReady={handleMapReady}
+      onStateClick={onProvinceSelect}
+      onMapReady={onMapReady}
     >
       {/* Status Bar - only show in demo mode */}
       {isDemo && (

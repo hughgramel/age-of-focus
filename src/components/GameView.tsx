@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useEffect, useRef, useState } from 'react';
+import { ReactNode, useEffect, useRef, useState, useCallback } from 'react';
 import MapView from './MapView';
 import Terminal from './Terminal';
 import BackButton from './BackButton';
@@ -27,6 +27,7 @@ interface GameViewProps {
 export default function GameView({ game, isDemo = false, onBack }: GameViewProps) {
   const { user } = useAuth();
   const selectedProvinceRef = useRef<string | null>(null);
+  const selectedOriginalColorRef = useRef<string | null>(null);
   const provincePopupRef = useRef<HTMLDivElement | null>(null);
   const nationPopupRef = useRef<HTMLDivElement | null>(null);
   const [fadeIn, setFadeIn] = useState(false);
@@ -77,7 +78,8 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
     };
   }, []);
 
-  const handleProvinceSelect = (provinceId: string | null) => {
+  // Handle province selection
+  const handleProvinceSelect = useCallback((provinceId: string | null) => {
     selectedProvinceRef.current = provinceId;
     console.log('Selected Province:', provinceId);
 
@@ -252,7 +254,28 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         }
       }
     }
-  };
+  }, [game]);
+
+  // Color provinces when map is ready
+  const handleMapReady = useCallback((stateMap: Map<string, StateData>) => {
+    if (!game || !game.nations) return;
+    
+    game.nations.forEach(nation => {
+      nation.provinces.forEach(province => {
+        const provinceId = province.id;
+        const stateData = stateMap.get(provinceId);
+        
+        if (stateData) {
+          // Apply nation color
+          stateData.path.style.fill = nation.color;
+          stateData.path.style.transition = 'fill 0.2s ease';
+          
+          // Store nation association
+          stateData.nationId = nation.nationTag;
+        }
+      });
+    });
+  }, [game]);
 
   // Function to add gold to player nation
   const addGold = async () => {
@@ -454,7 +477,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
       {!isDemo && (
         <button
           onClick={addGold}
-          className={`fixed bottom-8 left-8 z-50 px-4 py-3 rounded-lg text-[#FFD700] hover:bg-[#0F1C2F] transition-all duration-500 ease-in-out ${fadeIn ? 'opacity-70 hover:opacity-100' : 'opacity-0'}`}
+          className={`fixed bottom-50 left-8 z-50 px-4 py-3 rounded-lg text-[#FFD700] hover:bg-[#0F1C2F] transition-all duration-500 ease-in-out ${fadeIn ? 'opacity-70 hover:opacity-100' : 'opacity-0'}`}
           style={{ 
             backgroundColor: 'rgba(11, 20, 35, 0.95)',
             border: '2px solid rgba(255, 215, 0, 0.4)',
@@ -510,7 +533,12 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
       >
         {isDemo ? (
           // Demo view with demo map
-          <MapView isDemo selectedProvinceRef={selectedProvinceRef} />
+          <MapView 
+            isDemo 
+            selectedProvinceRef={selectedProvinceRef} 
+            onProvinceSelect={handleProvinceSelect}
+            onMapReady={handleMapReady}
+          />
         ) : (
           // Real game with actual map and nations
           <MapView 
@@ -518,6 +546,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             nations={game.nations}
             selectedProvinceRef={selectedProvinceRef}
             onProvinceSelect={handleProvinceSelect}
+            onMapReady={handleMapReady}
           />
         )}
       </div>
