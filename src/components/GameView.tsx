@@ -191,39 +191,119 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
 
   // Calculate monthly population growth (using 0.5% monthly growth rate for 19th century)
   const monthlyPopulationGrowth = Math.floor(totalPopulation * 0.005);
+  
+  // Format number with appropriate suffix (k for thousands, M for millions)
+  const formatNumber = (num: number): string => {
+    if (num >= 1000000) {
+      return (Math.floor(num / 10000) / 100).toFixed(2) + 'M';
+    } else if (num >= 1000) {
+      return (Math.floor(num / 10) / 100).toFixed(2) + 'K';
+    } else {
+      return num.toString();
+    }
+  };
+  
+  // Format date from YYYY-MM-DD to "Month Day, Year"
+  const formatDate = (dateString: string): string => {
+    const [year, month, day] = dateString.split('-').map(part => parseInt(part, 10));
+    const date = new Date(year, month - 1, day);
+    
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    
+    return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+  };
+
+  // Get flag emoji based on nation tag
+  const getNationFlag = (tag: string): string => {
+    switch(tag) {
+      case 'FRA': return '🇫🇷';
+      case 'PRU': return '🇩🇪';
+      case 'USA': return '🇺🇸';
+      case 'GBR': return '🇬🇧';
+      case 'RUS': return '🇷🇺';
+      case 'AUS': return '🇦🇹';
+      case 'ESP': return '🇪🇸';
+      case 'POR': return '🇵🇹';
+      case 'SWE': return '🇸🇪';
+      case 'DEN': return '🇩🇰';
+      case 'TUR': return '🇹🇷';
+      case 'SAR': return '🇮🇹';
+      case 'PAP': return '🇻🇦';
+      case 'SIC': return '🇮🇹';
+      case 'GRE': return '🇬🇷';
+      case 'NET': return '🇳🇱';
+      case 'BEL': return '🇧🇪';
+      default: return '🏳️';
+    }
+  };
 
   return (
     <div className="fixed inset-0 overflow-hidden bg-[#0B1423]">
       <BackButton onClick={onBack} />
       
       {/* Player Nation Resource Bar */}
-      <div className="fixed top-4 left-4 z-50 flex flex-wrap items-center gap-3 px-4 py-3 rounded-lg max-w-[calc(100vw-32px)]" 
+      <div className="fixed top-4 left-20 z-50 flex items-center gap-5 px-6 py-4 rounded-lg" 
            style={{ 
-             backgroundColor: 'rgba(20, 20, 20, 0.95)',
-             border: '1px solid rgba(255, 215, 140, 0.3)',
-             boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-             fontFamily: '"Playfair Display", serif',
+             backgroundColor: 'rgba(11, 20, 35, 0.95)',
+             border: '2px solid rgba(255, 215, 0, 0.4)',
+             boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
            }}>
-        <div className="flex items-center gap-2 pr-2">
-          <span className="text-[#FFD78C] font-semibold text-lg">{playerNation.nationTag}</span>
+        <div className="flex items-center gap-4 pr-4 border-r border-[#FFD700]/30">
+          <div className="flex items-center border-r border-[#FFD700]/30 pr-4">
+            <div className="relative" style={{ width: '40px', height: '40px' }}>
+              <span className="absolute left-1/2  top-1/2 transform -translate-x-7/12 -translate-y-1/2 text-6xl" style={{ 
+                textShadow: `
+                  -1.5px -1.5px 0px rgba(255, 255, 255, 1),
+                  1.5px -1.5px 0px rgba(255, 255, 255, 1),
+                  -1.5px  1.5px 0px rgba(255, 255, 255, 1),
+                  1.5px  1.5px 0px rgba(255, 255, 255, 1),
+                  1.5px  1.5px 0px rgba(255, 255, 255, 1)
+                `
+              }}>
+                {getNationFlag(playerNation.nationTag)}
+              </span>
+            </div>
+          </div>
+          <span className="text-[#FFD700] font-semibold text-xl historical-game-title">
+            {formatDate(game.date)}
+          </span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-gray-400 text-xl">💰</span>
-          <span className="text-[#FFD78C] text-lg">{playerNation.gold.toLocaleString()} Gold</span>
-          <span className="text-green-400 text-lg">+{totalGoldIncome.toLocaleString()}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-gray-400 text-xl">👥</span>
-          <span className="text-[#FFD78C] text-lg">{totalPopulation.toLocaleString()} Population</span>
-          <span className="text-green-400 text-lg">+{monthlyPopulationGrowth.toLocaleString()}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-gray-400 text-xl">🏭</span>
-          <span className="text-[#FFD78C] text-lg">{totalIndustry.toLocaleString()} Industry</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-gray-400 text-xl">⚔️</span>
-          <span className="text-[#FFD78C] text-lg">{totalArmy.toLocaleString()} Army</span>
+        
+        <div className="flex items-center gap-8">
+          {/* Gold */}
+          <div className="flex items-center gap-3">
+            <span className="text-4xl">💰</span>
+            <span className="text-[#FFD700] text-xl historical-game-title">
+              {formatNumber(playerNation.gold)}
+            </span>
+          </div>
+          
+          {/* Population */}
+          <div className="flex items-center gap-3">
+            <span className="text-4xl">👥</span>
+            <span className="text-[#FFD700] text-xl historical-game-title">
+              {formatNumber(totalPopulation)}
+            </span>
+          </div>
+          
+          {/* Industry */}
+          <div className="flex items-center gap-3">
+            <span className="text-4xl">🏭</span>
+            <span className="text-[#FFD700] text-xl historical-game-title">
+              {formatNumber(totalIndustry)}
+            </span>
+          </div>
+          
+          {/* Army */}
+          <div className="flex items-center gap-3">
+            <span className="text-4xl">⚔️</span>
+            <span className="text-[#FFD700] text-xl historical-game-title">
+              {formatNumber(totalArmy)}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -234,17 +314,6 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         </div>
       ) : (
         <div className="absolute inset-0 z-0">
-          {/* Game details overlay */}
-          <div className="absolute top-16 right-4 z-40 bg-[#1F1F1F] p-4 rounded-lg border border-[#FFD78C20] text-[#FFD78C] max-w-[300px]">
-            <h2 className="text-xl font-semibold mb-3">{game.gameName}</h2>
-            <div className="space-y-2 text-sm">
-              <p><span className="text-gray-400">Date:</span> {game.date}</p>
-              <p><span className="text-gray-400">Player Nation:</span> {game.playerNationTag}</p>
-              <p><span className="text-gray-400">Map:</span> {game.mapName}</p>
-              <p><span className="text-gray-400">Nations:</span> {game.nations.length}</p>
-            </div>
-          </div>
-          
           {/* Render the map using game.mapName and pass nations */}
           <MapView 
             mapName={game.mapName} 
