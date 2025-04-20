@@ -23,6 +23,7 @@ export default function GamePage() {
 
         const mode = searchParams?.get('mode');
         const saveNumber = searchParams?.get('save');
+        const gameId = searchParams?.get('id');
 
         if (mode === 'demo') {
           setGame(world_1836);
@@ -32,6 +33,21 @@ export default function GamePage() {
             setGame(save.game);
           } else {
             setError('Save game not found');
+          }
+        } else if (gameId && user) {
+          const allSaves = await GameService.getSaveGames(user.uid);
+          let gameFound = false;
+          
+          for (const [slot, save] of Object.entries(allSaves)) {
+            if (save && save.game.id === gameId) {
+              setGame(save.game);
+              gameFound = true;
+              break;
+            }
+          }
+          
+          if (!gameFound) {
+            setError('Game not found with the provided ID');
           }
         } else {
           setError('Invalid game parameters');

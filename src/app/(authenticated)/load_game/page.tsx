@@ -21,10 +21,15 @@ interface GameData {
   };
 }
 
+interface SaveGames {
+  [key: string]: GameData | null;
+}
+
 export default function LoadGame() {
   const router = useRouter();
   const { user } = useAuth();
   const [games, setGames] = useState<GameData[]>([]);
+  const [saveSlots, setSaveSlots] = useState<Record<string, GameData | null>>({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -43,6 +48,8 @@ export default function LoadGame() {
           );
           
           setGames(gamesArray);
+          // Store mapping of game IDs to save slots
+          setSaveSlots(savedGames);
         } catch (error) {
           console.error('Error loading games:', error);
         }
@@ -54,7 +61,15 @@ export default function LoadGame() {
   }, [user]);
 
   const handleLoadGame = (game: GameData) => {
-    router.push(`/game?id=${game.game.id || ''}`);
+    // Find which save slot contains this game
+    for (const [slot, savedGame] of Object.entries(saveSlots)) {
+      if (savedGame && savedGame.game.id === game.game.id) {
+        router.push(`/game?save=${slot}`);
+        return;
+      }
+    }
+    // Fallback - this shouldn't happen but just in case
+    router.push('/dashboard');
   };
 
   const handleBack = () => {

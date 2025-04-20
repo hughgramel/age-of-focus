@@ -22,7 +22,7 @@ interface GameData {
 }
 
 interface SaveGames {
-  [key: string]: GameData;
+  [key: string]: GameData | null;
 }
 
 export default function Dashboard() {
@@ -34,6 +34,7 @@ export default function Dashboard() {
   const [recentGame, setRecentGame] = useState<GameData | null>(null);
   const [previousGames, setPreviousGames] = useState<GameData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saveGames, setSaveGames] = useState<SaveGames>({});
 
   useEffect(() => {
     const loadGames = async () => {
@@ -52,6 +53,7 @@ export default function Dashboard() {
             );
             setRecentGame(gamesArray[0]);
             setPreviousGames(gamesArray.slice(1));
+            setSaveGames(games);
           }
         } catch (error) {
           console.error('Error loading games:', error);
@@ -65,13 +67,28 @@ export default function Dashboard() {
 
   const handleContinueGame = () => {
     if (recentGame) {
-      router.push(`/game?id=${recentGame.game.id || ''}`);
+      // Find the save slot number for this game
+      for (const [slot, game] of Object.entries(saveGames)) {
+        if (game && game.game.id === recentGame.game.id) {
+          router.push(`/game?save=${slot}`);
+          return;
+        }
+      }
+      // If we can't find it in the slots, use the first slot as fallback
+      router.push(`/game?save=1`);
     }
   };
 
   const handleLoadGame = (game: GameData) => {
-    router.push(`/game?id=${game.game.id || ''}`);
-    setShowLoadGames(false);
+    // Find the save slot number for this game
+    for (const [slot, savedGame] of Object.entries(saveGames)) {
+      if (savedGame && savedGame.game.id === game.game.id) {
+        router.push(`/game?save=${slot}`);
+        return;
+      }
+    }
+    // If we can't find it in the slots, use fallback
+    router.push(`/game?save=1`);
   };
 
   return (
