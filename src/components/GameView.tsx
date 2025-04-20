@@ -37,6 +37,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
   const [hasActiveSession, setHasActiveSession] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Add fade-in effect on mount
   useEffect(() => {
@@ -577,10 +578,12 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
               activeSessionId
             });
             
+            // Show the modal
             document.getElementById('focus-now-modal')!.style.display = 'block';
+            setIsModalOpen(true);
           }
         }}
-        className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 px-10 py-6 rounded-xl text-[#FFD700] hover:bg-[#0F1C2F] transition-all duration-300 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
+        className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 px-10 py-6 rounded-xl text-[#FFD700] hover:bg-[#0F1C2F] transition-all duration-300 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} ${isModalOpen ? 'hidden' : ''}`}
         style={{ 
           backgroundColor: hasActiveSession ? 'rgba(15, 60, 35, 1)' : 'rgba(11, 20, 35, 0.95)',
           border: hasActiveSession ? '2px solid rgba(255, 215, 0, 0.6)' : '2px solid rgba(255, 215, 0, 0.4)',
@@ -603,10 +606,21 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         {user && (
           <FocusNowModal
             userId={user.uid}
-            onClose={() => {
+            onClose={async () => {
+              // Check for active sessions when modal is closed
+              try {
+                const activeSessions = await SessionService.getActiveUserSessions(user.uid);
+                setHasActiveSession(activeSessions && activeSessions.length > 0);
+              } catch (error) {
+                console.error("Error checking active sessions:", error);
+              }
+              
               if (document.getElementById('focus-now-modal')) {
                 document.getElementById('focus-now-modal')!.style.display = 'none';
               }
+              
+              // Set modal as closed
+              setIsModalOpen(false);
             }}
             hasActiveSession={hasActiveSession}
           />

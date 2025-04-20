@@ -29,36 +29,44 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
   useEffect(() => {
     const loadActiveSession = async () => {
       try {
+        console.log('🔍 Loading active session...', { userId, hasActiveSession });
         setIsLoadingSession(true);
         const activeSessions = await SessionService.getActiveUserSessions(userId);
+        console.log('📊 Active sessions found:', activeSessions);
         
         if (activeSessions && activeSessions.length > 0) {
           const session = activeSessions[0];
+          console.log('✅ Setting active session:', session);
           setActiveSession(session);
           
           // Set duration based on active session
           if (session.planned_minutes) {
+            console.log('⏱️ Setting duration:', session.planned_minutes);
             setDuration(session.planned_minutes);
           }
           
           // Set session as started (show timer directly)
+          console.log('🎬 Setting session as started');
           setSessionStarted(true);
           
           // Set selected actions if they exist
           if (session.selected_actions && session.selected_actions.length > 0) {
+            console.log('🎯 Setting processed actions:', session.selected_actions);
             setProcessedActions(session.selected_actions);
           }
+        } else {
+          console.log('❌ No active sessions found');
         }
       } catch (error) {
-        console.error("Error loading active session:", error);
+        console.error("❌ Error loading active session:", error);
       } finally {
         setIsLoadingSession(false);
       }
     };
     
-    // Always try to load active session, regardless of hasActiveSession prop
+    console.log('🔄 useEffect triggered for loadActiveSession');
     loadActiveSession();
-  }, [userId]);
+  }, [userId, hasActiveSession]);
   
   // Initialize selected actions array
   useEffect(() => {
@@ -84,41 +92,92 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
 
   // Start focus session
   const startFocusSession = async () => {
+    console.log('🎬 Starting new focus session...');
     // Process 'auto' selections before starting
     const processedActionsList = selectedActions.map(action => 
       action === 'auto' ? getRandomAction().id : action
     );
     
-    // Save processed actions to state so they can be passed to the FocusTimer
+    console.log('🎯 Processed actions:', processedActionsList);
     setProcessedActions(processedActionsList);
-    
-    console.log("Starting focus session with actions:", processedActionsList);
     
     try {
       // Check for existing sessions
       const existingSessions = await SessionService.getActiveUserSessions(userId);
+      console.log('📊 Existing sessions:', existingSessions);
       
       // If there's an active session, close it first
       if (existingSessions.length > 0) {
         const activeSession = existingSessions[0];
+        console.log('⚠️ Closing existing session:', activeSession.id);
         await SessionService.updateSession(activeSession.id, {
           session_state: 'complete',
           total_minutes_done: 0
         });
       }
       
-      // Start the timer
+      // Create new session
+      const newSession = await SessionService.createSession({
+        user_id: userId,
+        planned_minutes: duration,
+        session_state: 'focus',
+        selected_actions: processedActionsList,
+        focus_start_time: new Date().toISOString(),
+        focus_end_time: new Date(Date.now() + duration * 60 * 1000).toISOString(),
+        break_minutes_remaining: Math.floor(duration / 2),
+        total_minutes_done: 0
+      });
+
+      if (newSession) {
+        console.log('✅ New session created:', newSession);
+        setActiveSession(newSession);
+      }
+      
+      console.log('🎬 Setting session as started');
       setSessionStarted(true);
     } catch (error) {
-      console.error('Error preparing session:', error);
+      console.error('❌ Error preparing session:', error);
     }
   };
 
   // Handle session completion
   const handleSessionComplete = (minutesElapsed: number) => {
-    // Close the modal
+    console.log('🏁 Session completed', { minutesElapsed });
+    // Only reset session state when the session is actually complete
+    setSessionStarted(false);
+    setActiveSession(null);
+    setSelectedActions([]);
+    setProcessedActions([]);
     onClose();
   };
+
+  // Handle modal close
+  const handleModalClose = () => {
+    console.log('🚪 Modal closing...', {
+      activeSession,
+      sessionStarted,
+      hasActiveSession
+    });
+    // Do not reset any state when there's an active session
+    // Just close the modal and let the session continue in the background
+    onClose();
+  };
+
+  useEffect(() => {
+    console.log('📊 State Update:', {
+      sessionStarted,
+      hasActiveSession,
+      activeSession: activeSession?.id,
+      duration,
+      selectedActions,
+      processedActions
+    });
+  }, [sessionStarted, hasActiveSession, activeSession, duration, selectedActions, processedActions]);
+
+  if (!userId) {
+    console.log('❌ No userId provided');
+    return null;
+  }
 
   if (isLoadingSession) {
     return (
@@ -137,19 +196,14 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center pt-16">
       <div 
-        className="absolute inset-0 bg-black opacity-60 z-0"
-        onClick={onClose}
+        className="absolute inset-0 bg-black opacity-60 z-0 border-2"
+        onClick={handleModalClose}
       ></div>
       
-      {!sessionStarted ? (
+      {/* Only show the start session view if there's no active session */}
+      {!sessionStarted && !activeSession ? (
         <div className="relative z-10 bg-[#0B1423] rounded-lg border border-[#FFD700] text-[#FFD700] p-8 w-full max-w-5xl">
-          {/* Close button */}
-          <button 
-            className="absolute top-4 right-4 text-[#FFD700] hover:text-[#FFD700]/80 transition-colors duration-200 w-10 h-10 flex items-center justify-center text-2xl border border-[#FFD700]/50 rounded-full"
-            onClick={onClose}
-          >
-            ✕
-          </button>
+         
           
           {/* Header */}
 
@@ -233,10 +287,10 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
               <div className="p-4 rounded-lg border border-[#4A9A4A]/70 bg-[#1F3A1F] text-white">
                 <h4 className="historical-game-title text-[#90D490] text-lg mb-2">What are actions?</h4>
                  <p className="text-lg historical-game-title mb-2">
-                  <ul className="list-none pl-4 mt-1">
-                    <li>• Every 30 minutes of focus = 1 action point</li>
-                    <li>• Choose your actions to nation on the right</li>
-                  </ul>
+                    • Every 30 minutes of focus = 1 action point
+                </p>
+                 <p className="text-lg historical-game-title mb-2">
+                    • Choose your actions to nation on the right
                 </p>
               </div>
             </div>
@@ -268,6 +322,7 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
               onSessionComplete={handleSessionComplete}
               selectedActions={processedActions}
               existingSessionId={activeSession?.id}
+              handleModalClose={handleModalClose}
             />
           )}
         </div>

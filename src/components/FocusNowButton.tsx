@@ -20,8 +20,8 @@ const FocusNowButton: React.FC<FocusNowButtonProps> = ({ userId }) => {
         const hasActive = activeSessions && activeSessions.length > 0;
         setHasActiveSession(hasActive);
         
-        // Automatically show the modal if there's an active session
-        if (hasActive && !showModal) {
+        // If there's an active session, show the modal with the timer view
+        if (hasActive) {
           setShowModal(true);
         }
       } catch (error) {
@@ -35,20 +35,18 @@ const FocusNowButton: React.FC<FocusNowButtonProps> = ({ userId }) => {
   }, [userId]);
   
   // Also check for active sessions when modal is closed
-  const handleCloseModal = () => {
+  const handleCloseModal = async () => {
     setShowModal(false);
     
     // Check for active sessions again after modal is closed
     if (userId) {
-      const checkAgain = async () => {
-        try {
-          const activeSessions = await SessionService.getActiveUserSessions(userId);
-          setHasActiveSession(activeSessions && activeSessions.length > 0);
-        } catch (error) {
-          console.error("Error checking for active sessions:", error);
-        }
-      };
-      checkAgain();
+      try {
+        const activeSessions = await SessionService.getActiveUserSessions(userId);
+        const hasActive = activeSessions && activeSessions.length > 0;
+        setHasActiveSession(hasActive);
+      } catch (error) {
+        console.error("Error checking for active sessions:", error);
+      }
     }
   };
 
