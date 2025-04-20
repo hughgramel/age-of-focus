@@ -4,6 +4,7 @@ import { Cinzel_Decorative, Playfair_Display, Merriweather, EB_Garamond } from "
 import "./globals.css";
 import { Providers } from '@/components/Providers';
 import { AuthProvider } from '@/contexts/AuthContext';
+import { GameProvider } from '@/contexts/GameContext';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -55,9 +56,11 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${cinzelDecorative.variable} ${playfairDisplay.variable} ${merriweather.variable} ${ebGaramond.variable} antialiased`}
       >
         <AuthProvider>
-          <Providers>
-            {children}
-          </Providers>
+          <GameProvider>
+            <Providers>
+              {children}
+            </Providers>
+          </GameProvider>
         </AuthProvider>
       </body>
     </html>

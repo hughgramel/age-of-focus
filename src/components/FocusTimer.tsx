@@ -59,6 +59,7 @@ import { useRouter } from 'next/navigation';
 import { SessionService } from '@/services/sessionService';
 import { Session, SessionInsert, SessionUpdate } from '@/types/session';
 import { serverTimestamp } from 'firebase/firestore';
+import { useGame } from '@/contexts/GameContext';
 
 import { ActionType, FOCUS_ACTIONS, executeActions, getRandomAction } from '@/data/actions';
 
@@ -224,6 +225,8 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
   // Default timer durations
   const FOCUS_TIME_SECONDS = initialDuration;
   const BREAK_TIME_SECONDS = 60 * 5; // 5 minutes
+  
+  const { currentGame, gameLoading } = useGame();
   
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -633,6 +636,19 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
       console.error("Error fetching session data:", error);
       setError("Failed to fetch session data");
     }
+  };
+
+  // Add function to print game state
+  const printGameState = () => {
+    console.log("Current Game State:", currentGame);
+    console.log("Game Loading:", gameLoading);
+    
+    // Also display in alert for easy viewing during testing
+    alert(
+      `Game State:\n` +
+      `Loading: ${gameLoading}\n` +
+      `Game: ${currentGame ? JSON.stringify(currentGame, null, 2) : 'No game data'}`
+    );
   };
 
   const tick = () => {
@@ -1079,6 +1095,12 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
               onClick={printSessionData}
             >
               Debug session
+            </button>
+            <button 
+              className="bg-[#15223A] text-[#FFD700] border border-[#FFD700]/30 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-[#1D2C4A] historical-game-title" 
+              onClick={printGameState}
+            >
+              Debug game
             </button>
           </div>
         </div>
