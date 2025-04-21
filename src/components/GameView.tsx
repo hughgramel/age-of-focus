@@ -835,12 +835,14 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         hasActiveSession={hasActiveSession}
         onTaskListClick={() => {
           if (user) {
+            handleProvinceSelect(null);
             setIsTaskModalOpen(true);
           }
         }}
         onFocusClick={() => {
           if (user && document.getElementById('focus-now-modal')) {
             // Log the current game state
+            handleProvinceSelect(null);
             console.log('Current Game State:', {
               gameId: game?.id,
               date: game?.date,
