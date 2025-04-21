@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Cinzel_Decorative, Playfair_Display, Merriweather, EB_Garamond } from "next/font/google";
+import { M_PLUS_Rounded_1c } from 'next/font/google';
 import "./globals.css";
 import { Providers } from '@/components/Providers';
 import { AuthProvider } from '@/contexts/AuthContext';
@@ -40,6 +41,13 @@ const ebGaramond = EB_Garamond({
   subsets: ["latin"],
 });
 
+const mplusRounded = M_PLUS_Rounded_1c({
+  subsets: ['latin'],
+  weight: '500',
+  display: 'swap',
+  variable: '--font-mplus-rounded',
+});
+
 export const metadata: Metadata = {
   title: "Age of Focus",
   description: "Shape your nation's destiny through focused productivity",
@@ -53,7 +61,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${cinzelDecorative.variable} ${playfairDisplay.variable} ${merriweather.variable} ${ebGaramond.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${cinzelDecorative.variable} ${playfairDisplay.variable} ${merriweather.variable} ${ebGaramond.variable} ${mplusRounded.variable} antialiased`}
       >
         <AuthProvider>
           <GameProvider>

@@ -47,7 +47,7 @@ export default function ResourceBar({
 
   return (
     <div 
-      className={`fixed top-4 left-20 z-50 flex items-center gap-5 px-6 py-4 rounded-lg transition-all duration-1000 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`} 
+      className={`flex items-center gap-5 px-6 py-4 rounded-lg transition-all duration-1000 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`} 
       style={{ 
         backgroundColor: 'rgba(11, 20, 35, 0.95)',
         border: '2px solid rgba(255, 215, 0, 0.4)',

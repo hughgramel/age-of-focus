@@ -15,6 +15,9 @@ import { SessionService } from '@/services/sessionService';
 import { ActionService } from '@/services/actionService';
 import type { ActionUpdate } from '@/services/actionService';
 import ResourceBar from './ResourceBar';
+import TaskListButton from './TaskListButton';
+import NationalPathButton from './NationalPathButton';
+import FocusNowButton from './FocusNowButton';
 
 // Create a globals object to store persistent map state
 const globalMapState = {
@@ -615,13 +618,13 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
                     const newTotals = {
                         playerGold: updatedPlayerNation.gold,
                         playerIndustry: updateIndustry ? 
-                            updatedPlayerNation.provinces.reduce((sum, p) => sum + p.industry, 0) : 
+                            updatedPlayerNation.provinces.reduce((sum: number, p: { industry: number }) => sum + p.industry, 0) : 
                             playerNationResourceTotals.playerIndustry,
                         playerPopulation: updatePopulation ? 
-                            updatedPlayerNation.provinces.reduce((sum, p) => sum + p.population, 0) : 
+                            updatedPlayerNation.provinces.reduce((sum: number, p: { population: number }) => sum + p.population, 0) : 
                             playerNationResourceTotals.playerPopulation,
                         playerArmy: updateArmy ? 
-                            updatedPlayerNation.provinces.reduce((sum, p) => sum + p.army, 0) : 
+                            updatedPlayerNation.provinces.reduce((sum: number, p: { army: number }) => sum + p.army, 0) : 
                             playerNationResourceTotals.playerArmy
                     };
 
@@ -735,16 +738,36 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
     <div className={`fixed inset-0 overflow-hidden bg-[#0B1423] transition-opacity ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
       <BackButton onClick={onBack} />
       
-      {/* Resource Bar */}
-      <ResourceBar
-        playerGold={playerGold !== undefined ? playerGold : playerNation.gold}
-        totalPopulation={totalPopulation}
-        totalIndustry={totalIndustry}
-        totalArmy={totalArmy}
-        playerNationTag={game.playerNationTag}
-        gameDate={game.date}
-        fadeIn={fadeIn}
-      />
+      {/* Top Bar with Resource Bar and Buttons */}
+      <div className="absolute top-0 left-0 right-0 z-50 flex flex-col md:flex-row items-center justify-between p-4 gap-4">
+        <ResourceBar
+          playerGold={playerGold !== undefined ? playerGold : playerNation.gold}
+          totalPopulation={totalPopulation}
+          totalIndustry={totalIndustry}
+          totalArmy={totalArmy}
+          playerNationTag={game.playerNationTag}
+          gameDate={game.date}
+          fadeIn={fadeIn}
+        />
+        
+        
+        <div className="flex flex-col md:flex-row items-center gap-4">
+          <TaskListButton 
+            fadeIn={fadeIn} 
+            onClick={() => {
+              // TODO: Implement task list functionality
+            }} 
+          />
+          <NationalPathButton 
+            fadeIn={fadeIn} 
+            onClick={() => {
+              // TODO: Implement national path functionality
+            }} 
+          />
+        </div>
+        
+        
+      </div>
 
       {/* Debug Button */}
       {!isDemo && (
@@ -758,90 +781,41 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           }}
         >
           <div className="flex items-center gap-3">
-            <span className="text-2xl">��</span>
+            <span className="text-2xl">💰</span>
             <span className="text-lg font-semibold historical-game-title">+100 Gold</span>
           </div>
         </button>
       )}
 
-      {/* Task List Button - Top Left */}
-      <button
-        onClick={() => {
-          // TODO: Implement task list functionality
-        }}
-        className={`fixed top-4 left-305 top-4.5 z-50 px-8 py-4 rounded-xl text-[#FFD700] hover:bg-[#0F1C2F] transition-all duration-300 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}
-        style={{ 
-          backgroundColor: 'rgba(11, 20, 35, 0.95)',
-          border: '2px solid rgba(255, 215, 0, 0.4)',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-          minWidth: '220px'
-        }}
-      >
-        <div className="flex items-center gap-4">
-          <span className="text-3xl">📋</span>
-          <span className="text-xl font-semibold historical-game-title">Task List</span>
-        </div>
-      </button>
-
-      {/* National Path Button - Top Left */}
-      <button
-        onClick={() => {
-          // TODO: Implement national path functionality
-        }}
-        className={`fixed top-4 left-240 top-4.5 z-50 px-8 py-4 rounded-xl text-[#FFD700] hover:bg-[#0F1C2F] transition-all duration-300 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}
-        style={{ 
-          backgroundColor: 'rgba(11, 20, 35, 0.95)',
-          border: '2px solid rgba(255, 215, 0, 0.4)',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-          minWidth: '220px'
-        }}
-      >
-        <div className="flex items-center gap-4">
-          <span className="text-3xl">🗺️</span>
-          <span className="text-xl font-semibold historical-game-title">National Path</span>
-        </div>
-      </button>
-
       {/* Focus Now Floating Button - Center Bottom */}
-      <button
-        onClick={() => {
-          if (user && document.getElementById('focus-now-modal')) {
-            // Log the current game state
-            console.log('Current Game State:', {
-              gameId: game?.id,
-              date: game?.date,
-              playerNation: game?.nations.find(n => n.nationTag === game?.playerNationTag),
-              totalPopulation,
-              totalIndustry,
-              totalGoldIncome,
-              totalArmy,
-              playerGold,
-              hasActiveSession,
-              activeSessionId
-            });
-            
-            // Show the modal
-            document.getElementById('focus-now-modal')!.style.display = 'block';
-            setIsModalOpen(true);
-          }
-        }}
-        className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 px-10 py-6 rounded-xl text-[#FFD700] hover:bg-[#0F1C2F] transition-all duration-300 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} ${isModalOpen ? 'hidden' : ''}`}
-        style={{ 
-          backgroundColor: hasActiveSession ? 'rgba(15, 60, 35, 1)' : 'rgba(11, 20, 35, 0.95)',
-          border: hasActiveSession ? '2px solid rgba(255, 215, 0, 0.6)' : '2px solid rgba(255, 215, 0, 0.4)',
-          boxShadow: hasActiveSession ? 
-            '0 4px 12px rgba(0,0,0,0.5), 0 0 0px rgba(255, 215, 0, 0.15)' : 
-            '0 4px 12px rgba(0,0,0,0.5)',
-          minWidth: '300px'
-        }}
-      >
-        <div className="flex items-center gap-4">
-          <span className="text-4xl">⏱️</span>
-          <span className={`text-2xl font-semibold historical-game-title ${hasActiveSession ? 'text-[#FFD700]' : 'text-[#FFD700]'}`}>
-            {hasActiveSession ? 'Active focus session' : 'Focus Now'}
-          </span>
-        </div>
-      </button>
+      <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
+        <FocusNowButton
+          fadeIn={fadeIn}
+          isModalOpen={isModalOpen}
+          hasActiveSession={hasActiveSession}
+          onClick={() => {
+            if (user && document.getElementById('focus-now-modal')) {
+              // Log the current game state
+              console.log('Current Game State:', {
+                gameId: game?.id,
+                date: game?.date,
+                playerNation: game?.nations.find(n => n.nationTag === game?.playerNationTag),
+                totalPopulation,
+                totalIndustry,
+                totalGoldIncome,
+                totalArmy,
+                playerGold,
+                hasActiveSession,
+                activeSessionId
+              });
+              
+              // Show the modal
+              document.getElementById('focus-now-modal')!.style.display = 'block';
+              setIsModalOpen(true);
+            }
+          }}
+        />
+      </div>
 
       {/* Focus Now Modal - always render but hide with CSS */}
       <div id="focus-now-modal" style={{ display: 'none' }}>

@@ -5,84 +5,37 @@ import FocusNowModal from './FocusNowModal';
 import { SessionService } from '@/services/sessionService';
 
 interface FocusNowButtonProps {
-  userId: string;
+  fadeIn: boolean;
+  isModalOpen: boolean;
+  hasActiveSession: boolean;
+  onClick: () => void;
 }
 
-const FocusNowButton: React.FC<FocusNowButtonProps> = ({ userId }) => {
-  const [showModal, setShowModal] = useState(false);
-  const [hasActiveSession, setHasActiveSession] = useState(false);
-  
-  // Check for active sessions when component mounts or userId changes
-  useEffect(() => {
-    const checkForActiveSessions = async () => {
-      try {
-        const activeSessions = await SessionService.getActiveUserSessions(userId);
-        const hasActive = activeSessions && activeSessions.length > 0;
-        setHasActiveSession(hasActive);
-        
-        // If there's an active session, show the modal with the timer view
-        if (hasActive) {
-          setShowModal(true);
-        }
-      } catch (error) {
-        console.error("Error checking for active sessions:", error);
-      }
-    };
-    
-    if (userId) {
-      checkForActiveSessions();
-    }
-  }, [userId]);
-  
-  // Also check for active sessions when modal is closed
-  const handleCloseModal = async () => {
-    setShowModal(false);
-    
-    // Check for active sessions again after modal is closed
-    if (userId) {
-      try {
-        const activeSessions = await SessionService.getActiveUserSessions(userId);
-        const hasActive = activeSessions && activeSessions.length > 0;
-        setHasActiveSession(hasActive);
-      } catch (error) {
-        console.error("Error checking for active sessions:", error);
-      }
-    }
-  };
-
+export default function FocusNowButton({ 
+  fadeIn, 
+  isModalOpen, 
+  hasActiveSession, 
+  onClick 
+}: FocusNowButtonProps) {
   return (
-    <>
-      {/* Center buttons with absolute positioning */}
-      <div className="flex flex-col items-center justify-center gap-4" >
-        <div className="flex flex-col gap-4 w-full">
-          {/* Focus Now button */}
-          <button 
-            className="w-full px-6 py-3 bg-[#1F1F1F] text-[#FFD78C] rounded-lg border border-[#FFD78C40] hover:bg-[#2A2A2A] transition-colors duration-200 font-semibold text-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-[#FFD78C40]"
-            onClick={() => setShowModal(true)}
-          >
-            {hasActiveSession ? "Resume Active Session" : "Focus Now"}
-          </button>
-
-          {/* Tutorial button - Positioned right below Focus Now */}
-          <button 
-            className="w-full px-6 py-3 bg-transparent text-[#FFD78C] rounded-lg border border-[#FFD78C40] hover:bg-[#1F1F1F] transition-colors duration-200 font-semibold text-lg shadow-lg focus:outline-none focus:ring-2 focus:ring-[#FFD78C40]"
-            onClick={() => window.location.href = '/game?mode=demo'}
-          >
-            Tutorial
-          </button>
-        </div>
+    <button
+      onClick={onClick}
+      className={`px-10 py-6 rounded-xl text-[#FFD700] hover:bg-[#0F1C2F] transition-all duration-300 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} ${isModalOpen ? 'hidden' : ''}`}
+      style={{ 
+        backgroundColor: hasActiveSession ? 'rgba(15, 60, 35, 1)' : 'rgba(11, 20, 35, 0.95)',
+        border: hasActiveSession ? '2px solid rgba(255, 215, 0, 0.6)' : '2px solid rgba(255, 215, 0, 0.4)',
+        boxShadow: hasActiveSession ? 
+          '0 4px 12px rgba(0,0,0,0.5), 0 0 0px rgba(255, 215, 0, 0.15)' : 
+          '0 4px 12px rgba(0,0,0,0.5)',
+        minWidth: '300px'
+      }}
+    >
+      <div className="flex items-center gap-4">
+        <span className="text-4xl">⏱️</span>
+        <span className={`text-2xl font-semibold historical-game-title ${hasActiveSession ? 'text-[#FFD700]' : 'text-[#FFD700]'}`}>
+          {hasActiveSession ? 'Active focus session' : 'Focus Now'}
+        </span>
       </div>
-
-      {/* Focus Now modal */}
-      {showModal && (
-        <FocusNowModal 
-          userId={userId}
-          onClose={handleCloseModal}
-          hasActiveSession={hasActiveSession}
-        />
-      )}
-    </>
+    </button>
   );
-};
-
-export default FocusNowButton; 
+} 
