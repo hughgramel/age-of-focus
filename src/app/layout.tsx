@@ -43,7 +43,7 @@ const ebGaramond = EB_Garamond({
 
 const mplusRounded = M_PLUS_Rounded_1c({
   subsets: ['latin'],
-  weight: '500',
+  weight: ['500', '700'],
   display: 'swap',
   variable: '--font-mplus-rounded',
 });

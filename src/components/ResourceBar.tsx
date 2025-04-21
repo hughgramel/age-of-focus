@@ -45,17 +45,27 @@ export default function ResourceBar({
     return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
   };
 
+  const emojiStyle = {
+    textShadow: `
+      -1px -1px 0 rgba(0,0,0,0.2),
+      1px -1px 0 rgba(0,0,0,0.2),
+      -1px 1px 0 rgba(0,0,0,0.2),
+      1px 1px 0 rgba(0,0,0,0.2)
+    `
+  };
+
   return (
     <div 
-      className={`flex items-center gap-5 px-6 py-4 rounded-lg transition-all duration-1000 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`} 
+      className={`[font-family:var(--font-mplus-rounded)] flex items-center gap-5 px-6 py-4 rounded-lg transition-all duration-1000 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`} 
       style={{ 
-        backgroundColor: 'rgba(11, 20, 35, 0.95)',
-        border: '2px solid rgba(255, 215, 0, 0.4)',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+        backgroundColor: '#ffffff',
+        border: '1px solid ',
+        boxShadow: '0 4px 0 rgba(229,229,229,255)',
+        transform: 'translateY(-2px)',
       }}
     >
-      <div className="flex items-center gap-4 pr-4 border-r border-[#FFD700]/30">
-        <div className="flex items-center border-r border-[#FFD700]/30 pr-4">
+      <div className="flex items-center gap-4 pr-4 border-r border-black/10">
+        <div className="flex items-center border-r border-black/10 pr-4">
           <div className="relative" style={{ width: '40px', height: '40px' }}>
             <span 
               className="absolute left-1/2 top-1/2 transform -translate-x-7/12 -translate-y-1/2 text-6xl" 
@@ -73,7 +83,7 @@ export default function ResourceBar({
             </span>
           </div>
         </div>
-        <span className="text-[#FFD700] font-semibold text-xl historical-game-title">
+        <span className="text-black font-bold text-xl">
           {formatDate(gameDate)}
         </span>
       </div>
@@ -81,32 +91,32 @@ export default function ResourceBar({
       <div className="flex items-center gap-8">
         {/* Gold */}
         <div className="flex items-center gap-3">
-          <span className="text-4xl">💰</span>
-          <span className="text-[#FFD700] text-xl historical-game-title">
+          <span className="text-4xl" style={emojiStyle}>💰</span>
+          <span className="text-black text-xl font-bold">
             {formatNumber(playerGold)}
           </span>
         </div>
         
         {/* Population */}
         <div className="flex items-center gap-3">
-          <span className="text-4xl">👥</span>
-          <span className="text-[#FFD700] text-xl historical-game-title">
+          <span className="text-4xl" style={emojiStyle}>👥</span>
+          <span className="text-black text-xl font-bold">
             {formatNumber(totalPopulation)}
           </span>
         </div>
         
         {/* Industry */}
         <div className="flex items-center gap-3">
-          <span className="text-4xl">🏭</span>
-          <span className="text-[#FFD700] text-xl historical-game-title">
+          <span className="text-4xl" style={emojiStyle}>🏭</span>
+          <span className="text-black text-xl font-bold">
             {formatNumber(totalIndustry)}
           </span>
         </div>
         
         {/* Army */}
         <div className="flex items-center gap-3">
-          <span className="text-4xl">⚔️</span>
-          <span className="text-[#FFD700] text-xl historical-game-title">
+          <span className="text-4xl" style={emojiStyle}>⚔️</span>
+          <span className="text-black text-xl font-bold">
             {formatNumber(totalArmy)}
           </span>
         </div>

@@ -8,8 +8,11 @@ export default function BackButton({ onClick }: BackButtonProps) {
   return (
     <button
       onClick={onClick}
-      className="fixed top-6 left-4 z-50 p-3 rounded-full backdrop-blur-sm border border-[#FFD700]/40 transition-colors duration-200 hover:bg-[#162033] bg-[#0B1423]/70"
+      className="pt-4 pb-3 pl-4 pr-4 rounded-lg backdrop-blur-sm transition-colors duration-200 hover:bg-gray-100 bg-white"
       aria-label="Back to home"
+      style={{
+        boxShadow: '0 4px 0 rgba(229,229,229,255)',
+      }}
     >
       <span className="text-3xl leading-none">🏠</span>
     </button>

@@ -18,6 +18,7 @@ import ResourceBar from './ResourceBar';
 import TaskListButton from './TaskListButton';
 import NationalPathButton from './NationalPathButton';
 import FocusNowButton from './FocusNowButton';
+import ButtonGroup from './ButtonGroup';
 
 // Create a globals object to store persistent map state
 const globalMapState = {
@@ -736,37 +737,20 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
 
   return (
     <div className={`fixed inset-0 overflow-hidden bg-[#0B1423] transition-opacity ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
-      <BackButton onClick={onBack} />
-      
       {/* Top Bar with Resource Bar and Buttons */}
       <div className="absolute top-0 left-0 right-0 z-50 flex flex-col md:flex-row items-center justify-between p-4 gap-4">
-        <ResourceBar
-          playerGold={playerGold !== undefined ? playerGold : playerNation.gold}
-          totalPopulation={totalPopulation}
-          totalIndustry={totalIndustry}
-          totalArmy={totalArmy}
-          playerNationTag={game.playerNationTag}
-          gameDate={game.date}
-          fadeIn={fadeIn}
-        />
-        
-        
-        <div className="flex flex-col md:flex-row items-center gap-4">
-          <TaskListButton 
-            fadeIn={fadeIn} 
-            onClick={() => {
-              // TODO: Implement task list functionality
-            }} 
-          />
-          <NationalPathButton 
-            fadeIn={fadeIn} 
-            onClick={() => {
-              // TODO: Implement national path functionality
-            }} 
+        <div className="flex items-center gap-6 relative">
+            <BackButton onClick={onBack} />
+          <ResourceBar
+            playerGold={playerGold !== undefined ? playerGold : playerNation.gold}
+            totalPopulation={totalPopulation}
+            totalIndustry={totalIndustry}
+            totalArmy={totalArmy}
+            playerNationTag={game.playerNationTag}
+            gameDate={game.date}
+            fadeIn={fadeIn}
           />
         </div>
-        
-        
       </div>
 
       {/* Debug Button */}
@@ -787,35 +771,66 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         </button>
       )}
 
-      {/* Focus Now Floating Button - Center Bottom */}
-      <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
-        <FocusNowButton
-          fadeIn={fadeIn}
-          isModalOpen={isModalOpen}
-          hasActiveSession={hasActiveSession}
-          onClick={() => {
-            if (user && document.getElementById('focus-now-modal')) {
-              // Log the current game state
-              console.log('Current Game State:', {
-                gameId: game?.id,
-                date: game?.date,
-                playerNation: game?.nations.find(n => n.nationTag === game?.playerNationTag),
-                totalPopulation,
-                totalIndustry,
-                totalGoldIncome,
-                totalArmy,
-                playerGold,
-                hasActiveSession,
-                activeSessionId
-              });
-              
-              // Show the modal
-              document.getElementById('focus-now-modal')!.style.display = 'block';
-              setIsModalOpen(true);
-            }
-          }}
-        />
+      {/* Map container */}
+      <div 
+        className={`absolute inset-0 z-0 transition-all duration-1000 ease-in-out ${fadeIn ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}
+        ref={mapCanvasContainerRef}
+      >
+        {isDemo ? (
+          // Demo view with demo map
+          <MapView 
+            isDemo 
+            selectedProvinceRef={selectedProvinceRef} 
+            onProvinceSelect={handleProvinceSelect}
+            onMapReady={handleMapReady}
+            disableKeyboardControls={isModalOpen}
+          />
+        ) : (
+          // Real game with actual map and nations
+          <MapView 
+            mapName={game.mapName} 
+            nations={game.nations}
+            selectedProvinceRef={selectedProvinceRef}
+            onProvinceSelect={handleProvinceSelect}
+            onMapReady={handleMapReady}
+            disableKeyboardControls={isModalOpen}
+          />
+        )}
       </div>
+
+      {/* Replace individual buttons with ButtonGroup */}
+      <ButtonGroup
+        fadeIn={fadeIn}
+        isModalOpen={isModalOpen}
+        hasActiveSession={hasActiveSession}
+        onTaskListClick={() => {
+          // TODO: Implement task list functionality
+        }}
+        onFocusClick={() => {
+          if (user && document.getElementById('focus-now-modal')) {
+            // Log the current game state
+            console.log('Current Game State:', {
+              gameId: game?.id,
+              date: game?.date,
+              playerNation: game?.nations.find(n => n.nationTag === game?.playerNationTag),
+              totalPopulation,
+              totalIndustry,
+              totalGoldIncome,
+              totalArmy,
+              playerGold,
+              hasActiveSession,
+              activeSessionId
+            });
+            
+            // Show the modal
+            document.getElementById('focus-now-modal')!.style.display = 'block';
+            setIsModalOpen(true);
+          }
+        }}
+        onNationalPathClick={() => {
+          // TODO: Implement national path functionality
+        }}
+      />
 
       {/* Focus Now Modal - always render but hide with CSS */}
       <div id="focus-now-modal" style={{ display: 'none' }}>
@@ -857,33 +872,6 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
       >
         Test Action (+10,000 Population)
       </button>
-
-      {/* Map container */}
-      <div 
-        className={`absolute inset-0 z-0 transition-all duration-1000 ease-in-out ${fadeIn ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}
-        ref={mapCanvasContainerRef}
-      >
-        {isDemo ? (
-          // Demo view with demo map
-          <MapView 
-            isDemo 
-            selectedProvinceRef={selectedProvinceRef} 
-            onProvinceSelect={handleProvinceSelect}
-            onMapReady={handleMapReady}
-            disableKeyboardControls={isModalOpen}
-          />
-        ) : (
-          // Real game with actual map and nations
-          <MapView 
-            mapName={game.mapName} 
-            nations={game.nations}
-            selectedProvinceRef={selectedProvinceRef}
-            onProvinceSelect={handleProvinceSelect}
-            onMapReady={handleMapReady}
-            disableKeyboardControls={isModalOpen}
-          />
-        )}
-      </div>
     </div>
   );
 } 
