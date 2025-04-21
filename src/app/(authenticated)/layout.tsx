@@ -20,7 +20,7 @@ export default function AuthenticatedLayout({
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen relative overflow-hidden">
+      <div className="min-h-screen relative overflow-hidden bg-white">
         {/* Full-screen background with gradient overlay */}
         <div className="fixed inset-0 w-full h-full z-0">
 
@@ -43,7 +43,7 @@ export default function AuthenticatedLayout({
 
 
           {/* dark charcoal theme */}
-          <div className="absolute inset-0 bg-gradient-to-br from-[#141618] via-[#1F2428] to-[#141618] opacity-100"></div>
+
 
           {/* slate theme */}
           {/* <div className="absolute inset-0 bg-gradient-to-br from-[#121517] via-[#23272B] to-[#121517] opacity-95"></div> */}

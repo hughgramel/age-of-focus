@@ -1,9 +1,4 @@
----
-description: 
-globs: 
-alwaysApply: true
----
- # Age of Focus Codebase Rules
+# Age of Focus Codebase Rules
 
 ## Project Structure
 ```
@@ -182,4 +177,4 @@ interface Action {
 ### Screen Reader Support
 - Timer announcements
 - Status updates
-- Error messages
+- Error messages 

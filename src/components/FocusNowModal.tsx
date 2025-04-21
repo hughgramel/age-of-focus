@@ -213,27 +213,26 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
       
       {/* Only show the start session view if there's no active session */}
       {!sessionStarted && !activeSession ? (
-        <div className="relative z-10 bg-[#0B1423] rounded-lg border border-[#FFD700] text-[#FFD700] p-8 w-full max-w-5xl">
-         
-          
-          {/* Header */}
-
-          
+        <div className="relative z-10 bg-white rounded-lg border border-gray-200 text-black p-8 w-full max-w-5xl [font-family:var(--font-mplus-rounded)]" style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}>
           {/* Two column layout */}
           <div className="flex flex-col md:flex-row gap-6 mb-8">
             {/* Left column - Session duration */}
             <div className="w-full md:w-1/2">
-              <h3 className="historical-game-title text-2xl font-semibold mb-4 text-center">Focus Session Duration</h3>
+              <h3 className="text-2xl font-semibold mb-4 text-center flex items-center justify-center gap-2">
+                <span className="text-3xl">⏱️</span>
+                Focus Session Duration
+              </h3>
               
               <select 
                 value={duration} 
                 onChange={handleDurationChange}
-                className="bg-[#15223A] historical-game-title text-[#FFD700] border border-[#FFD700] rounded-lg px-4 py-3 w-full outline-none appearance-none cursor-pointer text-center text-xl mb-4"
+                className="bg-white text-black border border-gray-200 rounded-lg px-4 py-3 w-full outline-none appearance-none cursor-pointer text-center text-xl mb-4"
                 style={{ 
-                  backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23FFD700' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")",
+                  backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")",
                   backgroundRepeat: 'no-repeat',
                   backgroundPosition: 'right 12px center',
-                  backgroundSize: '20px'
+                  backgroundSize: '20px',
+                  boxShadow: '0 2px 0 rgba(229,229,229,255)'
                 }}
               >
                 <option value="30">30 minutes</option>
@@ -245,38 +244,34 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
                 <option value="240">4 hours</option>
               </select>
 
-              {/* Add intention input box */}
-       
-              
               {/* Timer placeholder */}
-              <div className="w-full aspect-square flex items-center justify-center bg-[#15223A] rounded-lg border border-[#FFD700]/30 mt-1.5">
+              <div className="w-full aspect-square flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200 mt-1.5">
                 <div className="text-center">
-                  <img src="/images/timer-icon.svg" alt="Timer" className="w-16 h-16 mx-auto mb-3" 
-                       onError={(e) => {
-                         const target = e.target as HTMLImageElement;
-                         target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 24 24' fill='none' stroke='%23FFD700' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'%3E%3C/circle%3E%3Cpolyline points='12 6 12 12 16 14'%3E%3C/polyline%3E%3C/svg%3E";
-                       }} />
-                  <p className="text-xl historical-game-title text-white">Timer will appear here</p>
+                  <span className="text-6xl mb-3 block">⏱️</span>
+                  <p className="text-xl text-gray-600">Timer will appear here</p>
                 </div>
               </div>
             </div>
             
             {/* Right column - Actions */}
             <div className="w-full md:w-1/2">
-              <h3 className="historical-game-title text-2xl font-semibold mb-4 text-center">Choose your {actionCount} action{actionCount !== 1 ? 's' : ''}</h3>
+              <h3 className="text-2xl font-semibold mb-4 text-center flex items-center justify-center gap-2">
+                <span className="text-3xl">🎯</span>
+                Choose your {actionCount} action{actionCount !== 1 ? 's' : ''}
+              </h3>
               
               <div className="space-y-4">
                 {Array.from({ length: actionCount }, (_, i) => (
-                  <div key={i} className="flex bg-[#15223A] rounded-lg border border-[#FFD700]/50">
-                    <div className="py-3 px-4 border-r border-[#FFD700]/30 min-w-[120px]">
-                      <span className="text-xl historical-game-title text-white">Action {i + 1}</span>
+                  <div key={i} className="flex bg-white rounded-lg border border-gray-200" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
+                    <div className="py-3 px-4 border-r border-gray-200 min-w-[120px]">
+                      <span className="text-xl text-gray-700">Action {i + 1}</span>
                     </div>
                     <select 
                       value={selectedActions[i] || 'auto'} 
                       onChange={(e) => handleActionChange(i, e.target.value as ActionType)}
-                      className="bg-[#15223A] historical-game-title text-[#FFD700] border-0 rounded-r-lg px-3 py-2 w-full outline-none appearance-none cursor-pointer"
+                      className="bg-white text-gray-800 border-0 rounded-r-lg px-3 py-2 w-full outline-none appearance-none cursor-pointer"
                       style={{ 
-                        backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23FFD700' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")",
+                        backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")",
                         backgroundRepeat: 'no-repeat',
                         backgroundPosition: 'right 12px center',
                         backgroundSize: '20px'
@@ -295,45 +290,49 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
             </div>
           </div>
           
-          {/* Historical Info Box */}
+          {/* Historical Info Box and Start Button */}
           <div className="flex flex-col sm:flex-row gap-6 mb-6">
             <div className="w-full md:w-1/2">
-              <div className="p-4 rounded-lg border border-[#4A9A4A]/70 bg-[#1F3A1F] text-white">
-                <h4 className="historical-game-title text-[#90D490] text-lg mb-2">What are actions?</h4>
-                 <p className="text-lg historical-game-title mb-2">
-                    • Every 30 minutes of focus = 1 action point
+              <div className="p-4 rounded-lg border border-emerald-200 bg-emerald-50">
+                <h4 className="text-emerald-800 text-lg mb-2 flex items-center gap-2">
+                  <span className="text-2xl">ℹ️</span>
+                  What are actions?
+                </h4>
+                <p className="text-lg text-emerald-700 mb-2">
+                  • Every 30 minutes of focus = 1 action point
                 </p>
-                 <p className="text-lg historical-game-title mb-2">
-                    • Choose your actions to nation on the right
+                <p className="text-lg text-emerald-700 mb-2">
+                  • Choose your actions to nation on the right
                 </p>
               </div>
             </div>
             
             {/* Bottom - Start button */}
             <div className="w-full md:w-1/2 flex flex-col items-center justify-center">
-            <div className="mt-6 mb-2">
+              <div className="mt-6 mb-2 w-full">
                 <textarea
                   value={intention}
                   onChange={(e) => setIntention(e.target.value)}
                   placeholder="Write your intention for this focus session"
-                  className="bg-[#15223A] historical-game-title text-[#FFD700] border border-[#FFD700] rounded-lg px-4 py-2 w-64 outline-none text-base resize-none"
+                  className="bg-white text-gray-800 border border-gray-200 rounded-lg px-4 py-2 w-full outline-none text-base resize-none"
+                  style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
                 />
               </div>
               <button 
                 onClick={startFocusSession}
-                className="px-12 py-3 bg-[#15223A] historical-game-title text-[#FFD700] rounded-lg font-bold text-2xl border border-[#FFD700] hover:bg-[#1D2C4A] transition-colors duration-200"
+                className="px-12 py-3 bg-[#6ec53e] text-white rounded-lg font-bold text-2xl hover:opacity-90 transition-all duration-200 w-full flex items-center justify-center gap-2"
+                style={{ boxShadow: '0 4px 0 rgba(89,167,0,255)', transform: 'translateY(-2px)' }}
               >
-                START
+                <span className="text-3xl">▶️</span>
+                Start Focus
               </button>
             </div>
-                
           </div>
         </div>
       ) : (
-        <div className="relative z-10 bg-[#0B1423] rounded-lg border border-[#FFD700] text-[#FFD700] p-4 w-full max-w-4xl">
-
-          
-          {sessionStarted && (
+        // <div className="relative z-10 bg-white rounded-lg border border-gray-200 text-black p-4 w-full max-w-4xl" style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}>
+          <>
+        {sessionStarted && (
             <FocusTimer 
               userId={userId}
               initialDuration={duration * 60}
@@ -343,10 +342,11 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
               handleModalClose={handleModalClose}
               executeActionUpdate={executeActionUpdate}
               playerNationResourceTotals={playerNationResourceTotals}
-              intention={intention} // Pass intention to FocusTimer
+              intention={intention}
             />
           )}
-        </div>
+          </>
+        // </div>
       )}
     </div>
   );

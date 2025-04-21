@@ -33,8 +33,8 @@ export default function Statistics() {
   ];
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-[#FFD700] mb-8 text-center historical-game-title">Your Statistics</h1>
+    <div className="w-full max-w-6xl mx-auto px-4 py-8 bg-white min-h-screen">
+      <h1 className="text-3xl font-bold text-[#0B1423] mb-8 text-center [font-family:var(--font-mplus-rounded)]">Your Statistics</h1>
       
       {/* Timeframe selector */}
       <div className="flex justify-center mb-8 space-x-4">
@@ -42,11 +42,12 @@ export default function Statistics() {
           <button
             key={timeframe.id}
             onClick={() => setSelectedTimeframe(timeframe.id)}
-            className={`px-2 py-2 rounded-lg transition-all duration-200 historical-game-title tracking-wide text-base 
+            className={`px-4 py-2 rounded-lg transition-all duration-200 [font-family:var(--font-mplus-rounded)] tracking-wide text-base 
               ${selectedTimeframe === timeframe.id 
-                ? 'bg-[#1C2942] text-[#FFD700] border border-[#FFD700]/60' 
-                : 'bg-[#0B1423] text-[#FFD700]/70 border border-[#FFD700]/30 hover:border-[#FFD700]/60 hover:bg-[#162033]'
+                ? 'bg-[#67b9e7] text-white border-2 border-[#67b9e7] shadow-[0_4px_0_#4792ba]' 
+                : 'bg-white text-[#0B1423] border-2 border-[#67b9e7]/30 hover:border-[#67b9e7] hover:bg-gray-50'
               }`}
+            style={{ transform: selectedTimeframe === timeframe.id ? 'translateY(-2px)' : 'none' }}
           >
             {timeframe.label}
           </button>
@@ -55,65 +56,65 @@ export default function Statistics() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Focus Session Stats */}
-        <div className="backdrop-blur-sm bg-[#0B1423]/90 rounded-xl p-6 border border-[#FFD700]/30 shadow-lg">
-          <h2 className="text-2xl font-bold text-[#FFD700] mb-6 historical-game-title">Focus Sessions</h2>
+        <div className="bg-white rounded-xl p-6 border-2 border-[#67b9e7]/30 shadow-[4px_4px_0px_0px_rgba(103,185,231,0.3)]">
+          <h2 className="text-2xl font-bold text-[#0B1423] mb-6 [font-family:var(--font-mplus-rounded)]">Focus Sessions</h2>
           <div className="space-y-4">
-            <div className="flex justify-between items-center py-2 border-b border-[#FFD700]/20">
-              <span className="text-white/70">Total Sessions</span>
-              <span className="text-white font-semibold text-xl">{focusSessionStats.totalSessions}</span>
+            <div className="flex justify-between items-center py-2 border-b border-[#67b9e7]/20">
+              <span className="text-[#0B1423]/70 [font-family:var(--font-mplus-rounded)]">Total Sessions</span>
+              <span className="text-[#0B1423] font-semibold text-xl [font-family:var(--font-mplus-rounded)]">{focusSessionStats.totalSessions}</span>
             </div>
-            <div className="flex justify-between items-center py-2 border-b border-[#FFD700]/20">
-              <span className="text-white/70">Total Focus Minutes</span>
-              <span className="text-white font-semibold text-xl">{focusSessionStats.totalFocusMinutes}</span>
+            <div className="flex justify-between items-center py-2 border-b border-[#67b9e7]/20">
+              <span className="text-[#0B1423]/70 [font-family:var(--font-mplus-rounded)]">Total Focus Minutes</span>
+              <span className="text-[#0B1423] font-semibold text-xl [font-family:var(--font-mplus-rounded)]">{focusSessionStats.totalFocusMinutes}</span>
             </div>
-            <div className="flex justify-between items-center py-2 border-b border-[#FFD700]/20">
-              <span className="text-white/70">Average Session Length</span>
-              <span className="text-white font-semibold text-xl">{focusSessionStats.averageSessionLength} min</span>
+            <div className="flex justify-between items-center py-2 border-b border-[#67b9e7]/20">
+              <span className="text-[#0B1423]/70 [font-family:var(--font-mplus-rounded)]">Average Session Length</span>
+              <span className="text-[#0B1423] font-semibold text-xl [font-family:var(--font-mplus-rounded)]">{focusSessionStats.averageSessionLength} min</span>
             </div>
-            <div className="flex justify-between items-center py-2 border-b border-[#FFD700]/20">
-              <span className="text-white/70">Longest Streak</span>
-              <span className="text-white font-semibold text-xl">{focusSessionStats.longestStreak} days</span>
+            <div className="flex justify-between items-center py-2 border-b border-[#67b9e7]/20">
+              <span className="text-[#0B1423]/70 [font-family:var(--font-mplus-rounded)]">Longest Streak</span>
+              <span className="text-[#0B1423] font-semibold text-xl [font-family:var(--font-mplus-rounded)]">{focusSessionStats.longestStreak} days</span>
             </div>
             <div className="flex justify-between items-center py-2">
-              <span className="text-white/70">Current Streak</span>
-              <span className="text-white font-semibold text-xl">{focusSessionStats.currentStreak} days</span>
+              <span className="text-[#0B1423]/70 [font-family:var(--font-mplus-rounded)]">Current Streak</span>
+              <span className="text-[#0B1423] font-semibold text-xl [font-family:var(--font-mplus-rounded)]">{focusSessionStats.currentStreak} days</span>
             </div>
           </div>
         </div>
 
         {/* Game Progress Stats */}
-        <div className="backdrop-blur-sm bg-[#0B1423]/90 rounded-xl p-6 border border-[#FFD700]/30 shadow-lg">
-          <h2 className="text-2xl font-bold text-[#FFD700] mb-6 historical-game-title">Game Progress</h2>
+        <div className="bg-white rounded-xl p-6 border-2 border-[#67b9e7]/30 shadow-[4px_4px_0px_0px_rgba(103,185,231,0.3)]">
+          <h2 className="text-2xl font-bold text-[#0B1423] mb-6 [font-family:var(--font-mplus-rounded)]">Game Progress</h2>
           <div className="space-y-4">
-            <div className="flex justify-between items-center py-2 border-b border-[#FFD700]/20">
-              <span className="text-white/70">Total Actions</span>
-              <span className="text-white font-semibold text-xl">{gameProgressStats.totalActions}</span>
+            <div className="flex justify-between items-center py-2 border-b border-[#67b9e7]/20">
+              <span className="text-[#0B1423]/70 [font-family:var(--font-mplus-rounded)]">Total Actions</span>
+              <span className="text-[#0B1423] font-semibold text-xl [font-family:var(--font-mplus-rounded)]">{gameProgressStats.totalActions}</span>
             </div>
-            <div className="flex justify-between items-center py-2 border-b border-[#FFD700]/20">
-              <span className="text-white/70">Resources Gained</span>
-              <span className="text-white font-semibold text-xl">{gameProgressStats.resourcesGained}</span>
+            <div className="flex justify-between items-center py-2 border-b border-[#67b9e7]/20">
+              <span className="text-[#0B1423]/70 [font-family:var(--font-mplus-rounded)]">Resources Gained</span>
+              <span className="text-[#0B1423] font-semibold text-xl [font-family:var(--font-mplus-rounded)]">{gameProgressStats.resourcesGained}</span>
             </div>
-            <div className="flex justify-between items-center py-2 border-b border-[#FFD700]/20">
-              <span className="text-white/70">Population Growth</span>
-              <span className="text-white font-semibold text-xl">+{gameProgressStats.populationGrowth.toLocaleString()}</span>
+            <div className="flex justify-between items-center py-2 border-b border-[#67b9e7]/20">
+              <span className="text-[#0B1423]/70 [font-family:var(--font-mplus-rounded)]">Population Growth</span>
+              <span className="text-[#0B1423] font-semibold text-xl [font-family:var(--font-mplus-rounded)]">+{gameProgressStats.populationGrowth.toLocaleString()}</span>
             </div>
-            <div className="flex justify-between items-center py-2 border-b border-[#FFD700]/20">
-              <span className="text-white/70">Military Strength</span>
-              <span className="text-white font-semibold text-xl">{gameProgressStats.militaryStrength.toLocaleString()}</span>
+            <div className="flex justify-between items-center py-2 border-b border-[#67b9e7]/20">
+              <span className="text-[#0B1423]/70 [font-family:var(--font-mplus-rounded)]">Military Strength</span>
+              <span className="text-[#0B1423] font-semibold text-xl [font-family:var(--font-mplus-rounded)]">{gameProgressStats.militaryStrength.toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center py-2">
-              <span className="text-white/70">Industrial Capacity</span>
-              <span className="text-white font-semibold text-xl">{gameProgressStats.industrialCapacity}%</span>
+              <span className="text-[#0B1423]/70 [font-family:var(--font-mplus-rounded)]">Industrial Capacity</span>
+              <span className="text-[#0B1423] font-semibold text-xl [font-family:var(--font-mplus-rounded)]">{gameProgressStats.industrialCapacity}%</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Recent Activity (Placeholder) */}
-      <div className="mt-8 backdrop-blur-sm bg-[#0B1423]/90 rounded-xl p-6 border border-[#FFD700]/30 shadow-lg">
-        <h2 className="text-2xl font-bold text-[#FFD700] mb-6 historical-game-title">Recent Activity</h2>
+      {/* Recent Activity */}
+      <div className="mt-8 bg-white rounded-xl p-6 border-2 border-[#67b9e7]/30 shadow-[4px_4px_0px_0px_rgba(103,185,231,0.3)]">
+        <h2 className="text-2xl font-bold text-[#0B1423] mb-6 [font-family:var(--font-mplus-rounded)]">Recent Activity</h2>
         <div className="space-y-4">
-          <div className="text-center text-white/50 py-8">
+          <div className="text-center text-[#0B1423]/50 py-8 [font-family:var(--font-mplus-rounded)]">
             Your recent focus sessions and game actions will appear here.
           </div>
         </div>

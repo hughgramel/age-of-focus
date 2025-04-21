@@ -108,35 +108,46 @@ const SessionConfirmation = ({
   
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[1000]">
-      <div className="bg-[#0B1423] rounded-xl border-20 border-[#FFD700]/60 p-8 w-[90%] max-w-[500px] shadow-lg">
-        <h2 className="text-[#FFD700] text-[1.8rem] mb-6 text-center historical-game-title">End Session?</h2>
+      <div className="bg-white rounded-xl p-8 w-[90%] max-w-[500px] shadow-lg border border-gray-200 [font-family:var(--font-mplus-rounded)]" style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}>
+        <h2 className="text-gray-800 text-[1.8rem] mb-6 text-center flex items-center justify-center gap-2">
+          <span className="text-3xl">❓</span>
+          End Session?
+        </h2>
         
         {willRoundToZero ? (
-          <div className="mb-8 border-l-4 border-[#DC2626]/70 pl-4 bg-[#DC2626]/10 p-4 rounded-lg">
-            <p className="text-[#FFD700]/80 mb-2 text-center">Warning: Your session lasted less than 15 minutes and will be rounded down to 0 minutes.</p>
-            <p className="text-[#FFD700]/80 mb-2 text-center">Current time: {minutesElapsed} minutes</p>
-            <p className="text-[#FFD700]/80 mb-2 text-center">Rounded time: 0 minutes</p>
+          <div className="mb-8 border-l-4 border-red-500 pl-4 bg-red-50 p-4 rounded-lg">
+            <div className="flex items-center gap-2 mb-2 text-red-600">
+              <span className="text-2xl">⚠️</span>
+              <p className="font-semibold">Warning</p>
+            </div>
+            <p className="text-red-600 mb-2">Your session lasted less than 15 minutes and will be rounded down to 0 minutes.</p>
+            <p className="text-red-600/80 mb-2">Current time: {minutesElapsed} minutes</p>
+            <p className="text-red-600/80 mb-2">Rounded time: 0 minutes</p>
           </div>
         ) : (
           <div className="mb-8">
-            <p className="text-[#FFD700]/80 mb-2 text-center">You've focused for {minutesElapsed} minutes.</p>
+            <p className="text-gray-700 mb-2 text-center text-lg">You've focused for {minutesElapsed} minutes.</p>
             {minutesElapsed !== minutesRounded && (
-              <p className="text-[#FFD700]/80 mb-2 text-center">This will be rounded to {minutesRounded} minutes (nearest 15-minute increment).</p>
+              <p className="text-gray-600 mb-2 text-center">This will be rounded to {minutesRounded} minutes (nearest 15-minute increment).</p>
             )}
           </div>
         )}
         
         <div className="flex justify-between gap-4 mt-6">
           <button 
-            className="bg-[#15223A] text-[#FFD700] border border-[#FFD700]/50 py-3 px-0 rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 flex-1 text-center hover:bg-[#1D2C4A]" 
+            className="bg-white text-gray-800 border border-gray-200 py-3 px-0 rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 flex-1 text-center hover:bg-gray-50 flex items-center justify-center gap-2" 
+            style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}
             onClick={onCancel}
           >
+            <span className="text-xl">⏱️</span>
             Continue Session
           </button>
           <button 
-            className="bg-[rgba(153,27,27,0.2)] text-[#FFD700] border border-[#DC2626]/50 py-3 px-0 rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 flex-1 text-center hover:bg-[rgba(153,27,27,0.3)]" 
+            className="bg-white text-red-600 border border-red-200 py-3 px-0 rounded-lg text-base font-semibold cursor-pointer transition-all duration-200 flex-1 text-center hover:bg-red-50 flex items-center justify-center gap-2" 
+            style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}
             onClick={onConfirm}
           >
+            <span className="text-xl">⏹️</span>
             End Session
           </button>
         </div>
@@ -178,48 +189,49 @@ const SessionComplete = ({
     if (onReturnHome) {
       onReturnHome();
     }
-    // Remove the router navigation to just close the modal
   };
 
   return (
     <div className="w-full max-w-[700px] mx-auto">
-
-
-      
-      <div className="bg-[#0B1423] rounded-xl border-2 border-[#FFD700]/60 overflow-hidden shadow-lg">
-        <div className="bg-[#15223A] py-6 px-6 text-center border-b border-[#FFD700]/30">
-          <h1 className="text-[2.5rem] text-[#FFD700] m-0 font-bold historical-game-title">Session Complete!</h1>
+      <div className="bg-white rounded-xl overflow-hidden shadow-lg border border-gray-200 [font-family:var(--font-mplus-rounded)]" style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}>
+        <div className="bg-[#6ec53e] py-6 px-6 text-center">
+          <h1 className="text-[2.5rem] text-white m-0 font-bold flex items-center justify-center gap-3">
+            <span className="text-4xl">🎉</span>
+            Session Complete!
+          </h1>
         </div>
         
         <div className="p-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
             <div className="flex items-center gap-4">
-              <div className="text-[2.5rem] text-[#FFD700]">⏱️</div>
+              <div className="text-[2.5rem]">⏱️</div>
               <div>
-                <h3 className="text-[1.2rem] text-[#FFD700]/80 mb-2 historical-game-title">Focused for</h3>
-                <p className="text-[1.5rem] text-[#FFD700] font-semibold historical-game-title">{formatTimeElapsed(minutesElapsed)}</p>
+                <h3 className="text-[1.2rem] text-gray-600 mb-2">Focused for</h3>
+                <p className="text-[1.5rem] text-gray-800 font-semibold">{formatTimeElapsed(minutesElapsed)}</p>
               </div>
             </div>
             
             <div className="flex items-center gap-4">
-              <div className="text-[2.5rem] text-[#FFD700]">🕒</div>
+              <div className="text-[2.5rem]">🕒</div>
               <div>
-                <h3 className="text-[1.2rem] text-[#FFD700]/80 mb-2 historical-game-title">Session Details</h3>
-                <p className="text-base text-[#FFD700]/80 my-1 historical-game-title">Start: {formatTimeStamp(startTime)}</p>
-                <p className="text-base text-[#FFD700]/80 my-1 historical-game-title">End: {formatTimeStamp(endTime)}</p>
+                <h3 className="text-[1.2rem] text-gray-600 mb-2">Session Details</h3>
+                <p className="text-base text-gray-600 my-1">Start: {formatTimeStamp(startTime)}</p>
+                <p className="text-base text-gray-600 my-1">End: {formatTimeStamp(endTime)}</p>
               </div>
             </div>
           </div>
           
           <div className="text-center my-8">
-            <p className="text-[1.2rem] text-[#FFD700]/90 historical-game-title">Well done! You've completed a focus session!</p>
+            <p className="text-[1.2rem] text-gray-700">Well done! You've completed a focus session!</p>
           </div>
           
           <div className="flex justify-center mt-6">
             <button 
-              className="bg-[#15223A] text-[#FFD700] border border-[#FFD700]/50 py-3 px-8 rounded-lg text-[1.2rem] font-semibold cursor-pointer transition-all duration-200 hover:bg-[#1D2C4A] historical-game-title" 
+              className="bg-[#6ec53e] text-white py-3 px-8 rounded-lg text-[1.2rem] font-semibold cursor-pointer transition-all duration-200 hover:opacity-90 flex items-center justify-center gap-2" 
+              style={{ boxShadow: '0 4px 0 rgba(89,167,0,255)', transform: 'translateY(-2px)' }}
               onClick={handleReturnHome}
             >
+              <span className="text-2xl">🗺️</span>
               Return to Map
             </button>
           </div>
@@ -809,6 +821,10 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
 
   const deleteSession = async () => {
     try {
+      if (!sessionId.current) {
+        console.error("No active session to delete");
+        return;
+      }
       await SessionService.deleteSession(sessionId.current);
       isCompleted.current = true;
       setRerender((e) => e + 1);
@@ -824,6 +840,11 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
       isBreak: isBreak.current,
       sessionId: sessionId.current
     });
+
+    if (!sessionId.current) {
+      console.error("No active session to update");
+      return;
+    }
 
     if (breakTimeRemaining.current >= 5) {
       if (!isBreak.current) {
@@ -886,6 +907,11 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
       sessionId: sessionId.current,
       isBreak: isBreak.current
     });
+
+    if (!sessionId.current) {
+      console.error("No active session to update");
+      return;
+    }
 
     const session: SessionUpdate = {
       session_state: "focus",
@@ -972,7 +998,7 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
   }
 
   return (
-    <div className="h-full w-full flex justify-center items-center p-5 historical-game-title">
+    <div className="h-full w-full flex justify-center items-center p-5 [font-family:var(--font-mplus-rounded)]">
       {showConfirmation && (
         <SessionConfirmation
           minutesElapsed={pendingValues.current.minutesElapsed}
@@ -993,43 +1019,42 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
             undefined}
         />
       ) : (
-        <div className="bg-[#0B1423] rounded-xl p-8 w-full max-w-[700px] mx-auto shadow-lg text-[#FFD700]">
+        <div className="bg-white rounded-xl p-8 w-full max-w-[700px] mx-auto shadow-lg text-gray-800 border border-gray-200" style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}>
           {/* Close button */}
           <button 
-            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full border border-[#FFD700]/50 text-[#FFD700] hover:bg-[#1D2C4A] hover:border-[#FFD700] transition-all duration-200"
+            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all duration-200"
             onClick={handleModalClose}
           >
             ✕
           </button>
          
           <div>
-            
-            <h1 className="text-center text-2xl mb-0 font-semibold text-[#FFD700] historical-game-title">
+            <h1 className="text-center text-2xl mb-0 font-semibold text-gray-800 flex items-center justify-center gap-2">
+              <span className="text-3xl">{isBreak.current ? "☕" : "🎯"}</span>
               {isBreak.current ? "Taking a Break for " : "Focusing for "} 
               {isBreak.current 
                 ? getMinutesOrHoursIfOverSixty(BREAK_TIME_SECONDS) 
                 : getMinutesOrHoursIfOverSixty(FOCUS_TIME_SECONDS)
               }
             </h1>
-           
           </div>
 
           <div className="my-1 flex justify-center">
-            <div className="text-[4rem] font-bold text-[#FFD700] ">
+            <div className="text-[4rem] font-bold text-gray-800">
               {convertSecondsToTimeFormat(secondsRemaining.current < 0 ? 0 : secondsRemaining.current)}
             </div>
-            
           </div>
+
           {intention && (
-              <div className="text-center mb-2">
-                <p className="text-lg text-[#FFD700]/80 italic historical-game-title">"{intention}"</p>
-              </div>
-            )}
+            <div className="text-center mb-2">
+              <p className="text-lg text-gray-600 italic">"{intention}"</p>
+            </div>
+          )}
 
           <div className="my-8">
-            <div className="h-3 bg-[#15223A] rounded-lg overflow-hidden border border-[#FFD700]/30 mb-6">
+            <div className="h-3 bg-gray-100 rounded-lg overflow-hidden border border-gray-200 mb-6">
               <div
-                className="h-full bg-gradient-to-r from-[#FFD700] to-[#FFC107] rounded-lg transition-all duration-500"
+                className="h-full bg-gradient-to-r from-[#6ec53e] to-[#8ed75f] rounded-lg transition-all duration-500"
                 style={{ 
                   width: `${(secondsElapsed.current / (secondsElapsed.current + secondsRemaining.current)) * 100}%` 
                 }}
@@ -1040,9 +1065,11 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
             <div className="flex justify-between items-center mt-10 mb-12">
               {/* Save button */}
               <button 
-                className="bg-[#15223A] text-[#FFD700] border border-[#FFD700]/80 py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-200 hover:bg-[#1D2C4A] historical-game-title w-[32%]" 
+                className="bg-white text-gray-800 border border-gray-200 py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-200 hover:bg-gray-50 w-[32%] flex items-center justify-center gap-2" 
+                style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}
                 onClick={promptSessionEnd}
               >
+                <span className="text-2xl">💾</span>
                 Save session
               </button>
               
@@ -1050,62 +1077,74 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
               {isBreak.current ? (
                 <div className="flex flex-col items-center w-[32%] gap-2">
                   <button 
-                    className="bg-[#1A3959] text-[#FFD700] border border-[#FFD700]/80 py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-200 hover:bg-[#254670] w-full text-center historical-game-title" 
+                    className="bg-[#6ec53e] text-white py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-200 hover:opacity-90 w-full text-center flex items-center justify-center gap-2" 
+                    style={{ boxShadow: '0 4px 0 rgba(89,167,0,255)', transform: 'translateY(-2px)' }}
                     onClick={returnToFocus}
                   >
+                    <span className="text-2xl">▶️</span>
                     Resume Focus
                   </button>
                   <button 
-                    className="bg-[#15223A] text-[#FFD700] border border-[#FFD700]/50 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-[#1D2C4A] disabled:opacity-50 disabled:cursor-not-allowed historical-game-title" 
+                    className="bg-white text-gray-800 border border-gray-200 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" 
+                    style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
                     onClick={setBreak} 
                     disabled={breakTimeRemaining.current === 0}
                   >
+                    <span className="text-xl">⏰</span>
                     Extend break ({breakTimeRemaining.current}m left)
                   </button>
                 </div>
               ) : (
                 <button 
-                  className="bg-[#1A3959] text-[#FFD700] border border-[#FFD700]/80 py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-200 hover:bg-[#254670] w-[32%] text-center historical-game-title" 
+                  className="bg-[#6ec53e] text-white py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-200 hover:opacity-90 w-[32%] text-center flex items-center justify-center gap-2" 
+                  style={{ boxShadow: '0 4px 0 rgba(89,167,0,255)', transform: 'translateY(-2px)' }}
                   onClick={setBreak} 
                   disabled={breakTimeRemaining.current === 0}
                 >
+                  <span className="text-2xl">☕</span>
                   5m break
                 </button>
               )}
               
               {/* Discard button */}
               <button 
-                className="bg-[rgba(153,27,27,0.2)] text-[#FFD700] border border-[#FFD700]/80 py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-200 hover:bg-[rgba(153,27,27,0.3)] historical-game-title w-[32%]" 
+                className="bg-white text-red-600 border border-red-200 py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-200 hover:bg-red-50 w-[32%] flex items-center justify-center gap-2" 
+                style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}
                 onClick={deleteSession}
               >
-                Discard session
+                <span className="text-2xl">🗑️</span>
+                Discard
               </button>
             </div>
           </div>
 
           {/* Debug buttons section - separated at the bottom */}
-          <div className="flex justify-center flex-wrap gap-3 mt-12 pt-6 border-t border-[#FFD700]/20 opacity-70 hover:opacity-100 transition-opacity">
-            <p className="w-full text-center text-[#FFD700]/60 text-sm mb-2 historical-game-title">Debug Tools</p>
+          <div className="flex justify-center flex-wrap gap-3 mt-12 pt-6 border-t border-gray-200 opacity-70 hover:opacity-100 transition-opacity">
+            <p className="w-full text-center text-gray-500 text-sm mb-2">Debug Tools</p>
             <button 
-              className="bg-[#15223A] text-[#FFD700] border border-[#FFD700]/30 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-[#1D2C4A] historical-game-title" 
+              className="bg-white text-gray-600 border border-gray-200 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-gray-50" 
+              style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
               onClick={testFifteenMinutes}
             >
               Test 15 min
             </button>
             <button 
-              className="bg-[#15223A] text-[#FFD700] border border-[#FFD700]/30 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-[#1D2C4A] historical-game-title" 
+              className="bg-white text-gray-600 border border-gray-200 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-gray-50" 
+              style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
               onClick={adjustSessionTimeMinus15}
             >
               Adjust -15min
             </button>
             <button 
-              className="bg-[#15223A] text-[#FFD700] border border-[#FFD700]/30 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-[#1D2C4A] historical-game-title" 
+              className="bg-white text-gray-600 border border-gray-200 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-gray-50" 
+              style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
               onClick={printSessionData}
             >
               Debug session
             </button>
             <button 
-              className="bg-[#15223A] text-[#FFD700] border border-[#FFD700]/30 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-[#1D2C4A] historical-game-title" 
+              className="bg-white text-gray-600 border border-gray-200 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-gray-50" 
+              style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
               onClick={printGameState}
             >
               Debug game

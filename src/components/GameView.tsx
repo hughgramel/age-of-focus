@@ -173,9 +173,11 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
       if (selectedProvince) {
         // Create and style the province popup
         const popup = document.createElement('div');
-        popup.className = 'fixed bottom-4 left-4 z-50 bg-[#0B1423] p-6 rounded-lg border border-[#FFD700]/40 text-[#FFD700] historical-game-title';
+        popup.className = '[font-family:var(--font-mplus-rounded)] fixed bottom-4 left-4 z-50 bg-white p-6 rounded-lg';
+        popup.style.border = '1px solid rgb(229,229,229)';
+        popup.style.boxShadow = '0 4px 0 rgba(229,229,229,255)';
+        popup.style.transform = 'translateY(-2px)';
         popup.style.width = '350px';
-        popup.style.boxShadow = '0 4px 12px rgba(0,0,0,0.5)';
 
         // Function to capitalize first letter
         const capitalizeFirstLetter = (string: string): string => {
@@ -184,40 +186,47 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
 
         // Add province details
         popup.innerHTML = `
-          <div class="flex justify-between items-start mb-3">
-            <h3 class="text-2xl font-semibold">${selectedProvince.name}</h3>
-            <span class="text-base text-[#FFD700]/70">${selectedProvince.nationName}</span>
+          <div class="flex justify-between items-start mb-4">
+            <h3 class="text-2xl font-bold text-black">${selectedProvince.name}</h3>
+            <span class="text-base text-black/70">${selectedProvince.nationName}</span>
           </div>
-          <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-base mb-4">
-            <p class="flex items-center">
-              <span class="text-[#FFD700]/70 mr-2">Population:</span> 
-            </p>
-            <p class="text-right font-semibold">${selectedProvince.population.toLocaleString()}</p>
+          <div class="grid grid-cols-2 gap-x-6 gap-y-3 text-base mb-4">
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">👥</span>
+              <span class="text-black/70">Population:</span> 
+            </div>
+            <p class="text-right font-bold text-black">${selectedProvince.population.toLocaleString()}</p>
             
-            <p class="flex items-center">
-              <span class="text-[#FFD700]/70 mr-2">Gold:</span> 
-            </p>
-            <p class="text-right font-semibold">${selectedProvince.goldIncome}</p>
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">💰</span>
+              <span class="text-black/70">Gold:</span> 
+            </div>
+            <p class="text-right font-bold text-black">${selectedProvince.goldIncome}</p>
             
-            <p class="flex items-center">
-              <span class="text-[#FFD700]/70 mr-2">Industry:</span> 
-            </p>
-            <p class="text-right font-semibold">${selectedProvince.industry}</p>
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">🏭</span>
+              <span class="text-black/70">Industry:</span> 
+            </div>
+            <p class="text-right font-bold text-black">${selectedProvince.industry}</p>
             
-            <p class="flex items-center">
-              <span class="text-[#FFD700]/70 mr-2">Resource:</span> 
-            </p>
-            <p class="text-right font-semibold">${capitalizeFirstLetter(selectedProvince.resourceType)}</p>
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">🌟</span>
+              <span class="text-black/70">Resource:</span> 
+            </div>
+            <p class="text-right font-bold text-black">${capitalizeFirstLetter(selectedProvince.resourceType)}</p>
             
-            <p class="flex items-center">
-              <span class="text-[#FFD700]/70 mr-2">Army:</span> 
-            </p>
-            <p class="text-right font-semibold">${selectedProvince.army.toLocaleString()}</p>
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">⚔️</span>
+              <span class="text-black/70">Army:</span> 
+            </div>
+            <p class="text-right font-bold text-black">${selectedProvince.army.toLocaleString()}</p>
           </div>
           <button 
-            class="w-full px-4 py-3 bg-[#15223A] text-[#FFD700] rounded-lg border border-[#FFD700]/40 hover:bg-[#1D2C4A] hover:border-[#FFD700]/60 transition-colors duration-200 text-base"
+            class="w-full px-4 py-2 bg-[#67b9e7] text-white rounded-lg font-bold text-xl hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-2"
+            style="box-shadow: 0 4px 0 #4792ba; transform: translateY(-2px);"
             id="showNationButton"
           >
+            <span class="text-2xl">🎯</span>
             View Nation Details
           </button>
         `;
@@ -237,9 +246,11 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
 
             // Create and style the nation popup
             const nationPopup = document.createElement('div');
-            nationPopup.className = 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-[#0B1423] p-6 rounded-lg border border-[#FFD700]/40 text-[#FFD700] historical-game-title';
+            nationPopup.className = '[font-family:var(--font-mplus-rounded)] fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-white p-6 rounded-lg';
+            nationPopup.style.border = '1px solid rgb(229,229,229)';
+            nationPopup.style.boxShadow = '0 4px 0 rgba(229,229,229,255)';
+            nationPopup.style.transform = 'translateY(-2px)';
             nationPopup.style.width = '450px';
-            nationPopup.style.boxShadow = '0 4px 12px rgba(0,0,0,0.5)';
 
             // Calculate total province stats
             const totalPopulation = owningNation.provinces.reduce((sum, p) => sum + p.population, 0);
@@ -250,55 +261,85 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             // Add nation details
             nationPopup.innerHTML = `
               <div class="flex justify-between items-start mb-4">
-                <h3 class="text-2xl font-semibold">${owningNation.name}</h3>
+                <h3 class="text-2xl font-bold text-black">${owningNation.name}</h3>
                 <button 
-                  class="text-[#FFD700]/70 hover:text-[#FFD700] transition-colors duration-200 w-8 h-8 flex items-center justify-center rounded-full border border-[#FFD700]/30 hover:border-[#FFD700]/60"
+                  class="text-black/70 hover:text-black transition-colors duration-200 w-8 h-8 flex items-center justify-center rounded-full border border-black/30 hover:border-black/60"
                   id="closeNationButton"
                 >
                   ✕
                 </button>
               </div>
-              <div class="space-y-2 text-base">
-                <p class="flex justify-between border-b border-[#FFD700]/20 pb-2">
-                  <span class="text-[#FFD700]/70">Nation Tag:</span>
-                  <span class="font-semibold">${owningNation.nationTag}</span>
-                </p>
-                <p class="flex justify-between border-b border-[#FFD700]/20 pb-2">
-                  <span class="text-[#FFD700]/70">Total Population:</span>
-                  <span class="font-semibold">${totalPopulation.toLocaleString()}</span>
-                </p>
-                <p class="flex justify-between border-b border-[#FFD700]/20 pb-2">
-                  <span class="text-[#FFD700]/70">Total Gold Income:</span>
-                  <span class="font-semibold">${totalGoldIncome}</span>
-                </p>
-                <p class="flex justify-between border-b border-[#FFD700]/20 pb-2">
-                  <span class="text-[#FFD700]/70">Total Industry:</span>
-                  <span class="font-semibold">${totalIndustry}</span>
-                </p>
-                <p class="flex justify-between border-b border-[#FFD700]/20 pb-2">
-                  <span class="text-[#FFD700]/70">Total Army:</span>
-                  <span class="font-semibold">${totalArmy.toLocaleString()}</span>
-                </p>
-                <p class="flex justify-between border-b border-[#FFD700]/20 pb-2">
-                  <span class="text-[#FFD700]/70">Gold Reserves:</span>
-                  <span class="font-semibold">${owningNation.gold}</span>
-                </p>
-                <p class="flex justify-between border-b border-[#FFD700]/20 pb-2">
-                  <span class="text-[#FFD700]/70">Research Points:</span>
-                  <span class="font-semibold">${owningNation.researchPoints}</span>
-                </p>
-                <p class="flex justify-between border-b border-[#FFD700]/20 pb-2">
-                  <span class="text-[#FFD700]/70">Current Research:</span>
-                  <span class="font-semibold">${owningNation.currentResearchId || 'None'}</span>
-                </p>
-                <p class="flex justify-between border-b border-[#FFD700]/20 pb-2">
-                  <span class="text-[#FFD700]/70">Research Progress:</span>
-                  <span class="font-semibold">${owningNation.currentResearchProgress}%</span>
-                </p>
-                <p class="flex justify-between border-b border-[#FFD700]/20 pb-2">
-                  <span class="text-[#FFD700]/70">Number of Provinces:</span>
-                  <span class="font-semibold">${owningNation.provinces.length}</span>
-                </p>
+              <div class="space-y-3 text-base">
+                <div class="flex justify-between items-center border-b border-black/10 pb-2">
+                  <div class="flex items-center gap-3">
+                    <span class="text-3xl">🏷️</span>
+                    <span class="text-black/70">Nation Tag:</span>
+                  </div>
+                  <span class="font-bold text-black">${owningNation.nationTag}</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-black/10 pb-2">
+                  <div class="flex items-center gap-3">
+                    <span class="text-3xl">👥</span>
+                    <span class="text-black/70">Total Population:</span>
+                  </div>
+                  <span class="font-bold text-black">${totalPopulation.toLocaleString()}</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-black/10 pb-2">
+                  <div class="flex items-center gap-3">
+                    <span class="text-3xl">💰</span>
+                    <span class="text-black/70">Total Gold Income:</span>
+                  </div>
+                  <span class="font-bold text-black">${totalGoldIncome}</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-black/10 pb-2">
+                  <div class="flex items-center gap-3">
+                    <span class="text-3xl">🏭</span>
+                    <span class="text-black/70">Total Industry:</span>
+                  </div>
+                  <span class="font-bold text-black">${totalIndustry}</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-black/10 pb-2">
+                  <div class="flex items-center gap-3">
+                    <span class="text-3xl">⚔️</span>
+                    <span class="text-black/70">Total Army:</span>
+                  </div>
+                  <span class="font-bold text-black">${totalArmy.toLocaleString()}</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-black/10 pb-2">
+                  <div class="flex items-center gap-3">
+                    <span class="text-3xl">💎</span>
+                    <span class="text-black/70">Gold Reserves:</span>
+                  </div>
+                  <span class="font-bold text-black">${owningNation.gold}</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-black/10 pb-2">
+                  <div class="flex items-center gap-3">
+                    <span class="text-3xl">🔬</span>
+                    <span class="text-black/70">Research Points:</span>
+                  </div>
+                  <span class="font-bold text-black">${owningNation.researchPoints}</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-black/10 pb-2">
+                  <div class="flex items-center gap-3">
+                    <span class="text-3xl">📚</span>
+                    <span class="text-black/70">Current Research:</span>
+                  </div>
+                  <span class="font-bold text-black">${owningNation.currentResearchId || 'None'}</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-black/10 pb-2">
+                  <div class="flex items-center gap-3">
+                    <span class="text-3xl">📊</span>
+                    <span class="text-black/70">Research Progress:</span>
+                  </div>
+                  <span class="font-bold text-black">${owningNation.currentResearchProgress}%</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-black/10 pb-2">
+                  <div class="flex items-center gap-3">
+                    <span class="text-3xl">🗺️</span>
+                    <span class="text-black/70">Number of Provinces:</span>
+                  </div>
+                  <span class="font-bold text-black">${owningNation.provinces.length}</span>
+                </div>
               </div>
             `;
 

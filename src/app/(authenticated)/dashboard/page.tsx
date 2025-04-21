@@ -105,7 +105,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className={`w-full h-full flex items-center justify-center transition-opacity duration-500 ${isNavigating ? 'opacity-0' : 'opacity-100'}`}>
+    <div className={`w-full min-h-screen flex items-center justify-center bg-white transition-opacity duration-500 ${isNavigating ? 'opacity-0' : 'opacity-100'}`}>
       <div className="flex flex-col items-center gap-8 w-64 sm:w-96 -mt-16">
         <div className="w-full flex flex-col items-center">
           <div className="w-full relative">
@@ -117,7 +117,7 @@ export default function Dashboard() {
                 <button
                   onClick={handleContinueGame}
                   disabled={!recentGame}
-                  className={`w-full h-40 sm:h-56 md:h-70 lg:h-70 xl:h-70 2xl:h-70 text-lg sm:text-xl font-medium text-[#FFD700] rounded-3xl transition-all duration-200 historical-game-title border-2 ${!recentGame ? 'border-[#FFD700]/10 opacity-50 cursor-not-allowed' : 'border-[#FFD700]/30 hover:border-[#FFD700]/50'} overflow-hidden group`}
+                  className={`w-full h-40 sm:h-56 md:h-70 lg:h-70 xl:h-70 2xl:h-70 text-lg sm:text-xl font-medium text-white rounded-3xl transition-all duration-200 [font-family:var(--font-mplus-rounded)] border-2 ${!recentGame ? 'border-[#67b9e7]/10 opacity-50 cursor-not-allowed' : 'border-[#67b9e7]/30 hover:border-[#67b9e7]/50'} overflow-hidden group`}
                   style={{
                     backgroundImage: "url('/backgrounds/civil_war_background.png')",
                     backgroundSize: 'cover',
@@ -125,21 +125,21 @@ export default function Dashboard() {
                     backgroundPosition: 'center 70%',
                     backgroundRepeat: 'no-repeat',
                     clipPath: 'inset(0 0 0 0 round 24px)',
-                    boxShadow: '0 0 15px rgba(255, 255, 255, 0.2)'
+                    boxShadow: '0 4px 0 rgba(103, 185, 231, 0.3)'
                   }}
                 >
                   {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/30 to-white/60 opacity-27" />
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/60 opacity-60" />
                   
                   {/* Content */}
                   <div className="relative h-full flex flex-col z-10">
                     <div className="flex flex-col items-top justify-start h-full mt-4 px-6">
-                      <span className="text-4xl sm:text-4xl font-bold text-[#FFD700] drop-shadow-lg">
+                      <span className="text-4xl sm:text-4xl font-bold text-white drop-shadow-lg">
                         {recentGame ? 'Continue' : 'No Recent Game'}
                       </span>
                       {recentGame && (
                         <div className="absolute bottom-6 left-6 right-6">
-                          <div className="text-2xl text-[#FFD700]/90 historical-game-title">
+                          <div className="text-2xl text-white/90 [font-family:var(--font-mplus-rounded)]">
                             {getNationName(recentGame.game.playerNationTag)}, {recentGame.game.date.substring(0, 4)}
                           </div>
                         </div>
@@ -151,7 +151,7 @@ export default function Dashboard() {
                 {/* Load Game Box */}
                 <div
                   onClick={() => router.push('/load_game')}
-                  className={`w-full h-40 sm:h-56 md:h-70 lg:h-70 xl:h-70 2xl:h-70 text-lg sm:text-xl font-medium text-[#FFD700] rounded-3xl transition-all duration-200 historical-game-title border-2 ${previousGames.length === 0 ? 'border-[#FFD700]/10 opacity-50 cursor-not-allowed' : 'border-[#FFD700]/30 hover:border-[#FFD700]/50 cursor-pointer'} overflow-hidden group relative`}
+                  className={`w-full h-40 sm:h-56 md:h-70 lg:h-70 xl:h-70 2xl:h-70 text-lg sm:text-xl font-medium text-white rounded-3xl transition-all duration-200 [font-family:var(--font-mplus-rounded)] border-2 ${previousGames.length === 0 ? 'border-[#67b9e7]/10 opacity-50 cursor-not-allowed' : 'border-[#67b9e7]/30 hover:border-[#67b9e7]/50 cursor-pointer'} overflow-hidden group relative`}
                   style={{
                     backgroundImage: "url('/backgrounds/redcoats_background.png')",
                     backgroundSize: 'cover',
@@ -159,16 +159,16 @@ export default function Dashboard() {
                     backgroundPosition: 'center 40%',
                     backgroundRepeat: 'no-repeat',
                     clipPath: 'inset(0 0 0 0 round 24px)',
-                    boxShadow: '0 0 15px rgba(255, 255, 255, 0.2)'
+                    boxShadow: '0 4px 0 rgba(103, 185, 231, 0.3)'
                   }}
                 >
                   {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#1A1A1A]/40 to-[#1A1A1A]/70 opacity-40" />
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/60 opacity-60" />
                   
                   {/* Content */}
                   <div className="relative h-full flex flex-col z-10">
                     <div className="flex flex-col items-top justify-start h-full mt-4 px-6 pl-13">
-                      <span className="text-4xl sm:text-4xl font-bold text-[#FFD700] drop-shadow-lg">
+                      <span className="text-4xl sm:text-4xl font-bold text-white drop-shadow-lg">
                         {previousGames.length != 0 ? 'Load Game' : 'No Other Games'}
                       </span>
                     </div>
@@ -184,9 +184,9 @@ export default function Dashboard() {
                 setShowScenarios(false);
               }}
               disabled={loading}
-              className={`group relative w-full mb-6 px-3 py-3 sm:py-4 text-2xl sm:text-3xl font-medium text-[#FFD700] bg-[#0B1423] rounded-lg transition-all duration-500 ease-in-out historical-game-title flex items-center justify-center gap-3 border-2 ${!recentGame && !loading ? 'border-[#FFD700]/10 opacity-50 cursor-not-allowed' : 'border-[#FFD700]/40 hover:border-[#FFD700] hover:bg-[#162033]'} shadow-[4px_4px_0px_0px_rgba(255,215,0,0.3)]
+              className={`group relative w-full mb-6 px-3 py-3 sm:py-4 text-2xl sm:text-3xl font-medium text-white bg-[#67b9e7] rounded-lg transition-all duration-500 ease-in-out [font-family:var(--font-mplus-rounded)] flex items-center justify-center gap-3 border-2 ${!recentGame && !loading ? 'border-[#67b9e7]/10 opacity-50 cursor-not-allowed' : 'border-[#67b9e7] hover:bg-[#4792ba]'} shadow-[0_4px_0_#4792ba]
                 ${showResumeOptions ? 'mt-13 sm:mt-44 md:mt-70 lg:mt-70 xl:mt-70 2xl:mt-70' : ''}`}
-              style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%)' }}
+              style={{ transform: 'translateY(-2px)' }}
             >
               <span role="img" aria-label="timer" className="text-2xl sm:text-3xl">🏰</span>
               {!recentGame && !loading ? 'No Recent Nation' : 'Resume Nation'}
@@ -199,7 +199,7 @@ export default function Dashboard() {
               <div className="relative w-full h-40 sm:h-56 md:h-70 lg:h-70 xl:h-70 2xl:h-70 sm:mb-3">
                 <button
                   onClick={() => router.push(`/country_select`)}
-                  className="w-full h-full text-lg sm:text-xl font-medium text-[#FFD700] rounded-3xl transition-all duration-200 historical-game-title border-2 border-[#FFD700]/30 hover:border-[#FFD700]/50 overflow-hidden group"
+                  className="w-full h-full text-lg sm:text-xl font-medium text-white rounded-3xl transition-all duration-200 [font-family:var(--font-mplus-rounded)] border-2 border-[#67b9e7]/30 hover:border-[#67b9e7]/50 overflow-hidden group"
                   style={{
                     backgroundImage: "url('/backgrounds/civil_war_background.png')",
                     backgroundSize: 'cover',
@@ -207,17 +207,17 @@ export default function Dashboard() {
                     backgroundPosition: 'center 70%',
                     backgroundRepeat: 'no-repeat',
                     clipPath: 'inset(0 0 0 0 round 24px)',
-                    boxShadow: '0 0 15px rgba(255, 255, 255, 0.2)'
+                    boxShadow: '0 4px 0 rgba(103, 185, 231, 0.3)'
                   }}
                 >
                   {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-white/30 to-white/60 opacity-27" />
+                  <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-black/40 to-black/60 opacity-60" />
                   
                   {/* Content */}
                   <div className="relative h-full flex flex-col z-10">
                     <div className="flex flex-row items-center justify-between px-6 pt-4 sm:pt-6">
-                      <span className="text-3xl sm:text-4xl font-bold text-[#FFD700] drop-shadow-lg">1836</span>
-                      <span className="text-xl sm:text-2xl text-[#FFD700] drop-shadow-lg font-medium">Age of Industrialization</span>
+                      <span className="text-3xl sm:text-4xl font-bold text-white drop-shadow-lg">1836</span>
+                      <span className="text-xl sm:text-2xl text-white drop-shadow-lg font-medium">Age of Industrialization</span>
                     </div>
                   </div>
                 </button>
@@ -225,7 +225,7 @@ export default function Dashboard() {
 
               {/* Coming Soon Message */}
               <div className="text-center py-2 absolute w-full -bottom-12">
-                <span className="text-[#FFD700]/70 text-sm sm:text-base historical-game-title">More scenarios coming soon...</span>
+                <span className="text-[#0B1423]/70 text-sm sm:text-base [font-family:var(--font-mplus-rounded)]">More scenarios coming soon...</span>
               </div>
             </div>
 
@@ -235,10 +235,10 @@ export default function Dashboard() {
                 setShowScenarios(!showScenarios);
                 setShowResumeOptions(false);
               }}
-              className={`group relative w-full px-3 py-3 sm:py-4 text-2xl sm:text-3xl font-medium text-[#FFD700] bg-[#0B1423] rounded-lg transition-all duration-500 ease-in-out historical-game-title flex items-center justify-center gap-3 border-2 border-[#FFD700]/40 hover:border-[#FFD700] hover:bg-[#162033] shadow-[4px_4px_0px_0px_rgba(255,215,0,0.3)] 
+              className={`group relative w-full px-3 py-3 sm:py-4 text-2xl sm:text-3xl font-medium text-white bg-[#67b9e7] rounded-lg transition-all duration-500 ease-in-out [font-family:var(--font-mplus-rounded)] flex items-center justify-center gap-3 border-2 border-[#67b9e7] hover:bg-[#4792ba] shadow-[0_4px_0_#4792ba] 
                 ${showScenarios ? 'mt-13 sm:mt-44 md:mt-70 lg:mt-70 xl:mt-70 2xl:mt-70' : ''}
                 ${showResumeOptions ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
-              style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%)' }}
+              style={{ transform: 'translateY(-2px)' }}
             >
               <span role="img" aria-label="book" className="text-2xl sm:text-3xl">⚔️</span>
               New Nation
