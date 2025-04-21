@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@types/uuid": "^10.0.0",
+    "date-fns": "^4.1.0",
     "firebase": "^10.14.1",
     "next": "15.3.0",
     "panzoom": "^9.4.3",

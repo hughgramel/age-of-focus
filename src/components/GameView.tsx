@@ -19,6 +19,7 @@ import TaskListButton from './TaskListButton';
 import NationalPathButton from './NationalPathButton';
 import FocusNowButton from './FocusNowButton';
 import ButtonGroup from './ButtonGroup';
+import TaskModal from './TaskModal';
 
 // Create a globals object to store persistent map state
 const globalMapState = {
@@ -52,6 +53,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [localTotalPopulation, setLocalTotalPopulation] = useState<number | null>(null);
   const [playerNationResourceTotals, setPlayerNationResourceTotals] = useState<playerNationResourceTotals>({
     playerGold: 0,
@@ -811,7 +813,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             selectedProvinceRef={selectedProvinceRef} 
             onProvinceSelect={handleProvinceSelect}
             onMapReady={handleMapReady}
-            disableKeyboardControls={isModalOpen}
+            disableKeyboardControls={isModalOpen || isTaskModalOpen}
           />
         ) : (
           // Real game with actual map and nations
@@ -821,7 +823,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             selectedProvinceRef={selectedProvinceRef}
             onProvinceSelect={handleProvinceSelect}
             onMapReady={handleMapReady}
-            disableKeyboardControls={isModalOpen}
+            disableKeyboardControls={isModalOpen || isTaskModalOpen}
           />
         )}
         </div>
@@ -832,7 +834,9 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         isModalOpen={isModalOpen}
         hasActiveSession={hasActiveSession}
         onTaskListClick={() => {
-          // TODO: Implement task list functionality
+          if (user) {
+            setIsTaskModalOpen(true);
+          }
         }}
         onFocusClick={() => {
           if (user && document.getElementById('focus-now-modal')) {
@@ -887,6 +891,18 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           />
         )}
       </div>
+
+      {/* Task Modal */}
+      {isTaskModalOpen && user && (
+        <TaskModal
+          userId={user.uid}
+          onClose={() => setIsTaskModalOpen(false)}
+          onTaskComplete={(task) => {
+            console.log('Task completed:', task);
+            // You can add additional logic here if needed
+          }}
+        />
+      )}
 
       {/* Test Action Button */}
   
