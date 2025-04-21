@@ -903,6 +903,8 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             console.log('Task completed:', task);
             // You can add additional logic here if needed
           }}
+          executeActionUpdate={executeActionUpdate}
+          playerNationResourceTotals={playerNationResourceTotals}
         />
       )}
 

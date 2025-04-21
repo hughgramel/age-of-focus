@@ -3,22 +3,30 @@
 import React, { useState, useEffect } from 'react';
 import { Task, TaskCreate } from '@/types/task';
 import { TaskService } from '@/services/taskService';
-import { FOCUS_ACTIONS } from '@/data/actions';
+import { FOCUS_ACTIONS, executeActions } from '@/data/actions';
 import { format } from 'date-fns';
+import { ActionUpdate } from '@/services/actionService';
+import { playerNationResourceTotals } from './GameView';
 
 interface TaskModalProps {
   userId: string;
   onClose: () => void;
   onTaskComplete?: (task: Task) => void;
+  executeActionUpdate: (action: Omit<ActionUpdate, 'target'>) => void;
+  playerNationResourceTotals: playerNationResourceTotals;
 }
 
-export default function TaskModal({ userId, onClose, onTaskComplete }: TaskModalProps) {
+export default function TaskModal({ userId, onClose, onTaskComplete, executeActionUpdate, playerNationResourceTotals }: TaskModalProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [activeTab, setActiveTab] = useState<'active' | 'completed'>('active');
-  const [newTask, setNewTask] = useState<TaskCreate>({
-    title: '',
-    description: '',
-    actionType: 'invest',
+  const [newTask, setNewTask] = useState<TaskCreate>(() => {
+    // Load the last selected action type from localStorage, default to 'invest' if none found
+    const lastActionType = localStorage.getItem('lastTaskActionType') || 'invest';
+    return {
+      title: '',
+      description: '',
+      actionType: lastActionType,
+    };
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -44,17 +52,19 @@ export default function TaskModal({ userId, onClose, onTaskComplete }: TaskModal
     
     try {
       console.log('Creating task with data:', newTask);
+      // Save the selected action type to localStorage
+      localStorage.setItem('lastTaskActionType', newTask.actionType);
       const task = await TaskService.createTask(userId, {
         ...newTask,
         description: '', // We're not using description anymore
       });
       console.log('Created task:', task);
       setTasks([task, ...tasks]);
-      setNewTask({
+      setNewTask(prev => ({
         title: '',
         description: '',
-        actionType: 'invest',
-      });
+        actionType: prev.actionType, // Keep the same action type for the next task
+      }));
     } catch (error) {
       console.error('Error creating task:', error);
     }
@@ -64,6 +74,14 @@ export default function TaskModal({ userId, onClose, onTaskComplete }: TaskModal
     try {
       await TaskService.completeTask(task.id, task);
       setTasks(tasks.map(t => t.id === task.id ? { ...t, completed: true, actionCompleted: true } : t));
+      
+      // Execute the action associated with this task
+      const action = FOCUS_ACTIONS.find(a => a.id === task.actionType);
+      if (action) {
+        console.log("Executing task action:", action);
+        executeActions([action], true, executeActionUpdate, playerNationResourceTotals);
+      }
+
       if (onTaskComplete) {
         onTaskComplete(task);
       }
@@ -210,7 +228,7 @@ export default function TaskModal({ userId, onClose, onTaskComplete }: TaskModal
                         {!task.completed && (
                           <button
                             onClick={() => handleCompleteTask(task)}
-                            className="px-3 py-2 rounded-lg text-white hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-2 text-base [font-family:var(--font-mplus-rounded)]"
+                            className="px-3 py-2 rounded-lg text-white hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-2 text-base [font-family:var(--font-mplus-rounded)] cursor-pointer hover:transform hover:-translate-y-0.5 active:translate-y-0"
                             style={{ 
                               backgroundColor: '#6ec53e',
                               boxShadow: '0 3px 0 rgba(89,167,0,255)',
@@ -223,7 +241,7 @@ export default function TaskModal({ userId, onClose, onTaskComplete }: TaskModal
                         )}
                         <button
                           onClick={() => handleDeleteTask(task.id)}
-                          className="w-10 h-10 rounded-lg text-white hover:opacity-90 transition-all duration-200 flex items-center justify-center text-xl ml-2 [font-family:var(--font-mplus-rounded)] font-bold"
+                          className="w-10 h-10 rounded-lg text-white hover:opacity-90 transition-all duration-200 flex items-center justify-center text-xl ml-2 [font-family:var(--font-mplus-rounded)] font-bold cursor-pointer hover:transform hover:-translate-y-0.5 active:translate-y-0"
                           style={{ 
                             backgroundColor: '#dc2626',
                             boxShadow: '0 3px 0 #991b1b',
