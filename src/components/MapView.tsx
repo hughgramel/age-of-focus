@@ -191,6 +191,7 @@ interface MapViewProps {
   onProvinceSelect?: (provinceId: string | null) => void;
   selectedProvinceRef: React.RefObject<string | null>;
   onMapReady?: (stateMap: Map<string, StateData>) => void;
+  disableKeyboardControls?: boolean;
 }
 
 export default function MapView({ 
@@ -199,7 +200,8 @@ export default function MapView({
   nations, 
   onProvinceSelect,
   selectedProvinceRef,
-  onMapReady
+  onMapReady,
+  disableKeyboardControls = false
 }: MapViewProps) {
   const [openSections, setOpenSections] = useState({
     markets: true,
@@ -232,6 +234,7 @@ export default function MapView({
       mapName={mapName}
       onStateClick={onProvinceSelect}
       onMapReady={onMapReady}
+      disableKeyboardControls={disableKeyboardControls}
     >
       {/* Status Bar - only show in demo mode */}
       {isDemo && (

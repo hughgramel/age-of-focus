@@ -26,6 +26,7 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
   const router = useRouter();
   const [sessionStarted, setSessionStarted] = useState(false);
   const [duration, setDuration] = useState(60); // Default: 60 minutes
+  const [intention, setIntention] = useState(''); // Add intention state
   const [selectedActions, setSelectedActions] = useState<ActionType[]>([]);
   const [processedActions, setProcessedActions] = useState<ActionType[]>([]);
   const [activeSession, setActiveSession] = useState<Session | null>(null);
@@ -101,7 +102,7 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
 
   // Start focus session
   const startFocusSession = async () => {
-    console.log('🎬 Starting new focus session...');
+    console.log('🎬 Starting new focus session...', { intention });
     // Process 'auto' selections before starting
     const processedActionsList = selectedActions.map(action => 
       action === 'auto' ? getRandomAction().id : action
@@ -134,7 +135,8 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
         focus_start_time: new Date().toISOString(),
         focus_end_time: new Date(Date.now() + duration * 60 * 1000).toISOString(),
         break_minutes_remaining: Math.floor(duration / 2),
-        total_minutes_done: 0
+        total_minutes_done: 0,
+        intention: intention // Add intention to session
       });
 
       if (newSession) {
@@ -242,6 +244,9 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
                 <option value="180">3 hours</option>
                 <option value="240">4 hours</option>
               </select>
+
+              {/* Add intention input box */}
+       
               
               {/* Timer placeholder */}
               <div className="w-full aspect-square flex items-center justify-center bg-[#15223A] rounded-lg border border-[#FFD700]/30 mt-1.5">
@@ -305,7 +310,15 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
             </div>
             
             {/* Bottom - Start button */}
-            <div className="w-full md:w-1/2 flex items-center justify-center">
+            <div className="w-full md:w-1/2 flex flex-col items-center justify-center">
+            <div className="mt-6 mb-2">
+                <textarea
+                  value={intention}
+                  onChange={(e) => setIntention(e.target.value)}
+                  placeholder="Write your intention for this focus session"
+                  className="bg-[#15223A] historical-game-title text-[#FFD700] border border-[#FFD700] rounded-lg px-4 py-2 w-64 outline-none text-base resize-none"
+                />
+              </div>
               <button 
                 onClick={startFocusSession}
                 className="px-12 py-3 bg-[#15223A] historical-game-title text-[#FFD700] rounded-lg font-bold text-2xl border border-[#FFD700] hover:bg-[#1D2C4A] transition-colors duration-200"
@@ -313,16 +326,12 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
                 START
               </button>
             </div>
+                
           </div>
         </div>
       ) : (
-        <div className="relative z-10 bg-[#0B1423] rounded-lg border border-[#FFD700] text-[#FFD700] p-8 w-full max-w-4xl">
-          {activeSession ? (
-            <div className="text-center mb-4">
-              <h2 className="text-3xl font-bold mb-4 historical-game-title">Resuming Active Session</h2>
-              <p className="text-white mb-6 historical-game-title">Your focus session is already in progress</p>
-            </div>
-          ) : null}
+        <div className="relative z-10 bg-[#0B1423] rounded-lg border border-[#FFD700] text-[#FFD700] p-4 w-full max-w-4xl">
+
           
           {sessionStarted && (
             <FocusTimer 
@@ -334,6 +343,7 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
               handleModalClose={handleModalClose}
               executeActionUpdate={executeActionUpdate}
               playerNationResourceTotals={playerNationResourceTotals}
+              intention={intention} // Pass intention to FocusTimer
             />
           )}
         </div>

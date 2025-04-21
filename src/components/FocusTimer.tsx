@@ -79,6 +79,7 @@ interface FocusTimerProps {
   handleModalClose?: () => void;
   executeActionUpdate: (action: Omit<ActionUpdate, 'target'>) => void;
   playerNationResourceTotals: playerNationResourceTotals;
+  intention?: string; // Add intention prop
 }
 
 interface SessionCompleteProps {
@@ -236,7 +237,8 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
   existingSessionId = undefined, // Default to undefined (create new session)
   handleModalClose,
   executeActionUpdate,
-  playerNationResourceTotals
+  playerNationResourceTotals,
+  intention
 }) => {
   // Default timer durations
   const FOCUS_TIME_SECONDS = initialDuration;
@@ -993,9 +995,7 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
       ) : (
         <div className="bg-[#0B1423] rounded-xl p-8 w-full max-w-[700px] mx-auto shadow-lg text-[#FFD700]">
           {/* Close button */}
-
-           {/* Close button */}
-           <button 
+          <button 
             className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full border border-[#FFD700]/50 text-[#FFD700] hover:bg-[#1D2C4A] hover:border-[#FFD700] transition-all duration-200"
             onClick={handleModalClose}
           >
@@ -1003,20 +1003,28 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
           </button>
          
           <div>
-            <h1 className="text-center text-2xl mb-6 font-semibold text-[#FFD700] historical-game-title">
+            
+            <h1 className="text-center text-2xl mb-0 font-semibold text-[#FFD700] historical-game-title">
               {isBreak.current ? "Taking a Break for " : "Focusing for "} 
               {isBreak.current 
                 ? getMinutesOrHoursIfOverSixty(BREAK_TIME_SECONDS) 
                 : getMinutesOrHoursIfOverSixty(FOCUS_TIME_SECONDS)
               }
             </h1>
+           
           </div>
 
-          <div className="my-6 flex justify-center">
+          <div className="my-1 flex justify-center">
             <div className="text-[4rem] font-bold text-[#FFD700] ">
               {convertSecondsToTimeFormat(secondsRemaining.current < 0 ? 0 : secondsRemaining.current)}
             </div>
+            
           </div>
+          {intention && (
+              <div className="text-center mb-2">
+                <p className="text-lg text-[#FFD700]/80 italic historical-game-title">"{intention}"</p>
+              </div>
+            )}
 
           <div className="my-8">
             <div className="h-3 bg-[#15223A] rounded-lg overflow-hidden border border-[#FFD700]/30 mb-6">

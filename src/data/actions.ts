@@ -19,14 +19,6 @@ interface playerNationResourceTotals {
   playerArmy: number;
 }
 
-
-
-
-
-
-
-
-
 // Create the list of available actions
 export const FOCUS_ACTIONS: FocusAction[] = [
   {
@@ -34,19 +26,13 @@ export const FOCUS_ACTIONS: FocusAction[] = [
     name: 'Invest in the Economy',
     description: 'Invest in the economy and production',
     execute: (executeActionUpdate: (action: Omit<ActionUpdate, 'target'>) => void, playerNationResourceTotals: playerNationResourceTotals) => {
-      console.log('Executing Invest in the Economy action');
-      const goldToInvest = playerNationResourceTotals.playerGold * 0.15;
-      const industryToInvest = playerNationResourceTotals.playerIndustry * 0.1;
-      const populationToInvest = playerNationResourceTotals.playerPopulation * 0.005;
-      const armyToInvest = playerNationResourceTotals.playerArmy * 0.0024;
-      console.log('Investing in the Economy:', goldToInvest, industryToInvest, populationToInvest, armyToInvest);
-      console.log('Player Nation Resource Totals:', playerNationResourceTotals);
+      const goldToInvest = Math.floor(playerNationResourceTotals.playerGold * 0.15);
 
       // Invest in the Economy adds (gold * 0.15) gold to the player's gold
       const action = {
         type: 'resources',
         updates: [
-          { resource: 'population', amount: 10000 }
+          { resource: 'gold', amount: goldToInvest }
         ]
       };
       executeActionUpdate(action as Omit<ActionUpdate, 'target'>);
@@ -56,9 +42,20 @@ export const FOCUS_ACTIONS: FocusAction[] = [
     id: 'develop',
     name: 'Develop Industry',
     description: 'Develop industry and production',
-    execute: (executeActionUpdate: (action: ActionUpdate) => void) => {
+    execute: (executeActionUpdate: (action: Omit<ActionUpdate, 'target'>) => void, playerNationResourceTotals: playerNationResourceTotals) => {
       console.log('Executing develop action');
       // -  develop industry adds (industry * 0.1) industry and (gold * 0.03) gold. 
+      const goldToInvest = Math.floor(playerNationResourceTotals.playerGold * 0.03);
+      const industryToInvest = Math.floor(playerNationResourceTotals.playerIndustry * 0.1);
+
+      const action = {
+        type: 'resources',
+        updates: [
+          { resource: 'gold', amount: goldToInvest },
+          { resource: 'industry', amount: industryToInvest }
+        ]
+      };
+      executeActionUpdate(action as Omit<ActionUpdate, 'target'>);
 
     }
   },
@@ -74,20 +71,35 @@ export const FOCUS_ACTIONS: FocusAction[] = [
     id: 'improve_army',
     name: 'Improve the Army',
     description: 'Improve the army and military',
-    execute: (executeActionUpdate: (action: ActionUpdate) => void) => {
+    execute: (executeActionUpdate: (action: Omit<ActionUpdate, 'target'>) => void, playerNationResourceTotals: playerNationResourceTotals) => {
       console.log('Executing improve army action');
       // - Expand the army will add (total population * 0.0024) soldiers to the players tag
-
+      console.log('playerNationResourceTotals', playerNationResourceTotals);
+      const armyToInvest = Math.floor(playerNationResourceTotals.playerPopulation * 0.0006);
+      console.log('armyToInvest', armyToInvest);
+      const action = {
+        type: 'resources',
+        updates: [
+          { resource: 'army', amount: armyToInvest }
+        ]
+      };
+      executeActionUpdate(action as Omit<ActionUpdate, 'target'>);
     }
   },
   {
     id: 'population_growth',
     name: 'Encourage Population Growth',
     description: 'Encourage population growth in a province',
-    execute: (executeActionUpdate: (action: ActionUpdate) => void) => {
+    execute: (executeActionUpdate: (action: Omit<ActionUpdate, 'target'>) => void, playerNationResourceTotals: playerNationResourceTotals) => {
       console.log('Executing population growth action');
       // - Encourage population growth will add (total population * 0.005) population to the players tag
-
+      const action = {
+        type: 'resources',
+        updates: [
+          { resource: 'population', amount: Math.floor(playerNationResourceTotals.playerPopulation * 0.0005) }
+        ]
+      };
+      executeActionUpdate(action as Omit<ActionUpdate, 'target'>);
     }
   }
 ];

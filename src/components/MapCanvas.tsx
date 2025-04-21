@@ -8,6 +8,7 @@ interface MapCanvasProps {
   children?: React.ReactNode;
   onStateClick?: (stateId: string | null) => void;
   onMapReady?: (stateMap: Map<string, StateData>) => void;
+  disableKeyboardControls?: boolean;
 }
 
 export interface StateData {
@@ -18,7 +19,7 @@ export interface StateData {
   nationId?: string;
 }
 
-export default function MapCanvas({ mapName, children, onStateClick, onMapReady }: MapCanvasProps) {
+export default function MapCanvas({ mapName, children, onStateClick, onMapReady, disableKeyboardControls = false }: MapCanvasProps) {
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const panzoomInstanceRef = useRef<ReturnType<typeof panzoom> | null>(null);
   const keysPressed = useRef<Set<string>>(new Set<string>());
@@ -160,6 +161,9 @@ export default function MapCanvas({ mapName, children, onStateClick, onMapReady 
 
   // Handle WASD keyboard controls for smooth panning
   useEffect(() => {
+    // If keyboard controls are disabled, don't set up the event listeners
+    if (disableKeyboardControls) return;
+
     const baseSpeed = 45;  // Base movement speed
     const shiftMultiplier = 3;  // Shift key speed multiplier
 
@@ -233,7 +237,7 @@ export default function MapCanvas({ mapName, children, onStateClick, onMapReady 
         cancelAnimationFrame(animationFrameId.current);
       }
     };
-  }, []);
+  }, [disableKeyboardControls]);
 
   // Initialize map and state data
   useEffect(() => {

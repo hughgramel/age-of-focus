@@ -526,101 +526,143 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
   const executeActionUpdate = async (action: Omit<ActionUpdate, 'target'>) => {
     if (!game || !user) return;
 
+    console.log('Executing action:', action);
+
     try {
-      // Find the player nation
-      const playerNation = game.nations.find(nation => nation.nationTag === game.playerNationTag);
-      if (!playerNation || playerNation.provinces.length === 0) {
-        console.error('Player nation or provinces not found');
-        return;
-      }
-
-      // Select a random province
-      const randomIndex = Math.floor(Math.random() * playerNation.provinces.length);
-      const randomProvince = playerNation.provinces[randomIndex];
-
-      
-      let actionWithTarget: ActionUpdate = {
-        ...action,
-        target: {
-          type: 'province',
-          id: randomProvince.id
+        // Find the player nation
+        const playerNation = game.nations.find(nation => nation.nationTag === game.playerNationTag);
+        if (!playerNation || playerNation.provinces.length === 0) {
+            console.error('Player nation or provinces not found');
+            return;
         }
-      };
 
+        // Select a random province
+        const randomIndex = Math.floor(Math.random() * playerNation.provinces.length);
+        const randomProvince = playerNation.provinces[randomIndex];
 
+        let actionWithTarget: ActionUpdate = {
+            ...action,
+            target: {
+                type: 'province',
+                id: randomProvince.id
+            }
+        };
 
+        console.log(`Selected province ${randomProvince.name} for action:`, actionWithTarget);
 
-
-      console.log(`Selected province ${randomProvince.name} for population increase`);
-
-      // Find the save slot containing this game
-      const allSaves = await GameService.getSaveGames(user.uid);
-      let slotNumber: number | null = null;
-      
-      for (const [slot, save] of Object.entries(allSaves)) {
-        if (save && save.game.id === game.id) {
-          slotNumber = parseInt(slot);
-          break;
+        // Find the save slot containing this game
+        const allSaves = await GameService.getSaveGames(user.uid);
+        let slotNumber: number | null = null;
+        
+        for (const [slot, save] of Object.entries(allSaves)) {
+            if (save && save.game.id === game.id) {
+                slotNumber = parseInt(slot);
+                break;
+            }
         }
-      }
-      
-      if (slotNumber === null) {
-        console.error('Could not find save slot for this game');
-        return;
-      }
-
-      // Create a deep copy of the game for local state update
-      const updatedGame = JSON.parse(JSON.stringify(game));
-      const updatedPlayerNation = updatedGame.nations.find(
-        (nation: Nation) => nation.nationTag === updatedGame.playerNationTag
-      );
-      
-      if (updatedPlayerNation) {
-        // Find and update the province in the local state
-        const provinceToUpdate = updatedPlayerNation.provinces.find((p: { id: string }) => p.id === randomProvince.id);
-        if (provinceToUpdate) {
-          // Update the province population
-          provinceToUpdate.population += 10000;
-          
-          // Calculate the new total population
-          const newTotalPopulation = updatedPlayerNation.provinces.reduce(
-            (sum: number, province: { population: number }) => sum + province.population, 
-            0
-          );
-          
-          // Update the local total population state
-          setLocalTotalPopulation(newTotalPopulation);
-          
-          // Update the game state to reflect the changes
-          game.nations = updatedGame.nations;
-          
-          // Force a re-render of the ResourceBar
-          setPlayerGold(prev => prev); // Trigger re-render without changing value
-          
-          console.log(`Updated population for ${randomProvince.name} to ${provinceToUpdate.population}`);
-          console.log(`New total population: ${newTotalPopulation}`);
+        
+        if (slotNumber === null) {
+            console.error('Could not find save slot for this game');
+            return;
         }
-      }
 
-      // Process the action and update Firebase in the background
-      await ActionService.processActions(user.uid, slotNumber, game, [actionWithTarget]);
-      
-      // Show feedback
-      const feedback = document.createElement('div');
-      feedback.textContent = `+10,000 Population in ${randomProvince.name}!`;
-      feedback.className = 'fixed bottom-24 left-4 z-50 bg-[#0B1423] p-3 rounded-lg border border-[#FFD700] text-[#FFD700] historical-game-title';
-      document.body.appendChild(feedback);
-      
-      // Remove feedback after 2 seconds
-      setTimeout(() => {
-        feedback.remove();
-      }, 2000);
+        // Create a deep copy of the game for local state update
+        const updatedGame = JSON.parse(JSON.stringify(game));
+        const updatedPlayerNation = updatedGame.nations.find(
+            (nation: Nation) => nation.nationTag === updatedGame.playerNationTag
+        );
+        
+        if (updatedPlayerNation && action.type === 'resources' && action.updates) {
+            // Find and update the province in the local state
+            const provinceToUpdate = updatedPlayerNation.provinces.find(
+                (p: { id: string }) => p.id === randomProvince.id
+            );
+            
+            if (provinceToUpdate) {
+                // Track if we need to update any totals
+                let updatePopulation = false;
+                let updateIndustry = false;
+                let updateArmy = false;
 
-      console.log('Test action completed');
+                // Apply each update
+                action.updates.forEach(update => {
+                    const { resource, amount } = update;
+                    
+                    // Update the appropriate resource
+                    switch (resource) {
+                        case 'population':
+                            provinceToUpdate.population += amount;
+                            updatePopulation = true;
+                            break;
+                        case 'gold':
+                            // Update player gold at nation level
+                            updatedPlayerNation.gold += amount;
+                            setPlayerGold(prev => (prev !== undefined ? prev + amount : updatedPlayerNation.gold));
+                            break;
+                        case 'industry':
+                            provinceToUpdate.industry += amount;
+                            updateIndustry = true;
+                            break;
+                        case 'army':
+                            provinceToUpdate.army += amount;
+                            updateArmy = true;
+                            break;
+                    }
+                });
+
+                // Calculate new totals if needed
+                if (updatePopulation || updateIndustry || updateArmy) {
+                    const newTotals = {
+                        playerGold: updatedPlayerNation.gold,
+                        playerIndustry: updateIndustry ? 
+                            updatedPlayerNation.provinces.reduce((sum, p) => sum + p.industry, 0) : 
+                            playerNationResourceTotals.playerIndustry,
+                        playerPopulation: updatePopulation ? 
+                            updatedPlayerNation.provinces.reduce((sum, p) => sum + p.population, 0) : 
+                            playerNationResourceTotals.playerPopulation,
+                        playerArmy: updateArmy ? 
+                            updatedPlayerNation.provinces.reduce((sum, p) => sum + p.army, 0) : 
+                            playerNationResourceTotals.playerArmy
+                    };
+
+                    // Update all relevant states
+                    setPlayerNationResourceTotals(newTotals);
+                    if (updatePopulation) {
+                        setLocalTotalPopulation(newTotals.playerPopulation);
+                    }
+                }
+
+                // Update the game state to reflect the changes
+                game.nations = updatedGame.nations;
+                
+                console.log(`Updated province ${randomProvince.name}:`, provinceToUpdate);
+                console.log('New resource totals:', playerNationResourceTotals);
+            }
+        }
+
+        // Process the action and update Firebase in the background
+        console.log('Processing action with target:', actionWithTarget);
+        await ActionService.processActions(user.uid, slotNumber, game, [actionWithTarget]);
+        
+        // Show feedback for each update
+        if (action.type === 'resources' && action.updates) {
+            action.updates.forEach(update => {
+                const feedback = document.createElement('div');
+                feedback.textContent = `+${update.amount} ${update.resource} in ${randomProvince.name}!`;
+                feedback.className = 'fixed bottom-24 left-4 z-50 bg-[#0B1423] p-3 rounded-lg border border-[#FFD700] text-[#FFD700] historical-game-title';
+                document.body.appendChild(feedback);
+                
+                setTimeout(() => {
+                    feedback.remove();
+                }, 2000);
+            });
+        }
+
+        console.log('Action executed successfully');
     } catch (error) {
-      console.error('Error in test action:', error);
+        console.error('Error executing action:', error);
     }
-  }
+  };
   
   if (!game) {
     return <div>Error: No game data provided</div>;
@@ -854,6 +896,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             selectedProvinceRef={selectedProvinceRef} 
             onProvinceSelect={handleProvinceSelect}
             onMapReady={handleMapReady}
+            disableKeyboardControls={isModalOpen}
           />
         ) : (
           // Real game with actual map and nations
@@ -863,6 +906,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             selectedProvinceRef={selectedProvinceRef}
             onProvinceSelect={handleProvinceSelect}
             onMapReady={handleMapReady}
+            disableKeyboardControls={isModalOpen}
           />
         )}
       </div>
