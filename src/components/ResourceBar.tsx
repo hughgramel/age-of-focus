@@ -56,7 +56,7 @@ export default function ResourceBar({
 
   return (
     <div 
-      className={`[font-family:var(--font-mplus-rounded)] flex items-center gap-5 px-6 py-4 rounded-lg transition-all duration-1000 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`} 
+      className={`[font-family:var(--font-mplus-rounded)] flex items-center gap-5 px-10 py-4 rounded-lg transition-all duration-1000 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`} 
       style={{ 
         backgroundColor: '#ffffff',
         border: '1px solid ',

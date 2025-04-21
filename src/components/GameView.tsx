@@ -667,7 +667,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         console.error('Error executing action:', error);
     }
   };
-  
+
   if (!game) {
     return <div>Error: No game data provided</div>;
   }
@@ -738,9 +738,11 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
   return (
     <div className={`fixed inset-0 overflow-hidden bg-[#0B1423] transition-opacity ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
       {/* Top Bar with Resource Bar and Buttons */}
-      <div className="absolute top-0 left-0 right-0 z-50 flex flex-col md:flex-row items-center justify-between p-4 gap-4">
-        <div className="flex items-center gap-6 relative">
-            <BackButton onClick={onBack} />
+      <div className="absolute top-0 left-0 right-0 z-50 flex flex-col md:flex-row items-center p-4">
+        <div className="absolute left-4">
+      <BackButton onClick={onBack} />
+        </div>
+        <div className="flex-1 flex justify-center">
           <ResourceBar
             playerGold={playerGold !== undefined ? playerGold : playerNation.gold}
             totalPopulation={totalPopulation}
@@ -754,22 +756,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
       </div>
 
       {/* Debug Button */}
-      {!isDemo && (
-        <button
-          onClick={addGold}
-          className={`fixed bottom-50 left-8 z-50 px-4 py-3 rounded-lg text-[#FFD700] hover:bg-[#0F1C2F] transition-all duration-500 ease-in-out ${fadeIn ? 'opacity-70 hover:opacity-100' : 'opacity-0'}`}
-          style={{ 
-            backgroundColor: 'rgba(11, 20, 35, 0.95)',
-            border: '2px solid rgba(255, 215, 0, 0.4)',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
-          }}
-        >
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">💰</span>
-            <span className="text-lg font-semibold historical-game-title">+100 Gold</span>
-          </div>
-        </button>
-      )}
+      
 
       {/* Map container */}
       <div 
@@ -796,7 +783,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             disableKeyboardControls={isModalOpen}
           />
         )}
-      </div>
+        </div>
 
       {/* Replace individual buttons with ButtonGroup */}
       <ButtonGroup
@@ -861,17 +848,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
       </div>
 
       {/* Test Action Button */}
-      <button
-        onClick={testAction}
-        className="fixed bottom-8 left-8 z-50 px-6 py-3 rounded-lg text-[#FFD700] hover:bg-[#0F1C2F] transition-all duration-300 ease-in-out"
-        style={{ 
-          backgroundColor: 'rgba(11, 20, 35, 0.95)',
-          border: '2px solid rgba(255, 215, 0, 0.4)',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
-        }}
-      >
-        Test Action (+10,000 Population)
-      </button>
+  
     </div>
   );
 } 
