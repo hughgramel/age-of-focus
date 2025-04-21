@@ -18,7 +18,7 @@ export default function TaskModal({ userId, onClose, onTaskComplete }: TaskModal
   const [newTask, setNewTask] = useState<TaskCreate>({
     title: '',
     description: '',
-    actionType: 'build_factory',
+    actionType: 'invest',
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -29,6 +29,7 @@ export default function TaskModal({ userId, onClose, onTaskComplete }: TaskModal
   const loadTasks = async () => {
     try {
       const userTasks = await TaskService.getUserTasks(userId);
+      console.log('Loaded tasks:', userTasks);
       setTasks(userTasks);
     } catch (error) {
       console.error('Error loading tasks:', error);
@@ -42,15 +43,17 @@ export default function TaskModal({ userId, onClose, onTaskComplete }: TaskModal
     if (!newTask.title.trim()) return;
     
     try {
+      console.log('Creating task with data:', newTask);
       const task = await TaskService.createTask(userId, {
         ...newTask,
         description: '', // We're not using description anymore
       });
+      console.log('Created task:', task);
       setTasks([task, ...tasks]);
       setNewTask({
         title: '',
         description: '',
-        actionType: 'build_factory',
+        actionType: 'invest',
       });
     } catch (error) {
       console.error('Error creating task:', error);
@@ -166,44 +169,74 @@ export default function TaskModal({ userId, onClose, onTaskComplete }: TaskModal
                 {activeTab === 'active' ? 'No active tasks' : 'No completed tasks'}
               </div>
             ) : (
-              filteredTasks.map(task => (
-                <div
-                  key={task.id}
-                  className={`p-4 rounded-lg border ${
-                    task.completed ? 'bg-gray-50 border-gray-200' : 'bg-white border-gray-200'
-                  }`}
-                  style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 className={`text-lg font-semibold ${task.completed ? 'text-gray-500 line-through' : 'text-gray-800'}`}>
-                        {task.title}
-                      </h3>
-                      <div className="mt-2 flex items-center gap-2 text-sm text-gray-800">
-                        <span>🎯 {FOCUS_ACTIONS.find(a => a.id === task.actionType)?.name}</span>
-                        <span>•</span>
-                        <span>🕒 {format(new Date(task.createdAt), 'MMM d, yyyy')}</span>
+              filteredTasks.map(task => {
+                console.log('Rendering task:', task);
+                return (
+                  <div
+                    key={task.id}
+                    className={`p-4 rounded-lg border ${
+                      task.completed ? 'bg-gray-50 border-gray-200' : 'bg-white border-gray-200'
+                    }`}
+                    style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
+                  >
+                    <div className="flex justify-between items-center">
+                      <div className="flex-1">
+                        <h3 className={`text-lg font-semibold ${task.completed ? 'text-gray-500 line-through' : 'text-gray-800'}`}>
+                          {task.title}
+                        </h3>
+                        <div className="mt-2 flex items-center gap-2 text-sm text-gray-800">
+                          {(() => {
+                            const actionIcon = (() => {
+                              switch (task.actionType) {
+                                case 'invest': return '💰';
+                                case 'develop': return '🏭';
+                                case 'improve_army': return '⚔️';
+                                case 'population_growth': return '👥';
+                                default: return '🎯';
+                              }
+                            })();
+                            return (
+                              <span className="flex items-center gap-1">
+                                <span className="text-base">{actionIcon}</span>
+                                <span>{FOCUS_ACTIONS.find(a => a.id === task.actionType)?.name}</span>
+                              </span>
+                            );
+                          })()}
+                          <span>•</span>
+                          <span>🕒 {format(new Date(task.createdAt), 'MMM d, yyyy')}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        {!task.completed && (
+                          <button
+                            onClick={() => handleCompleteTask(task)}
+                            className="px-3 py-2 rounded-lg text-white hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-2 text-base [font-family:var(--font-mplus-rounded)]"
+                            style={{ 
+                              backgroundColor: '#6ec53e',
+                              boxShadow: '0 3px 0 rgba(89,167,0,255)',
+                              transform: 'translateY(-1px)'
+                            }}
+                          >
+                            <span className="text-lg">✓</span>
+                            <span>Complete</span>
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDeleteTask(task.id)}
+                          className="w-10 h-10 rounded-lg text-white hover:opacity-90 transition-all duration-200 flex items-center justify-center text-xl ml-2 [font-family:var(--font-mplus-rounded)] font-bold"
+                          style={{ 
+                            backgroundColor: '#dc2626',
+                            boxShadow: '0 3px 0 #991b1b',
+                            transform: 'translateY(-1px)'
+                          }}
+                        >
+                          ✕
+                        </button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      {!task.completed && (
-                        <button
-                          onClick={() => handleCompleteTask(task)}
-                          className="text-green-600 hover:text-green-700 text-2xl"
-                        >
-                          ✓
-                        </button>
-                      )}
-                      <button
-                        onClick={() => handleDeleteTask(task.id)}
-                        className="text-red-600 hover:text-red-700 text-xl"
-                      >
-                        🗑️
-                      </button>
-                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
