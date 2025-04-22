@@ -515,7 +515,8 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
         session_state: 'focus',
         break_minutes_remaining: calculateInitialBreakTime(Math.floor(FOCUS_TIME_SECONDS / 60)),
         selected_actions: selectedActions,
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        intention: intention // Add intention to session data
       };
 
       const sessionResult = await SessionService.createSession(sessionData);
@@ -738,7 +739,8 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
       isInitialized: isInitializedRef.current,
       userId,
       existingSessionId,
-      hasSelectedActions: selectedActions.length > 0
+      hasSelectedActions: selectedActions.length > 0,
+      intention // Log intention for debugging
     });
 
     if (isInitializedRef.current || !userId) {
@@ -817,7 +819,7 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
         intervalRef.current = null;
       }
     };
-  }, [userId, FOCUS_TIME_SECONDS, existingSessionId, selectedActions]);
+  }, [userId, FOCUS_TIME_SECONDS, existingSessionId, selectedActions, intention]); // Add intention to dependency array
 
   const deleteSession = async () => {
     try {

@@ -29,7 +29,8 @@ const parseSessionSnapshot = (snapshot: QuerySnapshot<DocumentData, DocumentData
             session_state: data.session_state ?? null,
             total_minutes_done: data.total_minutes_done ?? null,
             createdAt: data.createdAt,
-            selected_actions: data.selected_actions ?? []
+            selected_actions: data.selected_actions ?? [],
+            intention: data.intention ?? null
         } as Session;
     });
 };
@@ -128,13 +129,15 @@ export class SessionService {
                 session_state: sessionData.session_state ?? null,
                 total_minutes_done: sessionData.total_minutes_done ?? null,
                 createdAt: sessionData.createdAt ?? serverTimestamp(),
-                selected_actions: sessionData.selected_actions ?? []
+                selected_actions: sessionData.selected_actions ?? [],
+                intention: sessionData.intention ?? null
             };
 
-            // Create a plain object for Firestore (including selected_actions)
+            // Create a plain object for Firestore (including selected_actions and intention)
             const sessionForFirestore = {
                 ...newSession,
-                selected_actions: sessionData.selected_actions ?? []
+                selected_actions: sessionData.selected_actions ?? [],
+                intention: sessionData.intention ?? null
             };
 
             // Save the new session to Firestore
@@ -174,6 +177,7 @@ export class SessionService {
             if (sessionData.total_minutes_done !== undefined) updateData.total_minutes_done = sessionData.total_minutes_done;
             if (sessionData.user_id !== undefined) updateData.user_id = sessionData.user_id;
             if (sessionData.selected_actions !== undefined) updateData.selected_actions = sessionData.selected_actions;
+            if (sessionData.intention !== undefined) updateData.intention = sessionData.intention;
 
             // Update the document
             await updateDoc(sessionDoc, updateData);
@@ -199,7 +203,8 @@ export class SessionService {
                 session_state: data.session_state ?? null,
                 total_minutes_done: data.total_minutes_done ?? null,
                 createdAt: data.createdAt,
-                selected_actions: data.selected_actions ?? []
+                selected_actions: data.selected_actions ?? [],
+                intention: data.intention ?? null
             };
 
             return updatedSession;

@@ -16,7 +16,7 @@ export interface Session {
     total_minutes_done: number | null;
     createdAt: FieldValue;
     selected_actions?: ActionType[];
-    intention?: string;
+    intention?: string | null;
 }
 
 export interface SessionInsert {
@@ -32,7 +32,7 @@ export interface SessionInsert {
     user_id?: string;
     createdAt?: FieldValue;
     selected_actions?: ActionType[];
-    intention?: string;
+    intention?: string | null;
 }
 
 export interface SessionUpdate {
@@ -47,7 +47,7 @@ export interface SessionUpdate {
     total_minutes_done?: number | null;
     user_id?: string;
     selected_actions?: ActionType[];
-    intention?: string;
+    intention?: string | null;
 }
 
 export interface TimerLocationState {
