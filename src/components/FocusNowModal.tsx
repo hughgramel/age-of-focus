@@ -8,6 +8,118 @@ import { SessionService } from '@/services/sessionService';
 import { Session } from '@/types/session';
 import { ActionUpdate } from '@/services/actionService';
 import CustomDropdown from './CustomDropdown';
+import { CircularProgressbarWithChildren } from 'react-circular-progressbar';
+import 'react-circular-progressbar/dist/styles.css';
+
+// Add National Path types
+interface PathMilestone {
+  id: number;
+  title: string;
+  description: string;
+  icon: string;
+  locked: boolean;
+  current: boolean;
+  completed: boolean;
+}
+
+// National path data
+const NATIONAL_MILESTONES: PathMilestone[] = [
+  {
+    id: 1,
+    title: 'Industrial Foundation',
+    description: 'Establish your first factories',
+    icon: '🏭',
+    locked: false,
+    current: true,
+    completed: false,
+  },
+  {
+    id: 2,
+    title: 'Military Might',
+    description: 'Build your first army',
+    icon: '⚔️',
+    locked: true,
+    current: false,
+    completed: false,
+  },
+  {
+    id: 3,
+    title: 'Economic Power',
+    description: 'Reach 1000 gold income',
+    icon: '💰',
+    locked: true,
+    current: false,
+    completed: false,
+  },
+  {
+    id: 4,
+    title: 'Great Power',
+    description: 'Become a dominant nation',
+    icon: '👑',
+    locked: true,
+    current: false,
+    completed: false,
+  },
+];
+
+// Path Button component for milestone display
+const PathButton = ({ milestone }: { milestone: PathMilestone }) => {
+  return (
+    <div className="relative flex items-center justify-center w-full" style={{ marginTop: milestone.id === 1 ? 0 : 40 }}>
+      {/* Left side content */}
+      <div className={`flex-1 text-right pr-8 ${milestone.locked ? 'opacity-50' : ''}`}>
+        <h3 className="font-bold text-lg text-gray-800">{milestone.title}</h3>
+        <p className="text-sm text-gray-600">{milestone.description}</p>
+      </div>
+
+      {/* Center button */}
+      <div className="relative flex-shrink-0">
+        {milestone.current ? (
+          <div className="relative h-[102px] w-[102px]">
+            <CircularProgressbarWithChildren
+              value={5}
+              styles={{
+                root: {
+                  backgroundColor: 'white',
+                  borderRadius: '50%',
+                },
+                path: {
+                  stroke: '#4ade80',
+                  strokeLinecap: 'round',
+                  transition: 'stroke-dashoffset 0.5s ease 0s',
+                },
+                trail: {
+                  stroke: '#e5e7eb',
+                  strokeLinecap: 'round',
+                },
+                background: {
+                  fill: '#ffffff'
+                }
+              }}
+            >
+              <div className="h-[70px] w-[70px] rounded-full bg-white flex items-center justify-center">
+                <span className="text-4xl">{milestone.icon}</span>
+              </div>
+            </CircularProgressbarWithChildren>
+          </div>
+        ) : (
+          <div className="h-[70px] w-[70px] rounded-full bg-white flex items-center justify-center border-4 border-[#e5e7eb]">
+            <span className={`text-4xl ${
+              milestone.locked 
+                ? 'opacity-30'
+                : milestone.completed
+                  ? ''
+                  : ''
+            }`}>{milestone.icon}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Right side - empty div for centering */}
+      <div className="flex-1 pl-8" />
+    </div>
+  );
+};
 
 interface playerNationResourceTotals {
   playerGold: number;
@@ -287,9 +399,24 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
 
           {/* Middle section - Two boxes */}
           <div className="flex gap-6 mb-8">
-            {/* Left box - Empty for now */}
-            <div className="w-1/2 bg-gray-50 rounded-lg border border-gray-200 p-6" style={{ minHeight: '400px', boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
-              {/* Empty for now */}
+            {/* Left box - National Path */}
+            <div className="w-1/2 bg-gray-50 rounded-lg border border-gray-200 p-6 overflow-y-auto" style={{ minHeight: '400px', maxHeight: '400px', boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
+              <h3 className="text-2xl font-semibold mb-6 text-center flex items-center justify-center gap-2">
+                <span className="text-3xl">🌟</span>
+                National Path
+              </h3>
+              
+              <div className="relative mt-8">
+                {/* Vertical line connecting the buttons */}
+                <div className="absolute left-1/2 top-[35px] bottom-[35px] w-0.5 bg-[#67b9e7]/30 -translate-x-1/2" />
+                
+                {/* Path buttons */}
+                <div className="relative flex flex-col items-stretch">
+                  {NATIONAL_MILESTONES.map((milestone) => (
+                    <PathButton key={milestone.id} milestone={milestone} />
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Right box - Actions */}
