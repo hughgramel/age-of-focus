@@ -20,9 +20,10 @@ interface FocusNowModalProps {
   hasActiveSession?: boolean;
   executeActionUpdate: (action: Omit<ActionUpdate, 'target'>) => void;
   playerNationResourceTotals: playerNationResourceTotals;
+  setFocusTimeRemaining: (time: number) => void;
 }
 
-const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiveSession = false, executeActionUpdate, playerNationResourceTotals }) => {
+const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiveSession = false, executeActionUpdate, playerNationResourceTotals, setFocusTimeRemaining }) => {
   const router = useRouter();
   const [sessionStarted, setSessionStarted] = useState(false);
   const [duration, setDuration] = useState(60); // Default: 60 minutes
@@ -343,6 +344,7 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
               executeActionUpdate={executeActionUpdate}
               playerNationResourceTotals={playerNationResourceTotals}
               intention={intention}
+              setFocusTimeRemaining={setFocusTimeRemaining}
             />
           )}
           </>

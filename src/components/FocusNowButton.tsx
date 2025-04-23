@@ -9,13 +9,34 @@ interface FocusNowButtonProps {
   isModalOpen: boolean;
   hasActiveSession: boolean;
   onClick: () => void;
+  focusTimeRemaining: number;
 }
+
+
+const convertSecondsToTimeFormat = (seconds: number): string => {
+  const numHours = Math.floor((seconds / 60) / 60);
+  const numMinutes = Math.floor((seconds / 60) % 60);
+  const numSeconds = Math.floor(seconds % 60);
+
+  // Only include hours if > 0
+  const hoursStr = numHours > 0 ? `${numHours}:` : '';
+  
+  // Add leading zero to minutes only if there are hours
+  const minutesStr = numHours > 0 && numMinutes < 10 ? `0${numMinutes}` : numMinutes;
+  
+  // Always add leading zero to seconds if < 10
+  const secondsStr = numSeconds < 10 ? `0${numSeconds}` : numSeconds;
+
+  return `${hoursStr}${minutesStr}:${secondsStr}`;
+};
+
 
 export default function FocusNowButton({ 
   fadeIn, 
   isModalOpen, 
   hasActiveSession, 
-  onClick 
+  onClick,
+  focusTimeRemaining
 }: FocusNowButtonProps) {
   return (
     <button
@@ -32,7 +53,7 @@ export default function FocusNowButton({
       <div className="flex items-center justify-center gap-1">
         <span className="text-2xl sm:text-3xl">⏱️</span>
         <span className="text-xl sm:text-2xl whitespace-nowrap">
-          {hasActiveSession ? 'Resume Session' : 'Focus Now'}
+          {hasActiveSession ? `${convertSecondsToTimeFormat(focusTimeRemaining)}` : 'Focus Now'}
         </span>
       </div>
     </button>

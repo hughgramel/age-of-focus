@@ -80,6 +80,7 @@ interface FocusTimerProps {
   executeActionUpdate: (action: Omit<ActionUpdate, 'target'>) => void;
   playerNationResourceTotals: playerNationResourceTotals;
   intention?: string; // Add intention prop
+  setFocusTimeRemaining: (time: number) => void;
 }
 
 interface SessionCompleteProps {
@@ -250,7 +251,8 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
   handleModalClose,
   executeActionUpdate,
   playerNationResourceTotals,
-  intention
+  intention,
+  setFocusTimeRemaining
 }) => {
   // Default timer durations
   const FOCUS_TIME_SECONDS = initialDuration;
@@ -287,6 +289,8 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     startTime: "",
     endTime: ""
   });
+
+  const [currentIntention, setCurrentIntention] = useState<string | undefined>(intention);
 
   // Helper functions
   const convertSecondsToMinutes = (seconds: number): number => {
@@ -342,27 +346,33 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
 
   // Calculate remaining times
   function calculateRemainingTimes(dummy: null = null): void {
-    // console.log('🕒 Calculating remaining times...', {
-    //   isBreak: isBreak.current,
-    //   showConfirmation,
-    //   sessionId: sessionId.current
-    // });
+    console.log('⏱️ CALCULATE TIMES START ==================');
+    console.log('Initial State:', {
+      isBreak: isBreak.current,
+      showConfirmation,
+      sessionId: sessionId.current
+    });
     
     // Don't recalculate times if confirmation is showing (to avoid visual jumps)
-    if (showConfirmation) return;
+    if (showConfirmation) {
+      console.log('Skipping calculation due to confirmation dialog');
+      return;
+    }
     
     try {
       if (isBreak.current) {
-        // console.log('⏸️ In break mode, times:', {
-        //   breakEndTime: currBreakEndTime.current,
-        //   breakStartTime: currBreakStartTime.current
-        // });
+        console.log('Break Mode Calculation:', {
+          breakEndTime: currBreakEndTime.current,
+          breakStartTime: currBreakStartTime.current,
+          currentTime: new Date().toLocaleString()
+        });
         
         if (!currBreakEndTime.current || !currBreakStartTime.current) {
           console.warn("🚨 Break time values are null, returning to focus mode");
           returnToFocus();
           return;
         }
+
         const endTime = new Date(currBreakEndTime.current);
         const now = new Date();
         const timeDiffInMilliseconds = endTime.getTime() - now.getTime();
@@ -371,11 +381,19 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
         const startTime = new Date(currBreakStartTime.current);
         const elapsedTimeDiffInMilliseconds = now.getTime() - startTime.getTime();
         secondsElapsed.current = Math.floor(elapsedTimeDiffInMilliseconds / 1000);
+
+        console.log('Break Time Calculation Results:', {
+          secondsRemaining: secondsRemaining.current,
+          secondsElapsed: secondsElapsed.current,
+          timeDiffInMilliseconds,
+          elapsedTimeDiffInMilliseconds
+        });
       } else {
-        // console.log('🎯 In focus mode, times:', {
-        //   focusEndTime: currFocusEndTime.current,
-        //   focusStartTime: currFocusStartTime.current
-        // });
+        console.log('Focus Mode Calculation:', {
+          focusEndTime: currFocusEndTime.current,
+          focusStartTime: currFocusStartTime.current,
+          currentTime: new Date().toLocaleString()
+        });
         
         if (!currFocusEndTime.current || !currFocusStartTime.current) {
           console.warn("🚨 Focus time values are null, reinitializing session");
@@ -384,6 +402,7 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
           }
           return;
         }
+
         const endTime = new Date(currFocusEndTime.current);
         const now = new Date();
         const timeDiffInMilliseconds = endTime.getTime() - now.getTime();
@@ -392,17 +411,21 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
         const startTime = new Date(currFocusStartTime.current);
         const elapsedTimeDiffInMilliseconds = now.getTime() - startTime.getTime();
         secondsElapsed.current = Math.floor(elapsedTimeDiffInMilliseconds / 1000);
+
+        console.log('Focus Time Calculation Results:', {
+          secondsRemaining: secondsRemaining.current,
+          secondsElapsed: secondsElapsed.current,
+          timeDiffInMilliseconds,
+          elapsedTimeDiffInMilliseconds
+        });
       }
-      
-      // console.log('⏱️ Updated times:', {
-      //   secondsRemaining: secondsRemaining.current,
-      //   secondsElapsed: secondsElapsed.current
-      // });
     } catch (error) {
       console.error("❌ Error calculating remaining times:", error);
       secondsRemaining.current = 0;
       secondsElapsed.current = 0;
     }
+    
+    console.log('⏱️ CALCULATE TIMES END ==================\n');
   }
 
   // Set alias to avoid changing all call sites
@@ -722,16 +745,76 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
   };
 
   const tick = () => {
-    // console.log('🔄 Tick running...', {
-    //   sessionId: sessionId.current,
-    //   isBreak: isBreak.current,
-    //   secondsRemaining: secondsRemaining.current
-    // });
+
+    // Make sure isBreak is set correctly
+    if (isBreak.current) {
+      console.log("Is break is true");
+    } else {
+      console.log("Is break is false");
+    }
+
+
+
+
+    // Detailed state logging at start of tick
+    console.log('🔄 TICK START ==================');
+    console.log('Session Info:', {
+      sessionId: sessionId.current,
+      isBreak: isBreak.current,
+      breakTimeRemaining: breakTimeRemaining.current
+    });
     
-    // Remove the nested setInterval and just update the times directly
+    console.log('Timer State:', {
+      secondsRemaining: secondsRemaining.current,
+      secondsElapsed: secondsElapsed.current
+    });
+    
+    console.log('Focus Times:', {
+      focusStartTime: currFocusStartTime.current,
+      focusEndTime: currFocusEndTime.current,
+      focusStartDate: new Date(currFocusStartTime.current).toLocaleString(),
+      focusEndDate: new Date(currFocusEndTime.current).toLocaleString()
+    });
+    
+    console.log('Break Times:', {
+      breakStartTime: currBreakStartTime.current,
+      breakEndTime: currBreakEndTime.current,
+      breakStartDate: currBreakStartTime.current ? new Date(currBreakStartTime.current).toLocaleString() : null,
+      breakEndDate: currBreakEndTime.current ? new Date(currBreakEndTime.current).toLocaleString() : null
+    });
+
+    // Log before calculating remaining times
+    console.log('Before setRemainingTimesFromEndTimes');
     setRemainingTimesFromEndTimes(null);
+    console.log('After setRemainingTimesFromEndTimes:', {
+      newSecondsRemaining: secondsRemaining.current,
+      newSecondsElapsed: secondsElapsed.current
+    });
+
+    // Log before checking time
+    console.log('Before checkTime');
     checkTime();
+    console.log('After checkTime:', {
+      isBreak: isBreak.current,
+      secondsRemaining: secondsRemaining.current
+    });
+
+    
+
+
+    // Calculate it based on the session end time
+
+    const endTime = new Date(currFocusEndTime.current);
+    const now = new Date();
+    const timeDiffInMilliseconds = endTime.getTime() - now.getTime();
+    const focusTimeRemaining = Math.ceil(timeDiffInMilliseconds / 1000);
+    setFocusTimeRemaining(focusTimeRemaining);
     setRerender((e) => e + 1);
+
+
+
+
+    console.log('🔄 TICK END ==================\n');
   };
 
   useEffect(() => {
@@ -771,6 +854,11 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
           const session = existingSessions[0];
           sessionId.current = session.id;
           breakTimeRemaining.current = session.break_minutes_remaining;
+          
+          // Load the intention from the existing session with type checking
+          if (session.intention) {
+            setCurrentIntention(session.intention);
+          }
           
           // Initialize focus times with type checking
           if (session.focus_start_time && session.focus_end_time) {
@@ -867,7 +955,9 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
         currBreakStartTime.current = currTime.toUTCString();
         const updatedWithBreak = await SessionService.updateSession(sessionId.current, session);
         
+
         isBreak.current = true;
+        console.log("Set is break to true");  
         if (updatedWithBreak) {
           setRemainingAndElapsedTime(updatedWithBreak);
         } else {
@@ -925,6 +1015,7 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
       
       if (updatedWithBreak) {
         isBreak.current = false;
+        console.log("Set is break to false");
       }
       
       setRemainingTimesFromEndTimes(null);
@@ -1047,9 +1138,9 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
             </div>
           </div>
 
-          {intention && (
+          {currentIntention && (
             <div className="text-center mb-2">
-              <p className="text-lg text-gray-600 italic">"{intention}"</p>
+              <p className="text-lg text-gray-600 italic">{currentIntention}</p>
             </div>
           )}
 

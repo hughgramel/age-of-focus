@@ -20,6 +20,7 @@ import NationalPathButton from './NationalPathButton';
 import FocusNowButton from './FocusNowButton';
 import ButtonGroup from './ButtonGroup';
 import TaskModal from './TaskModal';
+import NationalPathModal from './NationalPathModal';
 
 // Create a globals object to store persistent map state
 const globalMapState = {
@@ -61,6 +62,12 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
     playerPopulation: 0,
     playerArmy: 0
   });
+  const [focusTimeRemaining, setFocusTimeRemaining] = useState(0);
+  // const [isInBreak, setIsInBreak] = useState(false);
+
+
+
+  const [isNationalPathModalOpen, setIsNationalPathModalOpen] = useState(false);
 
   // Add fade-in effect on mount
   useEffect(() => {
@@ -862,9 +869,16 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           }
         }}
         onNationalPathClick={() => {
-          // TODO: Implement national path functionality
+          handleProvinceSelect(null);
+          setIsNationalPathModalOpen(true);
         }}
+        focusTimeRemaining={focusTimeRemaining}
       />
+
+      {/* National Path Modal */}
+      {isNationalPathModalOpen && (
+        <NationalPathModal onClose={() => setIsNationalPathModalOpen(false)} />
+      )}
 
       {/* Focus Now Modal - always render but hide with CSS */}
       <div id="focus-now-modal" style={{ display: 'none' }}>
@@ -889,6 +903,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
               // Set modal as closed
               setIsModalOpen(false);
             }}
+            setFocusTimeRemaining={setFocusTimeRemaining}
             hasActiveSession={hasActiveSession}
           />
         )}

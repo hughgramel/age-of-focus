@@ -204,19 +204,33 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
                         </h3>
                         <div className="mt-2 flex items-center gap-2 text-sm text-gray-800">
                           {(() => {
-                            const actionIcon = (() => {
+                            const getActionEffect = () => {
                               switch (task.actionType) {
-                                case 'invest': return '💰';
-                                case 'develop': return '🏭';
-                                case 'improve_army': return '⚔️';
-                                case 'population_growth': return '👥';
-                                default: return '🎯';
+                                case 'invest': {
+                                  const goldGain = Math.floor(playerNationResourceTotals.playerGold * 0.15);
+                                  return `+${goldGain.toLocaleString()} 💰`;
+                                }
+                                case 'develop': {
+                                  const industryGain = Math.floor(playerNationResourceTotals.playerIndustry * 0.1);
+                                  const developGoldGain = Math.floor(playerNationResourceTotals.playerGold * 0.03);
+                                  return `+${industryGain.toLocaleString()} 🏭, +${developGoldGain.toLocaleString()} 💰`;
+                                }
+                                case 'improve_army': {
+                                  const armyGain = Math.floor(playerNationResourceTotals.playerPopulation * 0.0006);
+                                  return `+${armyGain.toLocaleString()} ⚔️`;
+                                }
+                                case 'population_growth': {
+                                  const popGain = Math.floor(playerNationResourceTotals.playerPopulation * 0.0005);
+                                  return `+${popGain.toLocaleString()} 👥`;
+                                }
+                                default:
+                                  return '';
                               }
-                            })();
+                            };
+
                             return (
-                              <span className="flex items-center gap-1">
-                                <span className="text-base">{actionIcon}</span>
-                                <span>{FOCUS_ACTIONS.find(a => a.id === task.actionType)?.name}</span>
+                              <span className="text-base font-medium">
+                                {getActionEffect()}
                               </span>
                             );
                           })()}

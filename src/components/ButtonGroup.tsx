@@ -12,6 +12,7 @@ interface ButtonGroupProps {
   onTaskListClick: () => void;
   onFocusClick: () => void;
   onNationalPathClick: () => void;
+  focusTimeRemaining: number;
 }
 
 export default function ButtonGroup({
@@ -20,7 +21,8 @@ export default function ButtonGroup({
   hasActiveSession,
   onTaskListClick,
   onFocusClick,
-  onNationalPathClick
+  onNationalPathClick,
+  focusTimeRemaining
 }: ButtonGroupProps) {
   return (
     <div className="fixed bottom-8 left-0 right-0 flex justify-center items-center gap-6">
@@ -33,6 +35,7 @@ export default function ButtonGroup({
           isModalOpen={isModalOpen} 
           hasActiveSession={hasActiveSession} 
           onClick={onFocusClick} 
+          focusTimeRemaining={focusTimeRemaining}
         />
       </div>
       <div className="flex-1">
