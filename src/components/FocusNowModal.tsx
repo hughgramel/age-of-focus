@@ -7,6 +7,7 @@ import FocusTimer from './FocusTimer';
 import { SessionService } from '@/services/sessionService';
 import { Session } from '@/types/session';
 import { ActionUpdate } from '@/services/actionService';
+import CustomDropdown from './CustomDropdown';
 
 interface playerNationResourceTotals {
   playerGold: number;
@@ -224,26 +225,20 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
                 Focus Session Duration
               </h3>
               
-              <select 
-                value={duration} 
-                onChange={handleDurationChange}
-                className="bg-white text-black border border-gray-200 rounded-lg px-4 py-3 w-full outline-none appearance-none cursor-pointer text-center text-xl mb-4"
-                style={{ 
-                  backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")",
-                  backgroundRepeat: 'no-repeat',
-                  backgroundPosition: 'right 12px center',
-                  backgroundSize: '20px',
-                  boxShadow: '0 2px 0 rgba(229,229,229,255)'
-                }}
-              >
-                <option value="30">30 minutes</option>
-                <option value="45">45 minutes</option>
-                <option value="60">1 hour</option>
-                <option value="90">1.5 hours</option>
-                <option value="120">2 hours</option>
-                <option value="180">3 hours</option>
-                <option value="240">4 hours</option>
-              </select>
+              <CustomDropdown
+                options={[
+                  { value: "30", label: "30 minutes", icon: "⏱️" },
+                  { value: "45", label: "45 minutes", icon: "⏱️" },
+                  { value: "60", label: "1 hour", icon: "⏱️" },
+                  { value: "90", label: "1.5 hours", icon: "⏱️" },
+                  { value: "120", label: "2 hours", icon: "⏱️" },
+                  { value: "180", label: "3 hours", icon: "⏱️" },
+                  { value: "240", label: "4 hours", icon: "⏱️" }
+                ]}
+                value={duration.toString()}
+                onChange={(value) => setDuration(parseInt(value))}
+                className="mb-4"
+              />
 
               {/* Timer placeholder */}
               <div className="w-full aspect-square flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200 mt-1.5">
@@ -267,24 +262,27 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
                     <div className="py-3 px-4 border-r border-gray-200 min-w-[120px]">
                       <span className="text-xl text-gray-700">Action {i + 1}</span>
                     </div>
-                    <select 
-                      value={selectedActions[i] || 'auto'} 
-                      onChange={(e) => handleActionChange(i, e.target.value as ActionType)}
-                      className="bg-white text-gray-800 border-0 rounded-r-lg px-3 py-2 w-full outline-none appearance-none cursor-pointer"
-                      style={{ 
-                        backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E\")",
-                        backgroundRepeat: 'no-repeat',
-                        backgroundPosition: 'right 12px center',
-                        backgroundSize: '20px'
-                      }}
-                    >
-                      <option value="auto">Auto (Random)</option>
-                      {FOCUS_ACTIONS.filter(action => action.id !== 'auto').map(action => (
-                        <option key={action.id} value={action.id}>
-                          {action.name}
-                        </option>
-                      ))}
-                    </select>
+                    <CustomDropdown
+                      options={[
+                        { value: "auto", label: "Auto (Random)", icon: "🎲" },
+                        ...FOCUS_ACTIONS.filter(action => action.id !== 'auto').map(action => ({
+                          value: action.id,
+                          label: action.name,
+                          icon: (() => {
+                            switch (action.id) {
+                              case 'invest': return '💰';
+                              case 'develop': return '🏭';
+                              case 'improve_army': return '⚔️';
+                              case 'population_growth': return '👥';
+                              default: return '🎯';
+                            }
+                          })()
+                        }))
+                      ]}
+                      value={selectedActions[i] || 'auto'}
+                      onChange={(value) => handleActionChange(i, value as ActionType)}
+                      className="flex-1"
+                    />
                   </div>
                 ))}
               </div>

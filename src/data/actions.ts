@@ -96,7 +96,7 @@ export const FOCUS_ACTIONS: FocusAction[] = [
       const action = {
         type: 'resources',
         updates: [
-          { resource: 'population', amount: Math.floor(playerNationResourceTotals.playerPopulation * 0.0005) }
+          { resource: 'population', amount: Math.floor(playerNationResourceTotals.playerPopulation * 0.0010) }
         ]
       };
       executeActionUpdate(action as Omit<ActionUpdate, 'target'>);

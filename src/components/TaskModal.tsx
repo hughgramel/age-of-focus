@@ -7,6 +7,7 @@ import { FOCUS_ACTIONS, executeActions } from '@/data/actions';
 import { format } from 'date-fns';
 import { ActionUpdate } from '@/services/actionService';
 import { playerNationResourceTotals } from './GameView';
+import CustomDropdown from './CustomDropdown';
 
 interface TaskModalProps {
   userId: string;
@@ -131,18 +132,24 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
                 className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 text-lg"
                 required
               />
-              <select
+              <CustomDropdown
+                options={FOCUS_ACTIONS.map(action => ({
+                  value: action.id,
+                  label: action.name,
+                  icon: (() => {
+                    switch (action.id) {
+                      case 'invest': return '💰';
+                      case 'develop': return '🏭';
+                      case 'improve_army': return '⚔️';
+                      case 'population_growth': return '👥';
+                      default: return '🎯';
+                    }
+                  })()
+                }))}
                 value={newTask.actionType}
-                onChange={(e) => setNewTask({ ...newTask, actionType: e.target.value as any })}
-                className="px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 bg-white text-lg"
-                style={{ width: '240px' }}
-              >
-                {FOCUS_ACTIONS.map(action => (
-                  <option key={action.id} value={action.id}>
-                    {action.name}
-                  </option>
-                ))}
-              </select>
+                onChange={(value) => setNewTask({ ...newTask, actionType: value as any })}
+                className="w-[240px]"
+              />
             </div>
             <button
               type="submit"
@@ -220,7 +227,7 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
                                   return `+${armyGain.toLocaleString()} ⚔️`;
                                 }
                                 case 'population_growth': {
-                                  const popGain = Math.floor(playerNationResourceTotals.playerPopulation * 0.0005);
+                                  const popGain = Math.floor(playerNationResourceTotals.playerPopulation * 0.0010);
                                   return `+${popGain.toLocaleString()} 👥`;
                                 }
                                 default:
