@@ -33,11 +33,12 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
   const [processedActions, setProcessedActions] = useState<ActionType[]>([]);
   const [activeSession, setActiveSession] = useState<Session | null>(null);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
+  const [showCompletionScreen, setShowCompletionScreen] = useState(false);
   
   // Calculate number of actions based on duration
   const actionCount = calculateActionsFromDuration(duration);
   
-  // Load active session if hasActiveSession is true
+  // Load active session if hasActiveSession is true or check for active sessions on load
   useEffect(() => {
     const loadActiveSession = async () => {
       try {
@@ -46,7 +47,11 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
         const activeSessions = await SessionService.getActiveUserSessions(userId);
         console.log('📊 Active sessions found:', activeSessions);
         
-        if (activeSessions && activeSessions.length > 0) {
+        // Check if we have a valid active session (not completed)
+        const validSession = activeSessions && activeSessions.length > 0 && 
+                             activeSessions[0].session_state !== 'complete';
+        
+        if (validSession) {
           const session = activeSessions[0];
           console.log('✅ Setting active session:', session);
           setActiveSession(session);
@@ -66,8 +71,16 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
             console.log('🎯 Setting processed actions:', session.selected_actions);
             setProcessedActions(session.selected_actions);
           }
+          
+          // Set intention if it exists
+          if (session.intention) {
+            setIntention(session.intention);
+          }
         } else {
-          console.log('❌ No active sessions found');
+          console.log('❌ No active sessions found or session is already completed');
+          // Reset states to show the creation screen
+          setSessionStarted(false);
+          setActiveSession(null);
         }
       } catch (error) {
         console.error("❌ Error loading active session:", error);
@@ -156,23 +169,56 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
   // Handle session completion
   const handleSessionComplete = (minutesElapsed: number) => {
     console.log('🏁 Session completed', { minutesElapsed });
-    // Only reset session state when the session is actually complete
-    setSessionStarted(false);
-    setActiveSession(null);
-    setSelectedActions([]);
-    setProcessedActions([]);
-    onClose();
+    setShowCompletionScreen(true);
+  };
+
+  // Handle final return to map
+  const handleReturnToMap = async () => {
+    console.log('🏁 Returning to map, resetting session state');
+    
+    try {
+      // If there's an active session ID, ensure it's properly marked as complete in Firebase
+      onClose();
+      if (activeSession?.id) {
+        console.log('✅ Marking session as complete:', activeSession.id);
+        await SessionService.updateSession(activeSession.id, {
+          session_state: 'complete'
+        });
+      }
+
+      // Reset all state
+      setShowCompletionScreen(false);
+      setSessionStarted(false);
+      setActiveSession(null);
+      setSelectedActions([]);
+      setProcessedActions([]);
+      setIntention('');
+      setDuration(60); // Reset to default duration
+      // Close the modal
+      
+    } catch (error) {
+      console.error('❌ Error closing session:', error);
+    }
   };
 
   // Handle modal close
   const handleModalClose = () => {
+    if (showCompletionScreen) {
+      // If we're showing completion screen, don't allow closing with backdrop click
+      return;
+    }
     console.log('🚪 Modal closing...', {
       activeSession,
       sessionStarted,
       hasActiveSession
     });
-    // Do not reset any state when there's an active session
-    // Just close the modal and let the session continue in the background
+    
+    // Don't reset the active session state if there's an actual active session
+    // This way when reopening, it will resume the session
+    
+    // Only reset states related to the modal UI
+    setShowCompletionScreen(false);
+    
     onClose();
   };
 
@@ -213,44 +259,41 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
         onClick={handleModalClose}
       ></div>
       
-      {/* Only show the start session view if there's no active session */}
-      {!sessionStarted && !activeSession ? (
+      {/* Only show the start session view if there's no active session and no completion screen */}
+      {!sessionStarted && !activeSession && !showCompletionScreen ? (
         <div className="relative z-10 bg-white rounded-lg border border-gray-200 text-black p-8 w-full max-w-5xl [font-family:var(--font-mplus-rounded)]" style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}>
-          {/* Two column layout */}
-          <div className="flex flex-col md:flex-row gap-6 mb-8">
-            {/* Left column - Session duration */}
-            <div className="w-full md:w-1/2">
-              <h3 className="text-2xl font-semibold mb-4 text-center flex items-center justify-center gap-2">
-                <span className="text-3xl">⏱️</span>
-                Focus Session Duration
-              </h3>
-              
-              <CustomDropdown
-                options={[
-                  { value: "30", label: "30 minutes", icon: "⏱️" },
-                  { value: "45", label: "45 minutes", icon: "⏱️" },
-                  { value: "60", label: "1 hour", icon: "⏱️" },
-                  { value: "90", label: "1.5 hours", icon: "⏱️" },
-                  { value: "120", label: "2 hours", icon: "⏱️" },
-                  { value: "180", label: "3 hours", icon: "⏱️" },
-                  { value: "240", label: "4 hours", icon: "⏱️" }
-                ]}
-                value={duration.toString()}
-                onChange={(value) => setDuration(parseInt(value))}
-                className="mb-4"
-              />
-
-              {/* Timer placeholder */}
-              <div className="w-full aspect-square flex items-center justify-center bg-gray-50 rounded-lg border border-gray-200 mt-1.5">
-                <div className="text-center">
-                  <span className="text-6xl mb-3 block">⏱️</span>
-                  <p className="text-xl text-gray-600">Timer will appear here</p>
-                </div>
-              </div>
-            </div>
+          {/* Top section - Duration centered */}
+          <div className="mb-8 max-w-md mx-auto">
+            <h3 className="text-2xl font-semibold mb-4 text-center flex items-center justify-center gap-2">
+              <span className="text-3xl">⏱️</span>
+              Focus Session Duration
+            </h3>
             
-            {/* Right column - Actions */}
-            <div className="w-full md:w-1/2">
+            <CustomDropdown
+              options={[
+                { value: "30", label: "30 minutes", icon: "⏱️" },
+                { value: "45", label: "45 minutes", icon: "⏱️" },
+                { value: "60", label: "1 hour", icon: "⏱️" },
+                { value: "90", label: "1.5 hours", icon: "⏱️" },
+                { value: "120", label: "2 hours", icon: "⏱️" },
+                { value: "180", label: "3 hours", icon: "⏱️" },
+                { value: "240", label: "4 hours", icon: "⏱️" }
+              ]}
+              value={duration.toString()}
+              onChange={(value) => setDuration(parseInt(value))}
+              className="w-full"
+            />
+          </div>
+
+          {/* Middle section - Two boxes */}
+          <div className="flex gap-6 mb-8">
+            {/* Left box - Empty for now */}
+            <div className="w-1/2 bg-gray-50 rounded-lg border border-gray-200 p-6" style={{ minHeight: '400px', boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
+              {/* Empty for now */}
+            </div>
+
+            {/* Right box - Actions */}
+            <div className="w-1/2 bg-white rounded-lg border border-gray-200 p-6" style={{ minHeight: '400px', boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
               <h3 className="text-2xl font-semibold mb-4 text-center flex items-center justify-center gap-2">
                 <span className="text-3xl">🎯</span>
                 Choose your {actionCount} action{actionCount !== 1 ? 's' : ''}
@@ -288,10 +331,11 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
               </div>
             </div>
           </div>
-          
-          {/* Historical Info Box and Start Button */}
-          <div className="flex flex-col sm:flex-row gap-6 mb-6">
-            <div className="w-full md:w-1/2">
+
+          {/* Bottom section - Info box and Intention */}
+          <div className="flex gap-6">
+            {/* Left - Info box */}
+            <div className="w-1/2">
               <div className="p-4 rounded-lg border border-emerald-200 bg-emerald-50">
                 <h4 className="text-emerald-800 text-lg mb-2 flex items-center gap-2">
                   <span className="text-2xl">ℹ️</span>
@@ -301,22 +345,20 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
                   • Every 30 minutes of focus = 1 action point
                 </p>
                 <p className="text-lg text-emerald-700 mb-2">
-                  • Choose your actions to nation on the right
+                  • Action points are used to develop your nation
                 </p>
               </div>
             </div>
-            
-            {/* Bottom - Start button */}
-            <div className="w-full md:w-1/2 flex flex-col items-center justify-center">
-              <div className="mt-6 mb-2 w-full">
-                <textarea
-                  value={intention}
-                  onChange={(e) => setIntention(e.target.value)}
-                  placeholder="Write your intention for this focus session"
-                  className="bg-white text-gray-800 border border-gray-200 rounded-lg px-4 py-2 w-full outline-none text-base resize-none"
-                  style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
-                />
-              </div>
+
+            {/* Right - Intention and Start button */}
+            <div className="w-1/2 flex flex-col gap-4">
+              <textarea
+                value={intention}
+                onChange={(e) => setIntention(e.target.value)}
+                placeholder="Write your intention for this focus session"
+                className="bg-white text-gray-800 border border-gray-200 rounded-lg px-4 py-3 w-full outline-none text-base resize-none h-[100px]"
+                style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
+              />
               <button 
                 onClick={startFocusSession}
                 className="px-12 py-3 bg-[#6ec53e] text-white rounded-lg font-bold text-2xl hover:opacity-90 transition-all duration-200 w-full flex items-center justify-center gap-2"
@@ -329,24 +371,21 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
           </div>
         </div>
       ) : (
-        // <div className="relative z-10 bg-white rounded-lg border border-gray-200 text-black p-4 w-full max-w-4xl" style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}>
-          <>
-        {sessionStarted && (
-            <FocusTimer 
-              userId={userId}
-              initialDuration={duration * 60}
-              onSessionComplete={handleSessionComplete}
-              selectedActions={processedActions}
-              existingSessionId={activeSession?.id}
-              handleModalClose={handleModalClose}
-              executeActionUpdate={executeActionUpdate}
-              playerNationResourceTotals={playerNationResourceTotals}
-              intention={intention}
-              setFocusTimeRemaining={setFocusTimeRemaining}
-            />
-          )}
-          </>
-        // </div>
+        <div className="relative z-10">
+          <FocusTimer 
+            userId={userId}
+            initialDuration={duration * 60}
+            onSessionComplete={handleSessionComplete}
+            selectedActions={processedActions}
+            existingSessionId={activeSession?.id}
+            handleModalClose={handleModalClose}
+            executeActionUpdate={executeActionUpdate}
+            playerNationResourceTotals={playerNationResourceTotals}
+            intention={intention}
+            setFocusTimeRemaining={setFocusTimeRemaining}
+            showFocusModal={handleReturnToMap}
+          />
+        </div>
       )}
     </div>
   );

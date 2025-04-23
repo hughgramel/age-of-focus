@@ -81,6 +81,7 @@ interface FocusTimerProps {
   playerNationResourceTotals: playerNationResourceTotals;
   intention?: string; // Add intention prop
   setFocusTimeRemaining: (time: number) => void;
+  showFocusModal?: () => void; // Add this new prop
 }
 
 interface SessionCompleteProps {
@@ -162,10 +163,51 @@ const SessionComplete = ({
   level, 
   startTime, 
   endTime, 
-  onReturnHome 
-}: SessionCompleteProps) => {
+  onReturnHome,
+  selectedActions,
+  playerNationResourceTotals
+}: SessionCompleteProps & { 
+  selectedActions?: ActionType[],
+  playerNationResourceTotals: playerNationResourceTotals 
+}) => {
   const router = useRouter();
   
+  const { currentGame, gameLoading } = useGame();
+  
+  // Calculate total resources gained
+  const calculateResourceGains = () => {
+    if (!selectedActions) return null;
+
+    const gains = {
+      gold: 0,
+      industry: 0,
+      army: 0,
+      population: 0
+    };
+
+    selectedActions.forEach(action => {
+      switch (action) {
+        case 'invest':
+          gains.gold += Math.floor(playerNationResourceTotals.playerGold * 0.15);
+          break;
+        case 'develop':
+          gains.industry += Math.floor(playerNationResourceTotals.playerIndustry * 0.1);
+          gains.gold += Math.floor(playerNationResourceTotals.playerGold * 0.03);
+          break;
+        case 'improve_army':
+          gains.army += Math.floor(playerNationResourceTotals.playerPopulation * 0.0006);
+          break;
+        case 'population_growth':
+          gains.population += Math.floor(playerNationResourceTotals.playerPopulation * 0.0010);
+          break;
+      }
+    });
+
+    return gains;
+  };
+
+  const resourceGains = calculateResourceGains();
+
   const formatTimeElapsed = (minutes: number): string => {
     if (minutes < 60) {
       return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
@@ -221,6 +263,29 @@ const SessionComplete = ({
               </div>
             </div>
           </div>
+
+          {resourceGains && (
+            <div className="bg-gray-50 rounded-lg p-6 mb-8 border border-gray-200">
+              <h3 className="text-[1.2rem] text-gray-800 mb-4 flex items-center gap-2">
+                <span className="text-2xl">🎁</span>
+                Resources Gained
+              </h3>
+              <div className="space-y-3">
+                {resourceGains.gold > 0 && (
+                  <p className="text-lg text-gray-700">+{resourceGains.gold.toLocaleString()} 💰</p>
+                )}
+                {resourceGains.industry > 0 && (
+                  <p className="text-lg text-gray-700">+{resourceGains.industry.toLocaleString()} 🏭</p>
+                )}
+                {resourceGains.army > 0 && (
+                  <p className="text-lg text-gray-700">+{resourceGains.army.toLocaleString()} ⚔️</p>
+                )}
+                {resourceGains.population > 0 && (
+                  <p className="text-lg text-gray-700">+{resourceGains.population.toLocaleString()} 👥</p>
+                )}
+              </div>
+            </div>
+          )}
           
           <div className="text-center my-8">
             <p className="text-[1.2rem] text-gray-700">Well done! You've completed a focus session!</p>
@@ -252,7 +317,8 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
   executeActionUpdate,
   playerNationResourceTotals,
   intention,
-  setFocusTimeRemaining
+  setFocusTimeRemaining,
+  showFocusModal
 }) => {
   // Default timer durations
   const FOCUS_TIME_SECONDS = initialDuration;
@@ -486,6 +552,7 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
           throw new Error("No active session to update");
         }
 
+        // Ensure session is properly marked as complete
         await SessionService.updateSession(sessionId.current, {
           session_state: 'complete',
           total_minutes_done: roundedMinutes,
@@ -808,7 +875,7 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     const now = new Date();
     const timeDiffInMilliseconds = endTime.getTime() - now.getTime();
     const focusTimeRemaining = Math.ceil(timeDiffInMilliseconds / 1000);
-    setFocusTimeRemaining(focusTimeRemaining);
+    setFocusTimeRemaining(focusTimeRemaining);  
     setRerender((e) => e + 1);
 
 
@@ -1069,6 +1136,42 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     }
   };
 
+  // Add function to adjust session time by +60 minutes
+  const adjustSessionTimePlus60 = async () => {
+    if (!userId || !sessionId.current) return;
+    
+    try {
+      // Calculate new start time (60 minutes later)
+      const currentStartTime = new Date(currFocusStartTime.current);
+      currentStartTime.setMinutes(currentStartTime.getMinutes() - 60);
+      const newStartTime = currentStartTime.toUTCString();
+      
+      // Calculate new end time (60 minutes later)
+      const currentEndTime = new Date(currFocusEndTime.current);
+      currentEndTime.setMinutes(currentEndTime.getMinutes() - 60);
+      const newEndTime = currentEndTime.toUTCString();
+      
+      // Update the session in Firebase
+      await SessionService.updateSession(sessionId.current, {
+        focus_start_time: newStartTime,
+        focus_end_time: newEndTime
+      });
+      
+      // Update local state
+      currFocusStartTime.current = newStartTime;
+      currFocusEndTime.current = newEndTime;
+      
+      // Recalculate timer values
+      setRemainingTimesFromEndTimes(null);
+      setRerender(prev => prev + 1);
+      
+      console.log("Session times adjusted by -60 minutes");
+    } catch (error) {
+      console.error("Error adjusting session time:", error);
+      setError("Failed to adjust session time");
+    }
+  };
+
   // Handle session completion
   const handleSessionComplete = (minutesElapsed: number) => {
     // Just close the modal without redirecting
@@ -1107,9 +1210,12 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
           level="L1"
           startTime={pendingValues.current.startTime || currFocusStartTime.current}
           endTime={pendingValues.current.endTime || new Date().toUTCString()}
-          onReturnHome={onSessionComplete ? 
-            () => onSessionComplete(totalMinutesElapsedRoundedToFifteen.current) : 
-            undefined}
+          onReturnHome={() => {
+            if (showFocusModal) showFocusModal();
+            if (onSessionComplete) onSessionComplete(totalMinutesElapsedRoundedToFifteen.current);
+          }}
+          selectedActions={selectedActions}
+          playerNationResourceTotals={playerNationResourceTotals}
         />
       ) : (
         <div className="bg-white rounded-xl p-8 w-full max-w-[700px] mx-auto shadow-lg text-gray-800 border border-gray-200" style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}>
@@ -1227,6 +1333,13 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
               onClick={adjustSessionTimeMinus15}
             >
               Adjust -15min
+            </button>
+            <button 
+              className="bg-white text-gray-600 border border-gray-200 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-gray-50" 
+              style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
+              onClick={adjustSessionTimePlus60}
+            >
+              Adjust -60min
             </button>
             <button 
               className="bg-white text-gray-600 border border-gray-200 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-gray-50" 
