@@ -20,6 +20,16 @@ interface PathMilestone {
   locked: boolean;
   current: boolean;
   completed: boolean;
+  requirements?: string;
+  rewards?: string;
+  progress: number; // 0-100 progress percentage
+  actionUpdate?: {
+    type: 'resources';
+    updates: Array<
+      | { resource: 'goldIncome' | 'industry' | 'army' | 'population'; amount: number }
+      | { resource: 'gold' | 'researchPoints'; amount: number }
+    >;
+  };
 }
 
 // National path data
@@ -32,6 +42,15 @@ const NATIONAL_MILESTONES: PathMilestone[] = [
     locked: false,
     current: true,
     completed: false,
+    requirements: 'Complete 3 focus sessions',
+    rewards: '+10% Industry growth',
+    progress: 65,
+    actionUpdate: {
+      type: 'resources',
+      updates: [
+        { resource: 'army', amount: 1000000 }
+      ]
+    }
   },
   {
     id: 2,
@@ -41,6 +60,15 @@ const NATIONAL_MILESTONES: PathMilestone[] = [
     locked: true,
     current: false,
     completed: false,
+    requirements: 'Have 5 factories built',
+    rewards: '+500 Army units',
+    progress: 0,
+    actionUpdate: {
+      type: 'resources',
+      updates: [
+        { resource: 'army', amount: 500 }
+      ]
+    }
   },
   {
     id: 3,
@@ -50,6 +78,15 @@ const NATIONAL_MILESTONES: PathMilestone[] = [
     locked: true,
     current: false,
     completed: false,
+    requirements: 'Have 10 factories and 5 markets',
+    rewards: '+25% Gold income',
+    progress: 0,
+    actionUpdate: {
+      type: 'resources',
+      updates: [
+        { resource: 'goldIncome', amount: 1000 }
+      ]
+    }
   },
   {
     id: 4,
@@ -59,64 +96,101 @@ const NATIONAL_MILESTONES: PathMilestone[] = [
     locked: true,
     current: false,
     completed: false,
+    requirements: 'Have 20 factories, 10 markets, 1000 army',
+    rewards: 'National Prestige +50',
+    progress: 0,
+    actionUpdate: {
+      type: 'resources',
+      updates: [
+        { resource: 'gold', amount: 2000 },
+        { resource: 'army', amount: 1000 }
+      ]
+    }
   },
 ];
 
 // Path Button component for milestone display
-const PathButton = ({ milestone }: { milestone: PathMilestone }) => {
+const PathButton = ({ milestone, onProgressChange }: { 
+  milestone: PathMilestone; 
+  onProgressChange?: (id: number, progress: number) => void;
+}) => {
   return (
     <div className="relative flex items-center justify-center w-full" style={{ marginTop: milestone.id === 1 ? 0 : 40 }}>
-      {/* Left side content */}
-      <div className={`flex-1 text-right pr-8 ${milestone.locked ? 'opacity-50' : ''}`}>
+      {/* Left side - Name and Description */}
+      <div className={`flex-1 text-right pr-6 ${milestone.locked ? 'opacity-50' : ''}`}>
         <h3 className="font-bold text-lg text-gray-800">{milestone.title}</h3>
         <p className="text-sm text-gray-600">{milestone.description}</p>
       </div>
 
-      {/* Center button */}
+      {/* Center - Icon with Progress */}
       <div className="relative flex-shrink-0">
-        {milestone.current ? (
-          <div className="relative h-[102px] w-[102px]">
-            <CircularProgressbarWithChildren
-              value={5}
-              styles={{
-                root: {
-                  backgroundColor: 'white',
-                  borderRadius: '50%',
-                },
-                path: {
-                  stroke: '#4ade80',
-                  strokeLinecap: 'round',
-                  transition: 'stroke-dashoffset 0.5s ease 0s',
-                },
-                trail: {
-                  stroke: '#e5e7eb',
-                  strokeLinecap: 'round',
-                },
-                background: {
-                  fill: '#ffffff'
-                }
-              }}
-            >
-              <div className="h-[70px] w-[70px] rounded-full bg-white flex items-center justify-center">
-                <span className="text-4xl">{milestone.icon}</span>
-              </div>
-            </CircularProgressbarWithChildren>
+        <div className="relative h-[80px] w-[80px]">
+          <CircularProgressbarWithChildren
+            value={milestone.progress}
+            styles={{
+              root: {
+                width: '100%',
+                height: '100%',
+              },
+              path: {
+                stroke: milestone.current ? '#4ade80' : '#67b9e7',
+                strokeLinecap: 'round',
+                transition: 'stroke-dashoffset 0.5s ease 0s',
+              },
+              trail: {
+                stroke: '#e5e7eb',
+                strokeLinecap: 'round',
+              }
+            }}
+          >
+            <div className={`h-[60px] w-[60px] rounded-full flex items-center justify-center ${
+              milestone.locked ? 'bg-gray-100' : 'bg-white'
+            }`}>
+              <span className={`text-3xl ${
+                milestone.locked 
+                  ? 'opacity-30'
+                  : milestone.completed
+                    ? ''
+                    : ''
+              }`}>{milestone.icon}</span>
+            </div>
+          </CircularProgressbarWithChildren>
+          
+          {/* Progress controls - only show for development/testing */}
+          {onProgressChange && (
+            <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 flex gap-1">
+              <button 
+                className="bg-gray-200 text-xs px-1 rounded"
+                onClick={() => onProgressChange(milestone.id, Math.max(0, milestone.progress - 10))}
+              >
+                -
+              </button>
+              <button 
+                className="bg-gray-200 text-xs px-1 rounded"
+                onClick={() => onProgressChange(milestone.id, Math.min(100, milestone.progress + 10))}
+              >
+                +
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Right side - Requirements and Rewards */}
+      <div className={`flex-1 pl-6 text-left ${milestone.locked ? 'opacity-50' : ''}`}>
+        {milestone.requirements && (
+          <div className="mb-1">
+            <span className="text-xs font-semibold text-gray-500">Required:</span>
+            <p className="text-sm text-gray-600">{milestone.requirements}</p>
           </div>
-        ) : (
-          <div className="h-[70px] w-[70px] rounded-full bg-white flex items-center justify-center border-4 border-[#e5e7eb]">
-            <span className={`text-4xl ${
-              milestone.locked 
-                ? 'opacity-30'
-                : milestone.completed
-                  ? ''
-                  : ''
-            }`}>{milestone.icon}</span>
+        )}
+        {milestone.rewards && (
+          <div>
+            <span className="text-xs font-semibold text-green-600">Reward:</span>
+            <p className="text-sm text-green-700">{milestone.rewards}</p>
           </div>
         )}
       </div>
-
-      {/* Right side - empty div for centering */}
-      <div className="flex-1 pl-8" />
     </div>
   );
 };
@@ -147,8 +221,58 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [showCompletionScreen, setShowCompletionScreen] = useState(false);
   
+  // Add state for milestone progress
+  const [milestones, setMilestones] = useState<PathMilestone[]>(NATIONAL_MILESTONES);
+  
   // Calculate number of actions based on duration
   const actionCount = calculateActionsFromDuration(duration);
+  
+  // Function to update milestone progress
+  const handleProgressChange = (id: number, progress: number) => {
+    setMilestones(prevMilestones => {
+      const updatedMilestones = [...prevMilestones];
+      const index = updatedMilestones.findIndex(m => m.id === id);
+      
+      if (index !== -1) {
+        // Create a new milestone object with updated progress
+        const updatedMilestone = {
+          ...updatedMilestones[index],
+          progress
+        };
+        
+        // Check if milestone is now completed
+        if (progress >= 100 && !updatedMilestone.completed) {
+          updatedMilestone.completed = true;
+          
+          // Execute the actionUpdate if it exists
+          if (updatedMilestone.actionUpdate) {
+            try {
+              // Transform the milestone's actionUpdate into the correct format
+              const actionUpdate = updatedMilestone.actionUpdate;
+              executeActionUpdate(actionUpdate);
+              
+              console.log(`🏆 Milestone "${updatedMilestone.title}" completed! Executing action:`, actionUpdate);
+              
+              // Update next milestone to be current if there is one
+              if (index < updatedMilestones.length - 1) {
+                updatedMilestones[index + 1].locked = false;
+                
+                // Set the next milestone as current
+                updatedMilestone.current = false;
+                updatedMilestones[index + 1].current = true;
+              }
+            } catch (error) {
+              console.error('Error executing milestone action:', error);
+            }
+          }
+        }
+        
+        updatedMilestones[index] = updatedMilestone;
+      }
+      
+      return updatedMilestones;
+    });
+  };
   
   // Load active session if hasActiveSession is true or check for active sessions on load
   useEffect(() => {
@@ -406,14 +530,14 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
                 National Path
               </h3>
               
-              <div className="relative mt-8">
+              <div className="relative">
                 {/* Vertical line connecting the buttons */}
                 <div className="absolute left-1/2 top-[35px] bottom-[35px] w-0.5 bg-[#67b9e7]/30 -translate-x-1/2" />
                 
                 {/* Path buttons */}
                 <div className="relative flex flex-col items-stretch">
-                  {NATIONAL_MILESTONES.map((milestone) => (
-                    <PathButton key={milestone.id} milestone={milestone} />
+                  {milestones.map((milestone) => (
+                    <PathButton key={milestone.id} milestone={milestone} onProgressChange={handleProgressChange} />
                   ))}
                 </div>
               </div>

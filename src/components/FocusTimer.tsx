@@ -824,47 +824,47 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
 
 
     // Detailed state logging at start of tick
-    console.log('🔄 TICK START ==================');
-    console.log('Session Info:', {
-      sessionId: sessionId.current,
-      isBreak: isBreak.current,
-      breakTimeRemaining: breakTimeRemaining.current
-    });
+    // console.log('🔄 TICK START ==================');
+    // console.log('Session Info:', {
+    //   sessionId: sessionId.current,
+    //   isBreak: isBreak.current,
+    //   breakTimeRemaining: breakTimeRemaining.current
+    // });
     
-    console.log('Timer State:', {
-      secondsRemaining: secondsRemaining.current,
-      secondsElapsed: secondsElapsed.current
-    });
+    // console.log('Timer State:', {
+    //   secondsRemaining: secondsRemaining.current,
+    //   secondsElapsed: secondsElapsed.current
+    // });
     
-    console.log('Focus Times:', {
-      focusStartTime: currFocusStartTime.current,
-      focusEndTime: currFocusEndTime.current,
-      focusStartDate: new Date(currFocusStartTime.current).toLocaleString(),
-      focusEndDate: new Date(currFocusEndTime.current).toLocaleString()
-    });
+    // console.log('Focus Times:', {
+    //   focusStartTime: currFocusStartTime.current,
+    //   focusEndTime: currFocusEndTime.current,
+    //   focusStartDate: new Date(currFocusStartTime.current).toLocaleString(),
+    //   focusEndDate: new Date(currFocusEndTime.current).toLocaleString()
+    // });
     
-    console.log('Break Times:', {
-      breakStartTime: currBreakStartTime.current,
-      breakEndTime: currBreakEndTime.current,
-      breakStartDate: currBreakStartTime.current ? new Date(currBreakStartTime.current).toLocaleString() : null,
-      breakEndDate: currBreakEndTime.current ? new Date(currBreakEndTime.current).toLocaleString() : null
-    });
+    // console.log('Break Times:', {
+    //   breakStartTime: currBreakStartTime.current,
+    //   breakEndTime: currBreakEndTime.current,
+    //   breakStartDate: currBreakStartTime.current ? new Date(currBreakStartTime.current).toLocaleString() : null,
+    //   breakEndDate: currBreakEndTime.current ? new Date(currBreakEndTime.current).toLocaleString() : null
+    // });
 
-    // Log before calculating remaining times
-    console.log('Before setRemainingTimesFromEndTimes');
+    // // Log before calculating remaining times
+    // console.log('Before setRemainingTimesFromEndTimes');
     setRemainingTimesFromEndTimes(null);
-    console.log('After setRemainingTimesFromEndTimes:', {
-      newSecondsRemaining: secondsRemaining.current,
-      newSecondsElapsed: secondsElapsed.current
-    });
+    // console.log('After setRemainingTimesFromEndTimes:', {
+    //   newSecondsRemaining: secondsRemaining.current,
+    //   newSecondsElapsed: secondsElapsed.current
+    // });
 
-    // Log before checking time
-    console.log('Before checkTime');
+    // // Log before checking time
+    // console.log('Before checkTime');
     checkTime();
-    console.log('After checkTime:', {
-      isBreak: isBreak.current,
-      secondsRemaining: secondsRemaining.current
-    });
+    // console.log('After checkTime:', {
+    //   isBreak: isBreak.current,
+    //   secondsRemaining: secondsRemaining.current
+    // });
 
     
 
@@ -881,7 +881,7 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
 
 
 
-    console.log('🔄 TICK END ==================\n');
+    // console.log('🔄 TICK END ==================\n');
   };
 
   useEffect(() => {

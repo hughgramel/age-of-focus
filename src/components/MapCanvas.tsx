@@ -9,6 +9,7 @@ interface MapCanvasProps {
   onStateClick?: (stateId: string | null) => void;
   onMapReady?: (stateMap: Map<string, StateData>) => void;
   disableKeyboardControls?: boolean;
+  initialFocusProvinceId?: string;
 }
 
 export interface StateData {
@@ -19,7 +20,7 @@ export interface StateData {
   nationId?: string;
 }
 
-export default function MapCanvas({ mapName, children, onStateClick, onMapReady, disableKeyboardControls = false }: MapCanvasProps) {
+export default function MapCanvas({ mapName, children, onStateClick, onMapReady, disableKeyboardControls = false, initialFocusProvinceId }: MapCanvasProps) {
   const svgContainerRef = useRef<HTMLDivElement>(null);
   const panzoomInstanceRef = useRef<ReturnType<typeof panzoom> | null>(null);
   const keysPressed = useRef<Set<string>>(new Set<string>());
@@ -104,34 +105,31 @@ export default function MapCanvas({ mapName, children, onStateClick, onMapReady,
 
   // Initialize panzoom with proper bounds and zoom constraints
   const initializeZoom = useCallback((svg: SVGElement) => {
-    // Calculate initial zoom to fit SVG to screen while maintaining aspect ratio
     const calculateInitialZoom = () => {
       const svgRect = svg.getBoundingClientRect();
       const containerRect = svgContainerRef.current?.getBoundingClientRect();
       if (!containerRect) return 1;
-
       const widthRatio = containerRect.width / svgRect.width;
       const heightRatio = containerRect.height / svgRect.height;
-
-      // Use the smaller ratio to ensure the entire map fits, with a slight padding
-      return Math.min(widthRatio, heightRatio) * 1.2;
+      return Math.min(widthRatio, heightRatio) * 12;
     };
 
-    const initialZoom = calculateInitialZoom();
-    initialZoomRef.current = initialZoom;
+    const initialZoomLevel = calculateInitialZoom();
+    initialZoomRef.current = initialZoomLevel;
 
-    // Initialize panzoom with constraints
+    // Initialize panzoom with only the basic fit-zoom options
     const panzoomInstance = panzoom(svg, {
-      maxZoom: 40,                    // Maximum zoom level
-      minZoom: initialZoom * 0.8,     // Minimum zoom level based on initial fit
-      initialZoom: initialZoom,       // Start with the calculated fit zoom
-      smoothScroll: false,            // Disable smooth scroll for better control
-      bounds: true,                   // Enable bounds to prevent dragging outside
-      boundsPadding: 0.1              // Add slight padding to bounds
+      maxZoom: 40,
+      minZoom: initialZoomLevel * 0.8,
+      initialZoom: initialZoomLevel,
+      smoothScroll: false,
+      bounds: true,
+      boundsPadding: 0.1
     });
 
     panzoomInstanceRef.current = panzoomInstance;
-    return panzoomInstance;
+    console.log(`Initializing panzoom with fit zoom level: ${initialZoomLevel}`);
+    return { panzoomInstance, initialZoomLevel };
   }, []);
 
   // Handle direct zooming based on trackpad/wheel input
@@ -239,12 +237,62 @@ export default function MapCanvas({ mapName, children, onStateClick, onMapReady,
     };
   }, [disableKeyboardControls]);
 
+  // Function to zoom to a specific province
+  const zoomToProvince = useCallback((provinceId: string, targetScale?: number) => {
+    console.log('Attempting zoom to province:', provinceId);
+    if (!panzoomInstanceRef.current || !stateDataRef.current.has(provinceId) || !svgContainerRef.current) {
+        console.error('Zoom prerequisites not met:', {
+            hasInstance: !!panzoomInstanceRef.current,
+            hasState: stateDataRef.current.has(provinceId),
+            hasContainer: !!svgContainerRef.current
+        });
+        return;
+    }
+
+    const state = stateDataRef.current.get(provinceId)!;
+    const bbox = state.path.getBBox();
+    // Restore original cx, cy calculation
+    const cx = (bbox.x + bbox.width / 2) * 1.31;
+    const cy = (bbox.y + bbox.height / 2) * 1.96;
+
+    // Use known/calculated min/max zoom values directly
+    const minZoom = initialZoomRef.current * 0.8;
+    const maxZoom = 40;
+    // Use the targetScale provided (which should be the initialFit level)
+    const desiredScale = targetScale || initialZoomRef.current * 3; // Default zoom-in if no targetScale
+    const finalScale = Math.max(minZoom, Math.min(maxZoom, desiredScale));
+
+    console.log(`Target Province BBox: x=${bbox.x}, y=${bbox.y}, w=${bbox.width}, h=${bbox.height}`);
+    console.log(`Calculated Center (SVG coords): cx=${cx}, cy=${cy}`);
+    console.log(`Calculated Final Scale: ${finalScale}`);
+
+    // 1. Apply the zoom centered on the SVG point (this might not center it visually)
+    panzoomInstanceRef.current.zoomAbs(cx, cy, finalScale);
+
+    // 2. Immediately calculate the required pan to center the point visually
+    const containerRect = svgContainerRef.current.getBoundingClientRect();
+    const containerCenterX = containerRect.width / 2;
+    const containerCenterY = containerRect.height / 2;
+
+    // Calculate the desired top-left corner position for the panzoom transform
+    const targetX = containerCenterX - (cx * finalScale);
+    const targetY = containerCenterY - (cy * finalScale);
+
+    console.log(`Container Center: x=${containerCenterX}, y=${containerCenterY}`);
+    console.log(`Calculated target pan: targetX=${targetX}, targetY=${targetY}`);
+
+    // 3. Move to the calculated position
+    panzoomInstanceRef.current.moveTo(targetX, targetY);
+
+    console.log(`Moved to target pan.`);
+
+  }, []); // Dependencies: Add any state/refs used inside if needed, e.g., initialZoomRef
+
   // Initialize map and state data
   useEffect(() => {
     if (typeof window === 'undefined') return;
     let isInitialized = false;
     setIsLoading(true);
-
     const loadMap = async () => {
       try {
         const response = await fetch(`/svg_maps/${mapName}.svg`);
@@ -266,17 +314,47 @@ export default function MapCanvas({ mapName, children, onStateClick, onMapReady,
         svg.style.outline = 'none';
         svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
 
-        // Initialize zoom functionality
-        const panzoomInstance = initializeZoom(svg);
+        // Process all paths in the SVG BEFORE initializing zoom
+        // so stateDataRef is populated
+        const paths = svg.querySelectorAll('path');
+        paths.forEach((path) => {
+          const id = path.id || crypto.randomUUID();
+          const name = path.getAttribute('name') || id;
+          const computedStyle = window.getComputedStyle(path);
+          const color = computedStyle.fill;
 
-        // Add wheel event listener for direct zooming
+          originalColorsRef.current.set(id, color);
+
+          const stateData: StateData = {
+            id,
+            name,
+            color,
+            path: path as SVGPathElement
+          };
+          stateDataRef.current.set(id, stateData);
+
+          const clickHandler = (e: MouseEvent) => {
+            e.stopPropagation();
+            if (!isDraggingRef.current && onStateClick) {
+              onStateClick(id);
+            }
+          };
+          
+          path.addEventListener('click', clickHandler);
+          path.dataset.clickId = id;
+        });
+
+        // Initialize zoom functionality (gets instance and initial level)
+        const { initialZoomLevel } = initializeZoom(svg);
+
+        // Add wheel event listener
         svg.addEventListener('wheel', (e: WheelEvent) => {
           e.preventDefault();
           const zoomIn = e.deltaY < 0;
           handleZoom(zoomIn, e.deltaY);
         });
 
-        // Add mouse event listeners to track dragging
+        // Add mouse event listeners
         const handleMouseDown = (e: MouseEvent) => {
           mouseStartPosRef.current = { x: e.clientX, y: e.clientY };
           isDraggingRef.current = false;
@@ -301,42 +379,9 @@ export default function MapCanvas({ mapName, children, onStateClick, onMapReady,
         window.addEventListener('mousemove', handleMouseMove);
         window.addEventListener('mouseup', handleMouseUp);
 
-        // Process all paths in the SVG
-        const paths = svg.querySelectorAll('path');
-        
-        paths.forEach((path) => {
-          const id = path.id || crypto.randomUUID();
-          const name = path.getAttribute('name') || id;
-          const computedStyle = window.getComputedStyle(path);
-          const color = computedStyle.fill;
-
-          // Store original colors
-          originalColorsRef.current.set(id, color);
-
-          const stateData: StateData = {
-            id,
-            name,
-            color,
-            path: path as SVGPathElement
-          };
-          stateDataRef.current.set(id, stateData);
-
-          // Add click handler
-          const clickHandler = (e: MouseEvent) => {
-            e.stopPropagation();
-            if (!isDraggingRef.current && onStateClick) {
-              onStateClick(id);
-            }
-          };
-          
-          path.addEventListener('click', clickHandler);
-          path.dataset.clickId = id;
-        });
-
         // Add click handler to SVG for deselection
         svg.addEventListener('click', (e: MouseEvent) => {
           const target = e.target as Element;
-          // Only deselect if clicking the SVG background, not a province
           if (target === svg && !isDraggingRef.current && onStateClick) {
             onStateClick(null);
           }
@@ -346,6 +391,18 @@ export default function MapCanvas({ mapName, children, onStateClick, onMapReady,
         if (onMapReady) {
           onMapReady(stateDataRef.current);
         }
+
+        // --- Center on Capital AFTER Init (using setTimeout) ---
+        if (initialFocusProvinceId && stateDataRef.current.has(initialFocusProvinceId)) {
+          console.log(`Scheduling zoom to capital: ${initialFocusProvinceId} at level ${initialZoomLevel}`);
+          setTimeout(() => {
+            // Pass the calculated initialZoomLevel to zoomToProvince
+            zoomToProvince(initialFocusProvinceId, initialZoomLevel);
+          }, 100); // Delay might need adjustment
+        } else {
+          console.log('No valid initialFocusProvinceId provided, using default fit.');
+        }
+        // --- End Center on Capital --- 
 
         setIsLoading(false);
       } catch (error) {
@@ -365,10 +422,18 @@ export default function MapCanvas({ mapName, children, onStateClick, onMapReady,
 
     // Cleanup
     return () => {
-      // Do not dispose of panzoom on unmount to prevent reset
-      // This is intentional to keep the map state
+      const svg = svgContainerRef.current?.querySelector('svg');
+      if (svg) {
+        // It's best practice to store handlers to remove them specifically
+        // For now, we'll skip removal as it requires more refactoring
+      }
+      // Consider panzoom disposal if the component unmounts permanently
+      // if (panzoomInstanceRef.current) {
+      //    panzoomInstanceRef.current.dispose();
+      //    panzoomInstanceRef.current = null;
+      // }
     };
-  }, [mapName, initializeZoom, onStateClick, onMapReady]);
+  }, [mapName, onStateClick, onMapReady, initialFocusProvinceId, initializeZoom, handleZoom, zoomToProvince]);
 
   return (
     <div className="w-full h-full bg-white relative overflow-hidden">

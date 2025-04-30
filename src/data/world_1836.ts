@@ -705,7 +705,7 @@ const belgium: Nation = {
 
 // Create Great Britain nation
 const greatBritain: Nation = {
-  nationTag: 'ENG',
+  nationTag: 'GBR',
   name: 'Great Britain',
   color: '#a76c4f',
   hexColor: '#a76c4f',

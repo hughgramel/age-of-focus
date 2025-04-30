@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import { countries_1836, Country1836 } from '@/data/countries_1836';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { GameService } from '@/services/gameService';
 import { world_1836 } from '@/data/world_1836';
@@ -14,6 +14,15 @@ export default function CountrySelect() {
   const [selectedCountry, setSelectedCountry] = useState<Country1836 | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fadeIn, setFadeIn] = useState(false);
+
+  // Add fade-in effect on mount
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setFadeIn(true);
+    }, 50);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleCountrySelect = async (country: Country1836) => {
     if (!user) {
@@ -26,7 +35,6 @@ export default function CountrySelect() {
     setError(null);
 
     try {
-      // Find an empty save slot
       const saves = await GameService.getSaveGames(user.uid);
       console.log('Current saves:', saves);
       
@@ -34,30 +42,27 @@ export default function CountrySelect() {
       
       if (!emptySlot) {
         setError('No empty save slots available');
+        setLoading(false);
         return;
       }
 
       console.log('Found empty slot:', emptySlot);
 
-      // Map country ID to nation tag
-      let nationTag = '';
-      switch (country.id) {
-        case 'france':
-          nationTag = 'FRA';
-          break;
-        case 'prussia':
-          nationTag = 'PRU';
-          break;
-        case 'usa':
-          // USA not implemented yet
-          setError('United States not implemented yet');
-          return;
-        default:
-          setError('Invalid country selected');
-          return;
+      // Directly use the nationTag from the selected country data
+      const nationTag = country.nationTag;
+
+      // Special handling for countries not yet implemented in the simulation
+      
+      // Add other checks for unimplemented tags here if necessary
+
+      // Check if nationTag exists in world_1836 data
+      const nationExists = world_1836.nations.some(n => n.nationTag === nationTag);
+      if (!nationExists) {
+           setError(`Nation tag '${nationTag}' for ${country.name} not found in world data. Implementation missing.`);
+           setLoading(false);
+           return;
       }
 
-      // Create new game based on world_1836 but with selected country
       const newGame = {
         ...world_1836,
         id: `game_${Date.now()}`,
@@ -67,80 +72,119 @@ export default function CountrySelect() {
 
       console.log('Creating new game:', newGame);
 
-      // Save the game
       await GameService.saveGame(user.uid, parseInt(emptySlot), newGame, 'world_1836');
       console.log('Game saved successfully');
 
-      // Navigate to the game
       router.push(`/game?save=${emptySlot}`);
     } catch (err) {
       console.error('Error starting game:', err);
-      setError('Failed to start game');
+      setError('Failed to start game. Check console for details.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="w-full h-11/12 overflow-hidden flex flex-col items-center">
-      <div className="w-full max-w-[1800px] px-4 flex flex-col items-center">
-        <h1 className="text-4xl sm:text-5xl text-center text-[#FFD700] mt-12 mb-15 historical-game-title">
+    <div className={`w-full min-h-screen bg-white transition-opacity duration-500 ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
+      {/* Main Content */}
+      <div className="w-full max-w-[800px] mx-auto px-4 py-8 mb-32">
+        <div className="flex flex-col items-center">
+          <h1 className="text-4xl sm:text-5xl text-center text-[#0B1423] mb-12 [font-family:var(--font-mplus-rounded)]">
           Choose Your Nation
         </h1>
 
         {error && (
-          <div className="mb-8 p-4 bg-red-900/50 border border-red-500 rounded-lg text-red-200">
+            <div className="mb-6 p-4 bg-red-900/50 border-2 border-red-500 rounded-lg text-red-200 [font-family:var(--font-mplus-rounded)] w-full">
             {error}
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-12 sm:gap-16 w-full max-w-[1600px] px-4 sm:px-8">
-          {countries_1836.map((country) => (
+          <div className="flex flex-col gap-6 w-full">
+            {countries_1836.map((country) => {
+              return (
             <button
               key={country.id}
               onClick={() => handleCountrySelect(country)}
               disabled={loading}
-              className={`w-full aspect-[1] text-lg sm:text-xl font-medium text-[#FFD700] rounded-3xl transition-all duration-200 historical-game-title border-2 border-[#FFD700]/30 hover:border-[#FFD700]/50 overflow-hidden group relative ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              style={{
-                backgroundImage: `url('${country.backgroundImage}')`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                backgroundRepeat: 'no-repeat',
-                clipPath: 'inset(0 0 0 0 round 24px)',
-                boxShadow: '0 0 15px rgba(255, 255, 255, 0.2)'
-              }}
+                  className={`w-full p-6 bg-white rounded-2xl transition-all duration-200 [font-family:var(--font-mplus-rounded)] border border-[#67b9e7]/20 hover:border-[#67b9e7]/40 hover:shadow-lg
+                    ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {/* Nation Header */}
+                  <div className="flex items-center gap-4 mb-6">
+                    <span className="text-4xl">{country.flag}</span>
+                    <span className="text-2xl font-bold text-[#0B1423]">{country.name}</span>
+                    <span className={`ml-2 text-sm font-medium px-3 py-1 rounded-full
+                      ${country.difficulty === 'Easy' ? 'bg-green-100 text-green-700' :
+                        country.difficulty === 'Medium' ? 'bg-yellow-100 text-yellow-700' :
+                        country.difficulty === 'Hard' ? 'bg-orange-100 text-orange-700' :
+                        'bg-red-100 text-red-700'}`}
             >
-              {/* Gradient Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0B1423]/50 to-[#0B1423]/90 opacity-60 group-hover:opacity-40 transition-opacity duration-200" />
-              
-              {/* Content */}
-              <div className="relative h-full flex flex-col justify-between z-10 p-10">
-                <div className="flex flex-row items-center gap-4">
-                  <span className="text-5xl">{country.flag}</span>
-                  <span className="text-3xl sm:text-4xl font-bold text-[#FFD700] drop-shadow-lg">{country.name}</span>
+                      {country.difficulty}
+                    </span>
+                  </div>
+
+                  {/* Resources Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
+                    <div className="flex flex-col items-start gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">👥</span>
+                        <span className="text-lg text-[#0B1423]/80">Population</span>
+                      </div>
+                      <span className="text-xl font-semibold text-[#0B1423] ml-9">
+                        {country.populationM}M
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-start gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">🏭</span>
+                        <span className="text-lg text-[#0B1423]/80">Industry</span>
+                      </div>
+                      <span className="text-xl font-semibold text-[#0B1423] ml-9">
+                        {country.industryM}M
+                      </span>
+                    </div>
+                    <div className="flex flex-col items-start gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">💰</span>
+                        <span className="text-lg text-[#0B1423]/80">Gold</span>
                 </div>
-                <div className="flex flex-col gap-4">
-                  <span className="text-xl sm:text-2xl text-white/90 drop-shadow-lg font-medium">
-                    {country.description}
+                      <span className="text-xl font-semibold text-[#0B1423] ml-9">
+                        {country.goldM}M
                   </span>
-                  <span className={`text-lg sm:text-xl font-medium drop-shadow-lg
-                    ${country.difficulty === 'Easy' ? 'text-green-400' :
-                      country.difficulty === 'Medium' ? 'text-yellow-400' :
-                      country.difficulty === 'Hard' ? 'text-orange-400' :
-                      'text-red-400'}`}
-                  >
-                    {country.difficulty} Difficulty
+                    </div>
+                    <div className="flex flex-col items-start gap-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl">⚔️</span>
+                        <span className="text-lg text-[#0B1423]/80">Army</span>
+                      </div>
+                      <span className="text-xl font-semibold text-[#0B1423] ml-9">
+                        {country.armyM}M
                   </span>
                 </div>
               </div>
             </button>
-          ))}
+              );
+            })}
         </div>
 
-        <div className="mt-25 text-center">
-          <span className="text-[#FFD700]/70 text-2xl sm:text-3xl historical-game-title">
+          <div className="mt-12 text-center">
+            <span className="text-[#0B1423]/70 text-xl sm:text-2xl [font-family:var(--font-mplus-rounded)]">
             More nations coming soon...
           </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Return to Dashboard Button - Fixed above bottom nav */}
+      <div className="fixed bottom-[72px] sm:bottom-6 left-0 right-0 p-4 bg-white/95 backdrop-blur-sm border-t border-[#67b9e7]/20 z-10">
+        <div className="max-w-[800px] mx-auto">
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="w-full sm:w-auto px-6 sm:px-12 py-3 sm:py-4 bg-[#67b9e7] text-white rounded-xl font-bold text-lg sm:text-xl hover:bg-[#4792ba] transition-all duration-200 flex items-center justify-center gap-2 sm:gap-3 [font-family:var(--font-mplus-rounded)]"
+          >
+            <span className="text-xl sm:text-2xl">←</span>
+            Return to Dashboard
+          </button>
         </div>
       </div>
     </div>

@@ -21,6 +21,7 @@ import FocusNowButton from './FocusNowButton';
 import ButtonGroup from './ButtonGroup';
 import TaskModal from './TaskModal';
 import NationalPathModal from './NationalPathModal';
+import { countries_1836 } from '@/data/countries_1836'; // Import static country data
 
 // Create a globals object to store persistent map state
 const globalMapState = {
@@ -722,13 +723,23 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
     return <div>Error: No game data provided</div>;
   }
 
-  // Find the player nation
+  // Find the player nation from the loaded game state
   const playerNation = game.nations.find(nation => nation.nationTag === game.playerNationTag);
   if (!playerNation) {
-    return <div>Error: Player nation not found</div>;
+    return <div>Error: Player nation not found in game data</div>;
   }
 
-  // Calculate total stats for the player nation
+  // Get the capital province ID from the STATIC country data
+  const staticCountryData = countries_1836.find(c => c.nationTag === game.playerNationTag);
+  const initialCapitalId = staticCountryData?.capitalProvinceId; 
+
+  // **** DEBUG ****
+  console.log('[GameView] Player Nation Tag:', game.playerNationTag);
+  console.log('[GameView] Static Country Data Found:', staticCountryData);
+  console.log('[GameView] Initial Capital ID being passed:', initialCapitalId);
+  // **** END DEBUG ****
+
+  // Calculate total stats for the player nation (uses dynamic playerNation)
   const totalPopulation = localTotalPopulation !== null ? localTotalPopulation : playerNation.provinces.reduce((sum, province) => sum + province.population, 0);
   const totalIndustry = playerNation.provinces.reduce((sum, province) => sum + province.industry, 0);
   const totalGoldIncome = playerNation.provinces.reduce((sum, province) => sum + province.goldIncome, 0);
@@ -831,6 +842,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             onProvinceSelect={handleProvinceSelect}
             onMapReady={handleMapReady}
             disableKeyboardControls={isModalOpen || isTaskModalOpen}
+            initialFocusProvinceId={initialCapitalId}
           />
         )}
         </div>
