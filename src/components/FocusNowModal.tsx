@@ -25,9 +25,10 @@ interface PathMilestone {
   progress: number; // 0-100 progress percentage
   actionUpdate?: {
     type: 'resources';
+    // Use only ResourceUpdate compatible types here for now
     updates: Array<
-      | { resource: 'goldIncome' | 'industry' | 'army' | 'population'; amount: number }
-      | { resource: 'gold' | 'researchPoints'; amount: number }
+      { resource: 'goldIncome' | 'industry' | 'army' | 'population'; amount: number } 
+      // Removed: | { resource: 'gold' | 'researchPoints'; amount: number }
     >;
   };
 }
@@ -43,12 +44,14 @@ const NATIONAL_MILESTONES: PathMilestone[] = [
     current: true,
     completed: false,
     requirements: 'Complete 3 focus sessions',
-    rewards: '+10% Industry growth',
+    rewards: '+10% Industry growth', // This reward text is fine, but action needs fixing
     progress: 65,
     actionUpdate: {
       type: 'resources',
       updates: [
-        { resource: 'army', amount: 1000000 }
+        // Changed from 'army' which wasn't in the reward text
+        // Let's assume +10% industry growth means a flat +100 industry points for now
+        { resource: 'industry', amount: 100 } 
       ]
     }
   },
@@ -66,7 +69,7 @@ const NATIONAL_MILESTONES: PathMilestone[] = [
     actionUpdate: {
       type: 'resources',
       updates: [
-        { resource: 'army', amount: 500 }
+        { resource: 'army', amount: 500 } // This one is fine
       ]
     }
   },
@@ -79,12 +82,13 @@ const NATIONAL_MILESTONES: PathMilestone[] = [
     current: false,
     completed: false,
     requirements: 'Have 10 factories and 5 markets',
-    rewards: '+25% Gold income',
+    rewards: '+25% Gold income', // Text fine, action needs fixing
     progress: 0,
     actionUpdate: {
       type: 'resources',
       updates: [
-        { resource: 'goldIncome', amount: 1000 }
+        // Assume +25% means a flat +1000 goldIncome for now
+        { resource: 'goldIncome', amount: 1000 } 
       ]
     }
   },
@@ -97,12 +101,13 @@ const NATIONAL_MILESTONES: PathMilestone[] = [
     current: false,
     completed: false,
     requirements: 'Have 20 factories, 10 markets, 1000 army',
-    rewards: 'National Prestige +50',
+    rewards: 'National Prestige +50', // Text fine, action needs fixing
     progress: 0,
     actionUpdate: {
       type: 'resources',
       updates: [
-        { resource: 'gold', amount: 2000 },
+        // Changed 'gold' to 'goldIncome' - prestige needs separate handling
+        { resource: 'goldIncome', amount: 2000 }, 
         { resource: 'army', amount: 1000 }
       ]
     }
@@ -131,9 +136,11 @@ const PathButton = ({ milestone, onProgressChange }: {
               root: {
                 width: '100%',
                 height: '100%',
+                backgroundColor: 'white',
+                borderRadius: '50%',
               },
               path: {
-                stroke: milestone.current ? '#4ade80' : '#67b9e7',
+                stroke: milestone.completed ? '#4ade80' : (milestone.current ? '#4ade80' : '#67b9e7'),
                 strokeLinecap: 'round',
                 transition: 'stroke-dashoffset 0.5s ease 0s',
               },
@@ -143,16 +150,10 @@ const PathButton = ({ milestone, onProgressChange }: {
               }
             }}
           >
-            <div className={`h-[60px] w-[60px] rounded-full flex items-center justify-center ${
-              milestone.locked ? 'bg-gray-100' : 'bg-white'
-            }`}>
-              <span className={`text-3xl ${
-                milestone.locked 
-                  ? 'opacity-30'
-                  : milestone.completed
-                    ? ''
-                    : ''
-              }`}>{milestone.icon}</span>
+            <div className={`h-[60px] w-[60px] rounded-full flex items-center justify-center bg-white`}>
+              <span className={`text-3xl ${milestone.locked ? 'opacity-30' : ''}`}>
+                {milestone.icon}
+              </span>
             </div>
           </CircularProgressbarWithChildren>
           
@@ -497,14 +498,13 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
       
       {/* Only show the start session view if there's no active session and no completion screen */}
       {!sessionStarted && !activeSession && !showCompletionScreen ? (
-        <div className="relative z-10 bg-white rounded-lg border border-gray-200 text-black p-8 w-full max-w-5xl [font-family:var(--font-mplus-rounded)]" style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}>
+        <div className="relative z-10 bg-white rounded-lg border border-gray-200 text-black p-8 w-full max-w-5xl [font-family:var(--font-mplus-rounded)] relative" style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}>
           {/* Top section - Duration centered */}
           <div className="mb-8 max-w-md mx-auto">
             <h3 className="text-2xl font-semibold mb-4 text-center flex items-center justify-center gap-2">
               <span className="text-3xl">⏱️</span>
               Focus Session Duration
             </h3>
-            
             <CustomDropdown
               options={[
                 { value: "30", label: "30 minutes", icon: "⏱️" },
@@ -521,98 +521,93 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
             />
           </div>
 
-          {/* Middle section - Two boxes */}
-          <div className="flex gap-6 mb-8">
-            {/* Left box - National Path */}
-            <div className="w-1/2 bg-gray-50 rounded-lg border border-gray-200 p-6 overflow-y-auto" style={{ minHeight: '400px', maxHeight: '400px', boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
-              <h3 className="text-2xl font-semibold mb-6 text-center flex items-center justify-center gap-2">
+          {/* Info Box (Moved to Absolute Top Right) */}
+          <div className="absolute top-10 right-8 p-3 rounded-lg border border-emerald-200 bg-emerald-50 w-60">
+            <h4 className="text-emerald-800 text-base mb-1 flex items-center gap-1">
+              <span className="text-xl">ℹ️</span>
+              What are actions?
+            </h4>
+            <p className="text-sm text-emerald-700 mb-0.5">
+              • 30 mins focus = 1 action pt
+            </p>
+            <p className="text-sm text-emerald-700">
+              • Action pts develop nation
+            </p>
+          </div>
+
+          {/* Main Content Area - Two Columns */}
+          <div className="flex gap-6 items-start">
+            {/* Left Column - National Path (Wider) */}
+            <div className="w-7/12 bg-gray-50 rounded-lg border border-gray-200 p-6 overflow-hidden flex flex-col self-stretch" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
+              <h3 className="text-2xl font-semibold mb-6 text-center flex items-center justify-center gap-2 flex-shrink-0">
                 <span className="text-3xl">🌟</span>
                 National Path
               </h3>
-              
-              <div className="relative">
-                {/* Vertical line connecting the buttons */}
-                <div className="absolute left-1/2 top-[35px] bottom-[35px] w-0.5 bg-[#67b9e7]/30 -translate-x-1/2" />
-                
-                {/* Path buttons */}
+              <div className="relative flex-grow overflow-y-auto pr-2 -mr-2">
+                <div className="absolute left-1/2 top-[35px] bottom-[35px] w-0.5 bg-[#67b9e7]/30 -translate-x-1/2" style={{ zIndex: 1 }} />
                 <div className="relative flex flex-col items-stretch">
                   {milestones.map((milestone) => (
-                    <PathButton key={milestone.id} milestone={milestone} onProgressChange={handleProgressChange} />
+                    <div key={milestone.id} style={{ zIndex: 2, position: 'relative' }}>
+                       <PathButton milestone={milestone} onProgressChange={handleProgressChange} />
+                    </div>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Right box - Actions */}
-            <div className="w-1/2 bg-white rounded-lg border border-gray-200 p-6" style={{ minHeight: '400px', boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
-              <h3 className="text-2xl font-semibold mb-4 text-center flex items-center justify-center gap-2">
-                <span className="text-3xl">🎯</span>
-                Choose your {actionCount} action{actionCount !== 1 ? 's' : ''}
-              </h3>
-              
-              <div className="space-y-4">
-                {Array.from({ length: actionCount }, (_, i) => (
-                  <div key={i} className="flex bg-white rounded-lg border border-gray-200" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
-                    <div className="py-3 px-4 border-r border-gray-200 min-w-[120px]">
-                      <span className="text-xl text-gray-700">Action {i + 1}</span>
+            {/* Right Column - Actions, Intention, Start */}
+            <div className="w-5/12 flex flex-col gap-4">
+              {/* Actions Box (Will now be at the top and grow, with min height) */}
+              <div className="bg-white rounded-lg border border-gray-200 p-6 flex-grow min-h-[450px]" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
+                <h3 className="text-2xl font-semibold mb-4 text-center flex items-center justify-center gap-2 flex-shrink-0">
+                  <span className="text-3xl">🎯</span>
+                  Choose your {actionCount} action{actionCount !== 1 ? 's' : ''}
+                </h3>
+                <div className="space-y-4 flex-grow pr-2 -mr-2">
+                  {Array.from({ length: actionCount }, (_, i) => (
+                    <div key={i} className="flex bg-white rounded-lg border border-gray-200 flex-shrink-0" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
+                       <div className="py-3 px-4 border-r border-gray-200 min-w-[100px]">
+                         <span className="text-lg text-gray-700">Action {i + 1}</span>
+                       </div>
+                       <CustomDropdown
+                        options={[
+                          { value: "auto", label: "Auto (Random)", icon: "🎲" },
+                          ...FOCUS_ACTIONS.filter(action => action.id !== 'auto').map(action => ({
+                            value: action.id,
+                            label: action.name,
+                            icon: (() => {
+                              switch (action.id) {
+                                case 'invest': return '💰';
+                                case 'develop': return '🏭';
+                                case 'improve_army': return '⚔️';
+                                case 'population_growth': return '👥';
+                                default: return '🎯';
+                              }
+                            })()
+                          }))
+                        ]}
+                        value={selectedActions[i] || 'auto'}
+                        onChange={(value) => handleActionChange(i, value as ActionType)}
+                        className="flex-1"
+                      />
                     </div>
-                    <CustomDropdown
-                      options={[
-                        { value: "auto", label: "Auto (Random)", icon: "🎲" },
-                        ...FOCUS_ACTIONS.filter(action => action.id !== 'auto').map(action => ({
-                          value: action.id,
-                          label: action.name,
-                          icon: (() => {
-                            switch (action.id) {
-                              case 'invest': return '💰';
-                              case 'develop': return '🏭';
-                              case 'improve_army': return '⚔️';
-                              case 'population_growth': return '👥';
-                              default: return '🎯';
-                            }
-                          })()
-                        }))
-                      ]}
-                      value={selectedActions[i] || 'auto'}
-                      onChange={(value) => handleActionChange(i, value as ActionType)}
-                      className="flex-1"
-                    />
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          </div>
 
-          {/* Bottom section - Info box and Intention */}
-          <div className="flex gap-6">
-            {/* Left - Info box */}
-            <div className="w-1/2">
-              <div className="p-4 rounded-lg border border-emerald-200 bg-emerald-50">
-                <h4 className="text-emerald-800 text-lg mb-2 flex items-center gap-2">
-                  <span className="text-2xl">ℹ️</span>
-                  What are actions?
-                </h4>
-                <p className="text-lg text-emerald-700 mb-2">
-                  • Every 30 minutes of focus = 1 action point
-                </p>
-                <p className="text-lg text-emerald-700 mb-2">
-                  • Action points are used to develop your nation
-                </p>
-              </div>
-            </div>
-
-            {/* Right - Intention and Start button */}
-            <div className="w-1/2 flex flex-col gap-4">
+              {/* Intention Box */}
               <textarea
                 value={intention}
                 onChange={(e) => setIntention(e.target.value)}
                 placeholder="Write your intention for this focus session"
-                className="bg-white text-gray-800 border border-gray-200 rounded-lg px-4 py-3 w-full outline-none text-base resize-none h-[100px]"
+                className="bg-white text-gray-800 border border-gray-200 rounded-lg px-4 py-3 w-full outline-none text-base resize-none h-[100px] flex-shrink-0"
                 style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
               />
+
+              {/* Start Button (Aligned Bottom Right) */}
               <button 
                 onClick={startFocusSession}
-                className="px-12 py-3 bg-[#6ec53e] text-white rounded-lg font-bold text-2xl hover:opacity-90 transition-all duration-200 w-full flex items-center justify-center gap-2"
+                className="mt-auto px-12 py-3 bg-[#6ec53e] text-white rounded-lg font-bold text-2xl hover:opacity-90 transition-all duration-200 w-full flex items-center justify-center gap-2 flex-shrink-0"
                 style={{ boxShadow: '0 4px 0 rgba(89,167,0,255)', transform: 'translateY(-2px)' }}
               >
                 <span className="text-3xl">▶️</span>

@@ -75,7 +75,7 @@ export const countries_1836: Country1836[] = [
     name: 'Great Britain',
     flag: '🇬🇧',
     nationTag: 'GBR',
-    capitalProvinceId: 'East_Anglia',
+    capitalProvinceId: 'Midlands',
     description: 'Global empire, dominant naval power',
     backgroundImage: '/countries/great_britain_1836.png',
     difficulty: 'Easy',

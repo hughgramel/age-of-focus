@@ -2,32 +2,20 @@
 
 import { ReactNode, useEffect, useRef, useState, useCallback } from 'react';
 import MapView from './MapView';
-import Terminal from './Terminal';
 import BackButton from './BackButton';
-import { Game, Nation } from '@/types/game';
+import { Game, Nation, Province } from '@/types/game';
 import { useAuth } from '@/contexts/AuthContext';
 import FocusNowModal from './FocusNowModal';
-import { doc, updateDoc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
 import { GameService } from '@/services/gameService';
 import MapCanvas, { StateData } from './MapCanvas';
 import { SessionService } from '@/services/sessionService';
 import { ActionService } from '@/services/actionService';
 import type { ActionUpdate } from '@/services/actionService';
 import ResourceBar from './ResourceBar';
-import TaskListButton from './TaskListButton';
-import NationalPathButton from './NationalPathButton';
-import FocusNowButton from './FocusNowButton';
 import ButtonGroup from './ButtonGroup';
 import TaskModal from './TaskModal';
 import NationalPathModal from './NationalPathModal';
-import { countries_1836 } from '@/data/countries_1836'; // Import static country data
-
-// Create a globals object to store persistent map state
-const globalMapState = {
-  mapCanvas: null as HTMLDivElement | null,
-  initialized: false,
-};
+import { countries_1836 } from '@/data/countries_1836';
 
 interface GameViewProps {
   game?: Game;
@@ -45,7 +33,6 @@ export interface playerNationResourceTotals {
 export default function GameView({ game, isDemo = false, onBack }: GameViewProps) {
   const { user } = useAuth();
   const selectedProvinceRef = useRef<string | null>(null);
-  const selectedOriginalColorRef = useRef<string | null>(null);
   const provincePopupRef = useRef<HTMLDivElement | null>(null);
   const nationPopupRef = useRef<HTMLDivElement | null>(null);
   const [fadeIn, setFadeIn] = useState(false);
@@ -56,7 +43,8 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
-  const [localTotalPopulation, setLocalTotalPopulation] = useState<number | null>(null);
+  const [isNationalPathModalOpen, setIsNationalPathModalOpen] = useState(false);
+  const [localGame, setLocalGame] = useState<Game | null>(game || null);
   const [playerNationResourceTotals, setPlayerNationResourceTotals] = useState<playerNationResourceTotals>({
     playerGold: 0,
     playerIndustry: 0,
@@ -64,124 +52,87 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
     playerArmy: 0
   });
   const [focusTimeRemaining, setFocusTimeRemaining] = useState(0);
-  // const [isInBreak, setIsInBreak] = useState(false);
 
-
-
-  const [isNationalPathModalOpen, setIsNationalPathModalOpen] = useState(false);
-
-  // Add fade-in effect on mount
   useEffect(() => {
-    // Short delay to ensure the fade effect is visible
-    const timer = setTimeout(() => {
-      setFadeIn(true);
-    }, 50);
-    
+    setLocalGame(game || null);
+  }, [game]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setFadeIn(true), 50);
     return () => clearTimeout(timer);
   }, []);
 
-  // Initialize playerGold and resource totals when game changes
   useEffect(() => {
-    if (game) {
-      const playerNation = game.nations.find(
-        (nation: Nation) => nation.nationTag === game.playerNationTag
+    if (localGame) {
+      const playerNation = localGame.nations.find(
+        (nation: Nation) => nation.nationTag === localGame.playerNationTag
       );
-      if (playerNation) {
-        setPlayerGold(playerNation.gold);
-        
-        // Initialize total population
-        const totalPop = playerNation.provinces.reduce((sum, province) => sum + province.population, 0);
-        setLocalTotalPopulation(totalPop);
 
-        // Update resource totals
-        const totalIndustry = playerNation.provinces.reduce((sum, province) => sum + province.industry, 0);
-        const totalArmy = playerNation.provinces.reduce((sum, province) => sum + province.army, 0);
-        
+      const playerProvinces = localGame.provinces.filter(
+        (province: Province) => province.ownerTag === localGame.playerNationTag
+      );
+
+      if (playerNation) {
+        const totalPop = playerProvinces.reduce((sum, province) => sum + province.population, 0);
+        const totalIndustry = playerProvinces.reduce((sum, province) => sum + province.industry, 0);
+        const totalArmy = playerProvinces.reduce((sum, province) => sum + province.army, 0);
+
+        setPlayerGold(playerNation.gold);
+
         setPlayerNationResourceTotals({
           playerGold: playerNation.gold,
           playerIndustry: totalIndustry,
           playerPopulation: totalPop,
           playerArmy: totalArmy
         });
+      } else {
+        setPlayerNationResourceTotals({ playerGold: 0, playerIndustry: 0, playerPopulation: 0, playerArmy: 0 });
+        setPlayerGold(undefined);
       }
+    } else {
+      setPlayerNationResourceTotals({ playerGold: 0, playerIndustry: 0, playerPopulation: 0, playerArmy: 0 });
+      setPlayerGold(undefined);
     }
-  }, [game]);
+  }, [localGame]);
 
-  // Update resource totals when relevant values change
   useEffect(() => {
-    if (game) {
-      const playerNation = game.nations.find(
-        (nation: Nation) => nation.nationTag === game.playerNationTag
-      );
-      if (playerNation) {
-        const totalIndustry = playerNation.provinces.reduce((sum, province) => sum + province.industry, 0);
-        const totalArmy = playerNation.provinces.reduce((sum, province) => sum + province.army, 0);
-        const population = localTotalPopulation !== null ? localTotalPopulation : 
-          playerNation.provinces.reduce((sum, province) => sum + province.population, 0);
-        const gold = playerGold !== undefined ? playerGold : playerNation.gold;
-
-        setPlayerNationResourceTotals({
-          playerGold: gold,
-          playerIndustry: totalIndustry,
-          playerPopulation: population,
-          playerArmy: totalArmy
-        });
-      }
+    if (playerGold !== undefined) {
+      setPlayerNationResourceTotals(prevTotals => ({
+        ...prevTotals,
+        playerGold: playerGold
+      }));
     }
-  }, [game, playerGold, localTotalPopulation]);
+  }, [playerGold]);
 
-  // Prevent standard scrolling
   useEffect(() => {
     const preventScroll = (e: WheelEvent) => {
-      if (e.ctrlKey) {
-        // Prevent browser zoom on Ctrl+Wheel
-        e.preventDefault();
-      }
+      if (e.ctrlKey) e.preventDefault();
     };
-
-    // Add event listener with passive: false to allow preventDefault
     document.addEventListener('wheel', preventScroll, { passive: false });
-    
-    // Disable document body scrolling
-    const originalStyle = window.getComputedStyle(document.body).overflow;
+    const originalStyle = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-
     return () => {
       document.removeEventListener('wheel', preventScroll);
       document.body.style.overflow = originalStyle;
     };
   }, []);
 
-  // Handle province selection
   const handleProvinceSelect = useCallback((provinceId: string | null) => {
     selectedProvinceRef.current = provinceId;
     console.log('Selected Province:', provinceId);
 
-    // Remove existing popups if any
-    if (provincePopupRef.current) {
-      provincePopupRef.current.remove();
-      provincePopupRef.current = null;
-    }
-    if (nationPopupRef.current) {
-      nationPopupRef.current.remove();
-      nationPopupRef.current = null;
-    }
+    provincePopupRef.current?.remove();
+    provincePopupRef.current = null;
+    nationPopupRef.current?.remove();
+    nationPopupRef.current = null;
 
-    if (provinceId && game) {
-      // Find the selected province in the game's nations
-      let selectedProvince = null;
-      let owningNation = null;
-      for (const nation of game.nations) {
-        const province = nation.provinces.find(p => p.id === provinceId);
-        if (province) {
-          selectedProvince = { ...province, nationName: nation.name };
-          owningNation = nation;
-          break;
-        }
-      }
+    if (provinceId && localGame) {
+      const selectedProvince = localGame.provinces.find(p => p.id === provinceId);
 
       if (selectedProvince) {
-        // Create and style the province popup
+        const owningNation = localGame.nations.find(n => n.nationTag === selectedProvince.ownerTag);
+        const nationName = owningNation ? owningNation.name : 'Unknown';
+
         const popup = document.createElement('div');
         popup.className = '[font-family:var(--font-mplus-rounded)] fixed bottom-4 left-4 z-50 bg-white p-6 rounded-lg';
         popup.style.border = '1px solid rgb(229,229,229)';
@@ -189,72 +140,40 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         popup.style.transform = 'translateY(-2px)';
         popup.style.width = '350px';
 
-        // Function to capitalize first letter
         const capitalizeFirstLetter = (string: string): string => {
           return string.charAt(0).toUpperCase() + string.slice(1);
         };
 
-        // Add province details
         popup.innerHTML = `
           <div class="flex justify-between items-start mb-4">
             <h3 class="text-2xl font-bold text-black">${selectedProvince.name}</h3>
-            <span class="text-base text-black/70">${selectedProvince.nationName}</span>
+            <span class="text-base text-black/70">${nationName}</span>
           </div>
           <div class="grid grid-cols-2 gap-x-6 gap-y-3 text-base mb-4">
-            <div class="flex items-center gap-3">
-              <span class="text-3xl">👥</span>
-              <span class="text-black/70">Population:</span> 
-            </div>
-            <p class="text-right font-bold text-black">${selectedProvince.population.toLocaleString()}</p>
-            
-            <div class="flex items-center gap-3">
-              <span class="text-3xl">💰</span>
-              <span class="text-black/70">Gold:</span> 
-            </div>
-            <p class="text-right font-bold text-black">${selectedProvince.goldIncome}</p>
-            
-            <div class="flex items-center gap-3">
-              <span class="text-3xl">🏭</span>
-              <span class="text-black/70">Industry:</span> 
-            </div>
-            <p class="text-right font-bold text-black">${selectedProvince.industry}</p>
-            
-            <div class="flex items-center gap-3">
-              <span class="text-3xl">🌟</span>
-              <span class="text-black/70">Resource:</span> 
-            </div>
-            <p class="text-right font-bold text-black">${capitalizeFirstLetter(selectedProvince.resourceType)}</p>
-            
-            <div class="flex items-center gap-3">
-              <span class="text-3xl">⚔️</span>
-              <span class="text-black/70">Army:</span> 
-            </div>
-            <p class="text-right font-bold text-black">${selectedProvince.army.toLocaleString()}</p>
+            <div>👥 Population:</div> <p class="text-right font-bold text-black">${selectedProvince.population.toLocaleString()}</p>
+            <div>💰 Gold Income:</div> <p class="text-right font-bold text-black">${selectedProvince.goldIncome}</p>
+            <div>🏭 Industry:</div> <p class="text-right font-bold text-black">${selectedProvince.industry}</p>
+            <div>🌟 Resource:</div> <p class="text-right font-bold text-black">${capitalizeFirstLetter(selectedProvince.resourceType)}</p>
+            <div>⚔️ Army:</div> <p class="text-right font-bold text-black">${selectedProvince.army.toLocaleString()}</p>
           </div>
-          <button 
+          ${owningNation ? `<button 
             class="w-full px-4 py-2 bg-[#67b9e7] text-white rounded-lg font-bold text-xl hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-2"
             style="box-shadow: 0 4px 0 #4792ba; transform: translateY(-2px);"
             id="showNationButton"
           >
             <span class="text-2xl">🎯</span>
             View Nation Details
-          </button>
+          </button>` : ''}
         `;
 
-        // Add to DOM and store reference
         document.body.appendChild(popup);
         provincePopupRef.current = popup;
 
-        // Add click handler for the nation button
         const showNationButton = popup.querySelector('#showNationButton');
         if (showNationButton && owningNation) {
           showNationButton.addEventListener('click', () => {
-            // Remove existing nation popup if any
-            if (nationPopupRef.current) {
-              nationPopupRef.current.remove();
-            }
+            nationPopupRef.current?.remove();
 
-            // Create and style the nation popup
             const nationPopup = document.createElement('div');
             nationPopup.className = '[font-family:var(--font-mplus-rounded)] fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-white p-6 rounded-lg';
             nationPopup.style.border = '1px solid rgb(229,229,229)';
@@ -262,207 +181,104 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             nationPopup.style.transform = 'translateY(-2px)';
             nationPopup.style.width = '450px';
 
-            // Calculate total province stats
-            const totalPopulation = owningNation.provinces.reduce((sum, p) => sum + p.population, 0);
-            const totalGoldIncome = owningNation.provinces.reduce((sum, p) => sum + p.goldIncome, 0);
-            const totalIndustry = owningNation.provinces.reduce((sum, p) => sum + p.industry, 0);
-            const totalArmy = owningNation.provinces.reduce((sum, p) => sum + p.army, 0);
+            const nationProvinces = localGame.provinces.filter(p => p.ownerTag === owningNation.nationTag);
+            const totalPopulation = nationProvinces.reduce((sum, p) => sum + p.population, 0);
+            const totalGoldIncome = nationProvinces.reduce((sum, p) => sum + p.goldIncome, 0);
+            const totalIndustry = nationProvinces.reduce((sum, p) => sum + p.industry, 0);
+            const totalArmy = nationProvinces.reduce((sum, p) => sum + p.army, 0);
 
-            // Add nation details
             nationPopup.innerHTML = `
               <div class="flex justify-between items-start mb-4">
                 <h3 class="text-2xl font-bold text-black">${owningNation.name}</h3>
-                <button 
-                  class="text-black/70 hover:text-black transition-colors duration-200 w-8 h-8 flex items-center justify-center rounded-full border border-black/30 hover:border-black/60"
-                  id="closeNationButton"
-                >
-                  ✕
-                </button>
+                <button id="closeNationButton" class="text-black/70 hover:text-black transition-colors duration-200 w-8 h-8 flex items-center justify-center rounded-full border border-black/30 hover:border-black/60">✕</button>
               </div>
               <div class="space-y-3 text-base">
-                <div class="flex justify-between items-center border-b border-black/10 pb-2">
-                  <div class="flex items-center gap-3">
-                    <span class="text-3xl">🏷️</span>
-                    <span class="text-black/70">Nation Tag:</span>
-                  </div>
-                  <span class="font-bold text-black">${owningNation.nationTag}</span>
-                </div>
-                <div class="flex justify-between items-center border-b border-black/10 pb-2">
-                  <div class="flex items-center gap-3">
-                    <span class="text-3xl">👥</span>
-                    <span class="text-black/70">Total Population:</span>
-                  </div>
-                  <span class="font-bold text-black">${totalPopulation.toLocaleString()}</span>
-                </div>
-                <div class="flex justify-between items-center border-b border-black/10 pb-2">
-                  <div class="flex items-center gap-3">
-                    <span class="text-3xl">💰</span>
-                    <span class="text-black/70">Total Gold Income:</span>
-                  </div>
-                  <span class="font-bold text-black">${totalGoldIncome}</span>
-                </div>
-                <div class="flex justify-between items-center border-b border-black/10 pb-2">
-                  <div class="flex items-center gap-3">
-                    <span class="text-3xl">🏭</span>
-                    <span class="text-black/70">Total Industry:</span>
-                  </div>
-                  <span class="font-bold text-black">${totalIndustry}</span>
-                </div>
-                <div class="flex justify-between items-center border-b border-black/10 pb-2">
-                  <div class="flex items-center gap-3">
-                    <span class="text-3xl">⚔️</span>
-                    <span class="text-black/70">Total Army:</span>
-                  </div>
-                  <span class="font-bold text-black">${totalArmy.toLocaleString()}</span>
-                </div>
-                <div class="flex justify-between items-center border-b border-black/10 pb-2">
-                  <div class="flex items-center gap-3">
-                    <span class="text-3xl">💎</span>
-                    <span class="text-black/70">Gold Reserves:</span>
-                  </div>
-                  <span class="font-bold text-black">${owningNation.gold}</span>
-                </div>
-                <div class="flex justify-between items-center border-b border-black/10 pb-2">
-                  <div class="flex items-center gap-3">
-                    <span class="text-3xl">🔬</span>
-                    <span class="text-black/70">Research Points:</span>
-                  </div>
-                  <span class="font-bold text-black">${owningNation.researchPoints}</span>
-                </div>
-                <div class="flex justify-between items-center border-b border-black/10 pb-2">
-                  <div class="flex items-center gap-3">
-                    <span class="text-3xl">📚</span>
-                    <span class="text-black/70">Current Research:</span>
-                  </div>
-                  <span class="font-bold text-black">${owningNation.currentResearchId || 'None'}</span>
-                </div>
-                <div class="flex justify-between items-center border-b border-black/10 pb-2">
-                  <div class="flex items-center gap-3">
-                    <span class="text-3xl">📊</span>
-                    <span class="text-black/70">Research Progress:</span>
-                  </div>
-                  <span class="font-bold text-black">${owningNation.currentResearchProgress}%</span>
-                </div>
-                <div class="flex justify-between items-center border-b border-black/10 pb-2">
-                  <div class="flex items-center gap-3">
-                    <span class="text-3xl">🗺️</span>
-                    <span class="text-black/70">Number of Provinces:</span>
-                  </div>
-                  <span class="font-bold text-black">${owningNation.provinces.length}</span>
-                </div>
+                <div>🏷️ Nation Tag: <span class="font-bold float-right">${owningNation.nationTag}</span></div>
+                <div>👥 Total Population: <span class="font-bold float-right">${totalPopulation.toLocaleString()}</span></div>
+                <div>💰 Total Gold Income: <span class="font-bold float-right">${totalGoldIncome}</span></div>
+                <div>🏭 Total Industry: <span class="font-bold float-right">${totalIndustry}</span></div>
+                <div>⚔️ Total Army: <span class="font-bold float-right">${totalArmy.toLocaleString()}</span></div>
+                <div>💎 Gold Reserves: <span class="font-bold float-right">${owningNation.gold}</span></div>
+                <div>🔬 Research Points: <span class="font-bold float-right">${owningNation.researchPoints}</span></div>
+                <div>📚 Current Research: <span class="font-bold float-right">${owningNation.currentResearchId || 'None'}</span></div>
+                <div>📊 Research Progress: <span class="font-bold float-right">${owningNation.currentResearchProgress}%</span></div>
+                <div>🗺️ Number of Provinces: <span class="font-bold float-right">${nationProvinces.length}</span></div>
               </div>
             `;
 
-            // Add to DOM and store reference
             document.body.appendChild(nationPopup);
             nationPopupRef.current = nationPopup;
 
-            // Add click handler for the close button
-            const closeButton = nationPopup.querySelector('#closeNationButton');
-            if (closeButton) {
-              closeButton.addEventListener('click', () => {
-                nationPopup.remove();
-                nationPopupRef.current = null;
-              });
-            }
+            nationPopup.querySelector('#closeNationButton')?.addEventListener('click', () => {
+              nationPopup.remove();
+              nationPopupRef.current = null;
+            });
           });
         }
       }
     }
-  }, [game]);
+  }, [localGame]);
 
-  // Color provinces when map is ready
   const handleMapReady = useCallback((stateMap: Map<string, StateData>) => {
-    if (!game || !game.nations) return;
-    
-    game.nations.forEach(nation => {
-      nation.provinces.forEach(province => {
-        const provinceId = province.id;
-        const stateData = stateMap.get(provinceId);
-        
-        if (stateData) {
-          // Apply nation color
+    if (!localGame) return;
+
+    localGame.provinces.forEach(province => {
+      const stateData = stateMap.get(province.id);
+      if (stateData) {
+        const nation = localGame.nations.find(n => n.nationTag === province.ownerTag);
+        if (nation) {
           stateData.path.style.fill = nation.color;
           stateData.path.style.transition = 'fill 0.2s ease';
-          
-          // Store nation association
           stateData.nationId = nation.nationTag;
         }
-      });
+      }
     });
-  }, [game]);
+  }, [localGame]);
 
-  // Function to add gold to player nation
   const addGold = async () => {
-    if (!user || !game) return;
-    
+    if (!user || !localGame) return;
+
     try {
-      // Find the save slot containing this game
       const allSaves = await GameService.getSaveGames(user.uid);
       let slotNumber: number | null = null;
-      
       for (const [slot, save] of Object.entries(allSaves)) {
-        if (save && save.game.id === game.id) {
+        if (save && save.game.id === localGame.id) {
           slotNumber = parseInt(slot);
           break;
         }
       }
-      
-      if (slotNumber === null) {
-        console.error('Could not find save slot for this game');
-        return;
-      }
-      
-      // Create a deep copy of the game
-      const updatedGame = JSON.parse(JSON.stringify(game));
-      
-      // Update the gold in the player nation
+      if (slotNumber === null) throw new Error('Could not find save slot');
+
+      const updatedGame = JSON.parse(JSON.stringify(localGame));
       const playerNationIndex = updatedGame.nations.findIndex(
-        (nation: Nation) => nation.nationTag === updatedGame.playerNationTag
+        (n: Nation) => n.nationTag === updatedGame.playerNationTag
       );
-      
+
       if (playerNationIndex !== -1) {
-        // Update the gold value
         updatedGame.nations[playerNationIndex].gold += 100;
-        
-        // Update the local gold state without refreshing the map
-        setPlayerGold(prev => (prev !== undefined ? prev + 100 : updatedGame.nations[playerNationIndex].gold));
-        
-        // Update Firebase in the background
-        await GameService.saveGame(
-          user.uid, 
-          slotNumber, 
-          updatedGame,
-          'debug-update' // Scenario ID (required but not important for debug)
-        );
-        
+
+        setLocalGame(updatedGame);
+        setPlayerGold(updatedGame.nations[playerNationIndex].gold);
+
+        await GameService.saveGame(user.uid, slotNumber, updatedGame, 'debug-update');
+
         console.log('Added 100 gold to player nation!');
-        
-        // Show feedback
         const feedback = document.createElement('div');
         feedback.textContent = '+100 Gold Added!';
         feedback.className = 'fixed bottom-24 left-4 z-50 bg-[#0B1423] p-3 rounded-lg border border-[#FFD700] text-[#FFD700] historical-game-title';
         document.body.appendChild(feedback);
-        
-        // Remove feedback after 2 seconds
-        setTimeout(() => {
-          feedback.remove();
-        }, 2000);
+        setTimeout(() => feedback.remove(), 2000);
       }
     } catch (error) {
       console.error('Error adding gold:', error);
     }
   };
 
-  // Check for active sessions when component mounts
   useEffect(() => {
-    const checkActiveSession = async () => {
-      if (!user) return;
-      
-      try {
-        setIsLoadingSession(true);
-        const activeSessions = await SessionService.getActiveUserSessions(user.uid);
-        
+    if (!user) return;
+    setIsLoadingSession(true);
+    SessionService.getActiveUserSessions(user.uid)
+      .then(activeSessions => {
         if (activeSessions && activeSessions.length > 0) {
           setHasActiveSession(true);
           setActiveSessionId(activeSessions[0].id);
@@ -470,107 +286,67 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           setHasActiveSession(false);
           setActiveSessionId(null);
         }
-      } catch (error) {
-        console.error("Error checking active session:", error);
-      } finally {
-        setIsLoadingSession(false);
-      }
-    };
-    
-    checkActiveSession();
+      })
+      .catch(error => console.error("Error checking active session:", error))
+      .finally(() => setIsLoadingSession(false));
   }, [user]);
 
-  // Add test action function
+  const getRandomPlayerProvinceId = (currentGame: Game): string | null => {
+    const playerProvinces = currentGame.provinces.filter(
+      p => p.ownerTag === currentGame.playerNationTag
+    );
+    if (playerProvinces.length === 0) return null;
+    const randomIndex = Math.floor(Math.random() * playerProvinces.length);
+    return playerProvinces[randomIndex].id;
+  };
+
   const testAction = async () => {
-    if (!game || !user) return;
+    if (!localGame || !user) return;
+
+    const randomProvinceId = getRandomPlayerProvinceId(localGame);
+    if (!randomProvinceId) {
+      console.error('Player has no provinces to target');
+      return;
+    }
+    const randomProvinceName = localGame.provinces.find(p=>p.id === randomProvinceId)?.name || 'Unknown';
+
+    console.log(`Selected province ${randomProvinceName} (${randomProvinceId}) for population increase`);
 
     try {
-      // Find the player nation
-      const playerNation = game.nations.find(nation => nation.nationTag === game.playerNationTag);
-      if (!playerNation || playerNation.provinces.length === 0) {
-        console.error('Player nation or provinces not found');
-        return;
-      }
-
-      // Select a random province
-      const randomIndex = Math.floor(Math.random() * playerNation.provinces.length);
-      const randomProvince = playerNation.provinces[randomIndex];
-
-      console.log(`Selected province ${randomProvince.name} for population increase`);
-
-      // Find the save slot containing this game
       const allSaves = await GameService.getSaveGames(user.uid);
       let slotNumber: number | null = null;
-      
       for (const [slot, save] of Object.entries(allSaves)) {
-        if (save && save.game.id === game.id) {
+        if (save && save.game.id === localGame.id) {
           slotNumber = parseInt(slot);
           break;
         }
       }
-      
-      if (slotNumber === null) {
-        console.error('Could not find save slot for this game');
-        return;
-      }
+      if (slotNumber === null) throw new Error('Could not find save slot');
 
       const action: ActionUpdate = {
         type: 'resources',
-        target: {
-          type: 'province',
-          id: randomProvince.id
-        },
-        updates: [
-          { resource: 'population', amount: 10000 }
-        ]
+        target: { type: 'province', id: randomProvinceId },
+        updates: [{ resource: 'population', amount: 10000 }]
       };
 
-      // Create a deep copy of the game for local state update
-      const updatedGame = JSON.parse(JSON.stringify(game));
-      const updatedPlayerNation = updatedGame.nations.find(
-        (nation: Nation) => nation.nationTag === updatedGame.playerNationTag
-      );
-      
-      if (updatedPlayerNation) {
-        // Find and update the province in the local state
-        const provinceToUpdate = updatedPlayerNation.provinces.find((p: { id: string }) => p.id === randomProvince.id);
-        if (provinceToUpdate) {
-          // Update the province population
-          provinceToUpdate.population += 10000;
-          
-          // Calculate the new total population
-          const newTotalPopulation = updatedPlayerNation.provinces.reduce(
-            (sum: number, province: { population: number }) => sum + province.population, 
-            0
-          );
-          
-          // Update the local total population state
-          setLocalTotalPopulation(newTotalPopulation);
-          
-          // Update the game state to reflect the changes
-          game.nations = updatedGame.nations;
-          
-          // Force a re-render of the ResourceBar
-          setPlayerGold(prev => prev); // Trigger re-render without changing value
-          
-          console.log(`Updated population for ${randomProvince.name} to ${provinceToUpdate.population}`);
-          console.log(`New total population: ${newTotalPopulation}`);
-        }
+      const updatedGame = JSON.parse(JSON.stringify(localGame));
+      const provinceIndex = updatedGame.provinces.findIndex((p: Province) => p.id === randomProvinceId);
+
+      if (provinceIndex !== -1) {
+        updatedGame.provinces[provinceIndex].population += 10000;
+
+        setLocalGame(updatedGame);
+
+        console.log(`Locally updated population for ${randomProvinceName} to ${updatedGame.provinces[provinceIndex].population}`);
       }
 
-      // Process the action and update Firebase in the background
-      await ActionService.processActions(user.uid, slotNumber, game, [action]);
-      
-      // Show feedback
+      await ActionService.processActions(user.uid, slotNumber, updatedGame, [action]);
+
       const feedback = document.createElement('div');
-      feedback.textContent = `+10,000 Population in ${randomProvince.name}!`;
+      feedback.textContent = `+10,000 Population in ${randomProvinceName}!`;
       feedback.className = 'fixed bottom-24 left-4 z-50 bg-[#0B1423] p-3 rounded-lg border border-[#FFD700] text-[#FFD700] historical-game-title';
       document.body.appendChild(feedback);
-      
-      // Remove feedback after 2 seconds
-      setTimeout(() => {
-        feedback.remove();
-      }, 2000);
+      setTimeout(() => feedback.remove(), 2000);
 
       console.log('Test action completed');
     } catch (error) {
@@ -579,364 +355,303 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
   };
 
   const executeActionUpdate = async (action: Omit<ActionUpdate, 'target'>) => {
-    if (!game || !user) return;
-
+    if (!localGame || !user) return;
     console.log('Executing action:', action);
 
+    if (action.type !== 'resources' || !action.updates) {
+      console.warn('executeActionUpdate currently only handles resource updates.');
+      return;
+    }
+
+    const targetProvinceId = getRandomPlayerProvinceId(localGame);
+    if (!targetProvinceId) {
+        console.error('Player has no provinces to target for action');
+        return;
+    }
+    const targetProvinceName = localGame.provinces.find(p=>p.id === targetProvinceId)?.name || 'Unknown';
+
+    const actionWithTarget: ActionUpdate = {
+        ...action,
+        target: { type: 'province', id: targetProvinceId }
+    };
+    console.log(`Selected province ${targetProvinceName} (${targetProvinceId}) for action:`, actionWithTarget);
+
     try {
-        // Find the player nation
-        const playerNation = game.nations.find(nation => nation.nationTag === game.playerNationTag);
-        if (!playerNation || playerNation.provinces.length === 0) {
-            console.error('Player nation or provinces not found');
-            return;
-        }
+      const allSaves = await GameService.getSaveGames(user.uid);
+      let slotNumber: number | null = null;
+      for (const [slot, save] of Object.entries(allSaves)) {
+          if (save && save.game.id === localGame.id) {
+              slotNumber = parseInt(slot);
+              break;
+          }
+      }
+      if (slotNumber === null) throw new Error('Could not find save slot');
 
-        // Select a random province
-        const randomIndex = Math.floor(Math.random() * playerNation.provinces.length);
-        const randomProvince = playerNation.provinces[randomIndex];
+      // --- Local State Update --- Create a deep copy for calculation/saving
+      const updatedGame = JSON.parse(JSON.stringify(localGame));
+      const provinceIndex = updatedGame.provinces.findIndex((p: Province) => p.id === targetProvinceId);
+      const nationIndex = updatedGame.nations.findIndex((n: Nation) => n.nationTag === updatedGame.playerNationTag);
+      let needsResourceRecalc = false;
+      let nationGoldChanged = false; // Track if nation gold specifically changed
 
-        let actionWithTarget: ActionUpdate = {
-            ...action,
-            target: {
-                type: 'province',
-                id: randomProvince.id
-            }
-        };
+      if (provinceIndex !== -1) {
+        action.updates.forEach(update => {
+          const { resource, amount } = update;
+          switch (resource) {
+            case 'population':
+              updatedGame.provinces[provinceIndex].population += amount;
+              needsResourceRecalc = true;
+              break;
+            case 'gold': // Apply gold updates to the NATION in the copied state
+              if (nationIndex !== -1) {
+                updatedGame.nations[nationIndex].gold += amount;
+                needsResourceRecalc = true; // Gold affects totals
+                nationGoldChanged = true;   // Mark that nation gold changed
+              }
+              break;
+            case 'industry':
+              updatedGame.provinces[provinceIndex].industry += amount;
+              needsResourceRecalc = true;
+              break;
+            case 'army':
+              updatedGame.provinces[provinceIndex].army += amount;
+              needsResourceRecalc = true;
+              break;
+            // Handle other resource types if necessary
+            // case 'goldIncome': // NOTE: goldIncome update logic might be different
+            //   updatedGame.provinces[provinceIndex].goldIncome += amount;
+            //   needsResourceRecalc = true;
+            //   break;
+          }
+        });
 
-        console.log(`Selected province ${randomProvince.name} for action:`, actionWithTarget);
-
-        // Find the save slot containing this game
-        const allSaves = await GameService.getSaveGames(user.uid);
-        let slotNumber: number | null = null;
-        
-        for (const [slot, save] of Object.entries(allSaves)) {
-            if (save && save.game.id === game.id) {
-                slotNumber = parseInt(slot);
-                break;
-            }
-        }
-        
-        if (slotNumber === null) {
-            console.error('Could not find save slot for this game');
-            return;
-        }
-
-        // Create a deep copy of the game for local state update
-        const updatedGame = JSON.parse(JSON.stringify(game));
-        const updatedPlayerNation = updatedGame.nations.find(
-            (nation: Nation) => nation.nationTag === updatedGame.playerNationTag
-        );
-        
-        if (updatedPlayerNation && action.type === 'resources' && action.updates) {
-            // Find and update the province in the local state
-            const provinceToUpdate = updatedPlayerNation.provinces.find(
-                (p: { id: string }) => p.id === randomProvince.id
+        // --- Update Display State ONLY --- Calculate new totals based on updatedGame
+        if (needsResourceRecalc && nationIndex !== -1) {
+            const playerProvinces = updatedGame.provinces.filter(
+                (p: Province) => p.ownerTag === updatedGame.playerNationTag
             );
-            
-            if (provinceToUpdate) {
-                // Track if we need to update any totals
-                let updatePopulation = false;
-                let updateIndustry = false;
-                let updateArmy = false;
-
-                // Apply each update
-                action.updates.forEach(update => {
-                    const { resource, amount } = update;
-                    
-                    // Update the appropriate resource
-                    switch (resource) {
-                        case 'population':
-                            provinceToUpdate.population += amount;
-                            updatePopulation = true;
-                            break;
-                        case 'gold':
-                            // Update player gold at nation level
-                            updatedPlayerNation.gold += amount;
-                            setPlayerGold(prev => (prev !== undefined ? prev + amount : updatedPlayerNation.gold));
-                            break;
-                        case 'industry':
-                            provinceToUpdate.industry += amount;
-                            updateIndustry = true;
-                            break;
-                        case 'army':
-                            provinceToUpdate.army += amount;
-                            updateArmy = true;
-                            break;
-                    }
-                });
-
-                // Calculate new totals if needed
-                if (updatePopulation || updateIndustry || updateArmy) {
-                    const newTotals = {
-                        playerGold: updatedPlayerNation.gold,
-                        playerIndustry: updateIndustry ? 
-                            updatedPlayerNation.provinces.reduce((sum: number, p: { industry: number }) => sum + p.industry, 0) : 
-                            playerNationResourceTotals.playerIndustry,
-                        playerPopulation: updatePopulation ? 
-                            updatedPlayerNation.provinces.reduce((sum: number, p: { population: number }) => sum + p.population, 0) : 
-                            playerNationResourceTotals.playerPopulation,
-                        playerArmy: updateArmy ? 
-                            updatedPlayerNation.provinces.reduce((sum: number, p: { army: number }) => sum + p.army, 0) : 
-                            playerNationResourceTotals.playerArmy
-                    };
-
-                    // Update all relevant states
-                    setPlayerNationResourceTotals(newTotals);
-                    if (updatePopulation) {
-                        setLocalTotalPopulation(newTotals.playerPopulation);
-                    }
-                }
-
-                // Update the game state to reflect the changes
-                game.nations = updatedGame.nations;
-                
-                console.log(`Updated province ${randomProvince.name}:`, provinceToUpdate);
-                console.log('New resource totals:', playerNationResourceTotals);
-            }
+            const newTotals = {
+                playerGold: updatedGame.nations[nationIndex].gold,
+                playerIndustry: playerProvinces.reduce((sum: number, p: { industry: number }) => sum + p.industry, 0),
+                playerPopulation: playerProvinces.reduce((sum: number, p: { population: number }) => sum + p.population, 0),
+                playerArmy: playerProvinces.reduce((sum: number, p: { army: number }) => sum + p.army, 0)
+            };
+            setPlayerNationResourceTotals(newTotals);
+            console.log('Updated playerNationResourceTotals state:', newTotals);
         }
 
-        // Process the action and update Firebase in the background
-        console.log('Processing action with target:', actionWithTarget);
-        await ActionService.processActions(user.uid, slotNumber, game, [actionWithTarget]);
-        
-        // Show feedback for each update
-        if (action.type === 'resources' && action.updates) {
-            action.updates.forEach(update => {
-                const feedback = document.createElement('div');
-                feedback.textContent = `+${update.amount} ${update.resource} in ${randomProvince.name}!`;
-                feedback.className = 'fixed bottom-24 left-4 z-50 bg-[#0B1423] p-3 rounded-lg border border-[#FFD700] text-[#FFD700] historical-game-title';
-                document.body.appendChild(feedback);
-                
-                setTimeout(() => {
-                    feedback.remove();
-                }, 2000);
-            });
+        // If nation gold specifically changed, update the playerGold state
+        if (nationGoldChanged && nationIndex !== -1) {
+            setPlayerGold(updatedGame.nations[nationIndex].gold);
+            console.log('Updated playerGold state:', updatedGame.nations[nationIndex].gold);
         }
+        // --- End Display State Update ---
 
-        console.log('Action executed successfully');
+        // REMOVED: setLocalGame(updatedGame); // Do NOT update the main localGame state here
+
+        console.log(`Calculated update for province ${targetProvinceName}:`, updatedGame.provinces[provinceIndex]);
+        if (nationIndex !== -1) console.log(`Calculated update for nation ${updatedGame.nations[nationIndex].nationTag}:`, updatedGame.nations[nationIndex]);
+
+      } else {
+          console.error(`Target province ${targetProvinceId} not found in local game state copy.`);
+          return; // Don't proceed if province not found
+      }
+
+      // Process action and save the UPDATED game state to Firebase in the background
+      await ActionService.processActions(user.uid, slotNumber, updatedGame, [actionWithTarget]);
+
+      // Show feedback for each update
+      action.updates.forEach(update => {
+          const feedback = document.createElement('div');
+          feedback.textContent = `+${update.amount} ${update.resource} in ${targetProvinceName}!`;
+          feedback.className = 'fixed bottom-24 left-4 z-50 bg-[#0B1423] p-3 rounded-lg border border-[#FFD700] text-[#FFD700] historical-game-title';
+          document.body.appendChild(feedback);
+          setTimeout(() => feedback.remove(), 2000);
+      });
+
+      console.log('Action executed successfully');
     } catch (error) {
-        console.error('Error executing action:', error);
+      console.error('Error executing action:', error);
     }
   };
 
-  if (!game) {
-    return <div>Error: No game data provided</div>;
-  }
+  // Function to change province ownership to the player
+  const executeTakeProvince = async (provinceId: string) => {
+    if (!localGame || !user) {
+      console.error('Cannot take province: Game or user not loaded.');
+      return;
+    }
+    if (!provinceId) {
+      console.error('Cannot take province: No province ID provided.');
+      return;
+    }
 
-  // Find the player nation from the loaded game state
-  const playerNation = game.nations.find(nation => nation.nationTag === game.playerNationTag);
-  if (!playerNation) {
+    console.log(`Attempting to take province: ${provinceId}`);
+
+    try {
+      // Find save slot
+      const allSaves = await GameService.getSaveGames(user.uid);
+      let slotNumber: number | null = null;
+      for (const [slot, save] of Object.entries(allSaves)) {
+          if (save && save.game.id === localGame.id) {
+              slotNumber = parseInt(slot);
+              break;
+          }
+      }
+      if (slotNumber === null) throw new Error('Could not find save slot for executeTakeProvince');
+
+      // Create a deep copy for update and saving
+      const updatedGame = JSON.parse(JSON.stringify(localGame));
+
+      // Find the province index
+      const provinceIndex = updatedGame.provinces.findIndex((p: Province) => p.id === provinceId);
+
+      if (provinceIndex !== -1) {
+        const originalOwner = updatedGame.provinces[provinceIndex].ownerTag;
+        const targetOwner = updatedGame.playerNationTag;
+
+        if (originalOwner === targetOwner) {
+          console.log(`Province ${provinceId} is already owned by the player (${targetOwner}).`);
+          return; // No change needed
+        }
+
+        // Change the ownerTag
+        updatedGame.provinces[provinceIndex].ownerTag = targetOwner;
+        console.log(`Province ${provinceId} owner changed from ${originalOwner} to ${targetOwner} in updatedGame state.`);
+
+        // Update local game state to trigger map re-color
+        setLocalGame(updatedGame);
+
+        // Save the updated game state to Firebase in the background
+        // Use a specific scenario ID if needed, or a generic one like 'take-province'
+        await GameService.saveGame(user.uid, slotNumber, updatedGame, 'take-province');
+
+        console.log(`Province ${provinceId} successfully taken by player ${targetOwner}. Saved to slot ${slotNumber}.`);
+
+        // Optional: Add feedback to the user
+        const provinceName = updatedGame.provinces[provinceIndex].name || provinceId;
+        const feedback = document.createElement('div');
+        feedback.textContent = `Province ${provinceName} now belongs to you!`;
+        feedback.className = 'fixed bottom-24 left-4 z-50 bg-green-600 p-3 rounded-lg border border-green-800 text-white historical-game-title';
+        document.body.appendChild(feedback);
+        setTimeout(() => feedback.remove(), 3000);
+
+      } else {
+        console.error(`Province ${provinceId} not found in game state.`);
+      }
+    } catch (error) {
+      console.error(`Error taking province ${provinceId}:`, error);
+    }
+  };
+
+  if (!localGame && !isDemo) {
+    return <div>Loading game data...</div>;
+  }
+  if (!isDemo && !localGame?.nations.find(nation => nation.nationTag === localGame?.playerNationTag)) {
     return <div>Error: Player nation not found in game data</div>;
   }
 
-  // Get the capital province ID from the STATIC country data
-  const staticCountryData = countries_1836.find(c => c.nationTag === game.playerNationTag);
-  const initialCapitalId = staticCountryData?.capitalProvinceId; 
+  const playerNation = localGame?.nations.find(nation => nation.nationTag === localGame?.playerNationTag);
 
-  // **** DEBUG ****
-  console.log('[GameView] Player Nation Tag:', game.playerNationTag);
-  console.log('[GameView] Static Country Data Found:', staticCountryData);
+  const staticCountryData = localGame ? countries_1836.find(c => c.nationTag === localGame.playerNationTag) : null;
+  const initialCapitalId = staticCountryData?.capitalProvinceId;
+
+  console.log('[GameView] Player Nation Tag:', localGame?.playerNationTag);
   console.log('[GameView] Initial Capital ID being passed:', initialCapitalId);
-  // **** END DEBUG ****
 
-  // Calculate total stats for the player nation (uses dynamic playerNation)
-  const totalPopulation = localTotalPopulation !== null ? localTotalPopulation : playerNation.provinces.reduce((sum, province) => sum + province.population, 0);
-  const totalIndustry = playerNation.provinces.reduce((sum, province) => sum + province.industry, 0);
-  const totalGoldIncome = playerNation.provinces.reduce((sum, province) => sum + province.goldIncome, 0);
-  const totalArmy = playerNation.provinces.reduce((sum, province) => sum + province.army, 0);
-
-  // Calculate monthly population growth (using 0.5% monthly growth rate for 19th century)
-  const monthlyPopulationGrowth = Math.floor(totalPopulation * 0.005);
-  
-  // Format number with appropriate suffix (k for thousands, M for millions)
-  const formatNumber = (num: number): string => {
-    if (num >= 1000000) {
-      return (Math.floor(num / 10000) / 100).toFixed(2) + 'M';
-    } else if (num >= 1000) {
-      return (Math.floor(num / 10) / 100).toFixed(2) + 'K';
-    } else {
-      return num.toString();
-    }
-  };
-  
-  // Format date from YYYY-MM-DD to "Month Day, Year"
-  const formatDate = (dateString: string): string => {
-    const [year, month, day] = dateString.split('-').map(part => parseInt(part, 10));
-    const date = new Date(year, month - 1, day);
-    
-    const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
-    ];
-    
-    return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
-  };
-
-  // Get flag emoji based on nation tag
-  const getNationFlag = (tag: string): string => {
-    switch(tag) {
-      case 'FRA': return '🇫🇷';
-      case 'PRU': return '🇩🇪';
-      case 'USA': return '🇺🇸';
-      case 'GBR': return '🇬🇧';
-      case 'RUS': return '🇷🇺';
-      case 'AUS': return '🇦🇹';
-      case 'ESP': return '🇪🇸';
-      case 'POR': return '🇵🇹';
-      case 'SWE': return '🇸🇪';
-      case 'DEN': return '🇩🇰';
-      case 'TUR': return '🇹🇷';
-      case 'SAR': return '🇮🇹';
-      case 'PAP': return '🇻🇦';
-      case 'SIC': return '🇮🇹';
-      case 'GRE': return '🇬🇷';
-      case 'NET': return '🇳🇱';
-      case 'BEL': return '🇧🇪';
-      default: return '🏳️';
-    }
-  };
+  const { playerGold: currentGold, playerPopulation: totalPopulation, playerIndustry: totalIndustry, playerArmy: totalArmy } = playerNationResourceTotals;
 
   return (
     <div className={`fixed inset-0 overflow-hidden bg-[#0B1423] transition-opacity ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
-      {/* Top Bar with Resource Bar and Buttons */}
       <div className="absolute top-0 left-0 right-0 z-50 flex flex-col md:flex-row items-center p-4">
         <div className="absolute left-4">
-      <BackButton onClick={onBack} />
+          <BackButton onClick={onBack} />
         </div>
         <div className="flex-1 flex justify-center">
-          <ResourceBar
-            playerGold={playerGold !== undefined ? playerGold : playerNation.gold}
-            totalPopulation={totalPopulation}
-            totalIndustry={totalIndustry}
-            totalArmy={totalArmy}
-            playerNationTag={game.playerNationTag}
-            gameDate={game.date}
-            fadeIn={fadeIn}
-          />
+          {localGame && (
+            <ResourceBar
+              playerGold={currentGold}
+              totalPopulation={totalPopulation}
+              totalIndustry={totalIndustry}
+              totalArmy={totalArmy}
+              playerNationTag={localGame.playerNationTag}
+              gameDate={localGame.date}
+              fadeIn={fadeIn}
+            />
+          )}
         </div>
       </div>
 
-      {/* Debug Button */}
-      
-
-      {/* Map container */}
-      <div 
+      <div
         className={`absolute inset-0 z-0 transition-all duration-1000 ease-in-out ${fadeIn ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}
         ref={mapCanvasContainerRef}
       >
-        {isDemo ? (
-          // Demo view with demo map
-          <MapView 
-            isDemo 
-            selectedProvinceRef={selectedProvinceRef} 
-            onProvinceSelect={handleProvinceSelect}
-            onMapReady={handleMapReady}
-            disableKeyboardControls={isModalOpen || isTaskModalOpen}
-          />
-        ) : (
-          // Real game with actual map and nations
-          <MapView 
-            mapName={game.mapName} 
-            nations={game.nations}
-            selectedProvinceRef={selectedProvinceRef}
-            onProvinceSelect={handleProvinceSelect}
-            onMapReady={handleMapReady}
-            disableKeyboardControls={isModalOpen || isTaskModalOpen}
-            initialFocusProvinceId={initialCapitalId}
-          />
-        )}
-        </div>
+        <MapView
+          mapName={localGame?.mapName || 'world_states'}
+          isDemo={isDemo}
+          selectedProvinceRef={selectedProvinceRef}
+          onProvinceSelect={handleProvinceSelect}
+          onMapReady={handleMapReady}
+          disableKeyboardControls={isModalOpen || isTaskModalOpen || isNationalPathModalOpen}
+          initialFocusProvinceId={initialCapitalId}
+        />
+      </div>
 
-      {/* Replace individual buttons with ButtonGroup */}
       <ButtonGroup
         fadeIn={fadeIn}
-        isModalOpen={isModalOpen}
+        isModalOpen={isModalOpen || isTaskModalOpen || isNationalPathModalOpen}
         hasActiveSession={hasActiveSession}
-        onTaskListClick={() => {
-          if (user) {
-            handleProvinceSelect(null);
-            setIsTaskModalOpen(true);
-          }
-        }}
+        onTaskListClick={() => { if (user) { handleProvinceSelect(null); setIsTaskModalOpen(true); } }}
         onFocusClick={() => {
-          if (user && document.getElementById('focus-now-modal')) {
-            // Log the current game state
+          if (user && localGame) {
             handleProvinceSelect(null);
-            console.log('Current Game State:', {
-              gameId: game?.id,
-              date: game?.date,
-              playerNation: game?.nations.find(n => n.nationTag === game?.playerNationTag),
-              totalPopulation,
-              totalIndustry,
-              totalGoldIncome,
-              totalArmy,
-              playerGold,
-              hasActiveSession,
-              activeSessionId
-            });
-            
-            // Show the modal
-            document.getElementById('focus-now-modal')!.style.display = 'block';
+            console.log('Opening Focus Modal. Current Game State:', localGame);
+            console.log('Current Resource Totals:', playerNationResourceTotals);
             setIsModalOpen(true);
           }
         }}
-        onNationalPathClick={() => {
-          handleProvinceSelect(null);
-          setIsNationalPathModalOpen(true);
-        }}
+        onNationalPathClick={() => { handleProvinceSelect(null); setIsNationalPathModalOpen(true); }}
         focusTimeRemaining={focusTimeRemaining}
       />
 
-      {/* National Path Modal */}
       {isNationalPathModalOpen && (
         <NationalPathModal onClose={() => setIsNationalPathModalOpen(false)} />
       )}
 
-      {/* Focus Now Modal - always render but hide with CSS */}
-      <div id="focus-now-modal" style={{ display: 'none' }}>
-        {user && (
-          <FocusNowModal
-            userId={user.uid}
-            executeActionUpdate={executeActionUpdate}
-            playerNationResourceTotals={playerNationResourceTotals}
-            onClose={async () => {
-              // Check for active sessions when modal is closed
-              try {
-                const activeSessions = await SessionService.getActiveUserSessions(user.uid);
-                setHasActiveSession(activeSessions && activeSessions.length > 0);
-              } catch (error) {
-                console.error("Error checking active sessions:", error);
-              }
-              
-              if (document.getElementById('focus-now-modal')) {
-                document.getElementById('focus-now-modal')!.style.display = 'none';
-              }
-              
-              // Set modal as closed
-              setIsModalOpen(false);
-            }}
-            setFocusTimeRemaining={setFocusTimeRemaining}
-            hasActiveSession={hasActiveSession}
-          />
+      {/* Focus Now Modal - always render but control visibility with style */}
+      <div id="focus-now-modal" style={{ display: isModalOpen ? 'block' : 'none' }}>
+        {user && localGame && (
+            <FocusNowModal
+              userId={user.uid}
+              executeActionUpdate={executeActionUpdate}
+              playerNationResourceTotals={playerNationResourceTotals}
+              onClose={async () => {
+                setIsModalOpen(false);
+                try {
+                  const activeSessions = await SessionService.getActiveUserSessions(user.uid);
+                  const isActive = activeSessions && activeSessions.length > 0;
+                  setHasActiveSession(isActive);
+                  setActiveSessionId(isActive ? activeSessions[0].id : null);
+                } catch (error) {
+                  console.error("Error checking active sessions after modal close:", error);
+                }
+              }}
+              setFocusTimeRemaining={setFocusTimeRemaining}
+              hasActiveSession={hasActiveSession}
+            />
         )}
       </div>
 
-      {/* Task Modal */}
-      {isTaskModalOpen && user && (
+      {isTaskModalOpen && user && localGame && (
         <TaskModal
           userId={user.uid}
           onClose={() => setIsTaskModalOpen(false)}
-          onTaskComplete={(task) => {
-            console.log('Task completed:', task);
-            // You can add additional logic here if needed
-          }}
+          onTaskComplete={(task) => console.log('Task completed:', task)}
           executeActionUpdate={executeActionUpdate}
           playerNationResourceTotals={playerNationResourceTotals}
         />
       )}
 
-      {/* Test Action Button */}
-  
     </div>
   );
 } 
