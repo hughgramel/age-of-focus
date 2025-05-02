@@ -3,7 +3,7 @@
 import React from 'react';
 import TaskListButton from './TaskListButton';
 import FocusNowButton from './FocusNowButton';
-import NationalPathButton from './NationalPathButton';
+import HabitsButton from './HabitsButton';
 
 interface ButtonGroupProps {
   fadeIn: boolean;
@@ -11,7 +11,7 @@ interface ButtonGroupProps {
   hasActiveSession: boolean;
   onTaskListClick: () => void;
   onFocusClick: () => void;
-  onNationalPathClick: () => void;
+  onHabitsClick: () => void;
   focusTimeRemaining: number;
 }
 
@@ -21,7 +21,7 @@ export default function ButtonGroup({
   hasActiveSession,
   onTaskListClick,
   onFocusClick,
-  onNationalPathClick,
+  onHabitsClick,
   focusTimeRemaining
 }: ButtonGroupProps) {
   return (
@@ -39,7 +39,7 @@ export default function ButtonGroup({
         />
       </div>
       <div className="flex-1">
-        <NationalPathButton fadeIn={fadeIn} onClick={onNationalPathClick} />
+        <HabitsButton fadeIn={fadeIn} onClick={onHabitsClick} />
       </div>
     </div>
   );

@@ -642,15 +642,18 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         )}
       </div>
 
-      {isTaskModalOpen && user && localGame && (
-        <TaskModal
-          userId={user.uid}
-          onClose={() => setIsTaskModalOpen(false)}
-          onTaskComplete={(task) => console.log('Task completed:', task)}
-          executeActionUpdate={executeActionUpdate}
-          playerNationResourceTotals={playerNationResourceTotals}
-        />
-      )}
+      {/* Task Modal - always render but control visibility with style */}
+      <div id="task-modal" style={{ display: isTaskModalOpen ? 'block' : 'none' }}>
+        {user && localGame && (
+          <TaskModal
+            userId={user.uid}
+            onClose={() => setIsTaskModalOpen(false)}
+            onTaskComplete={(task) => console.log('Task completed:', task)}
+            executeActionUpdate={executeActionUpdate}
+            playerNationResourceTotals={playerNationResourceTotals}
+          />
+        )}
+      </div>
 
     </div>
   );
