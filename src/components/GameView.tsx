@@ -16,6 +16,7 @@ import ButtonGroup from './ButtonGroup';
 import TaskModal from './TaskModal';
 import NationalPathModal from './NationalPathModal';
 import { countries_1836 } from '@/data/countries_1836';
+import HabitsModal from './HabitsModal';
 
 interface GameViewProps {
   game?: Game;
@@ -43,6 +44,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [isHabitsModalOpen, setIsHabitsModalOpen] = useState(false);
   const [isNationalPathModalOpen, setIsNationalPathModalOpen] = useState(false);
   const [localGame, setLocalGame] = useState<Game | null>(game || null);
   const [playerNationResourceTotals, setPlayerNationResourceTotals] = useState<playerNationResourceTotals>({
@@ -610,7 +612,8 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             setIsModalOpen(true);
           }
         }}
-        onNationalPathClick={() => { handleProvinceSelect(null); setIsNationalPathModalOpen(true); }}
+        // onNationalPathClick={() => { handleProvinceSelect(null); setIsNationalPathModalOpen(true); }}
+        onHabitsClick={() => { handleProvinceSelect(null); setIsHabitsModalOpen(true); }}
         focusTimeRemaining={focusTimeRemaining}
       />
 
@@ -649,6 +652,18 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             userId={user.uid}
             onClose={() => setIsTaskModalOpen(false)}
             onTaskComplete={(task) => console.log('Task completed:', task)}
+            executeActionUpdate={executeActionUpdate}
+            playerNationResourceTotals={playerNationResourceTotals}
+          />
+        )}
+      </div>
+      {/* Habits Modal - always render but control visibility with style */}
+      <div id="habits-modal" style={{ display: isHabitsModalOpen ? 'block' : 'none' }}>
+        {user && localGame && (
+          <HabitsModal
+            userId={user.uid}
+            onClose={() => setIsHabitsModalOpen(false)}
+            onHabitComplete={(habit) => console.log('Habit completed:', habit)}
             executeActionUpdate={executeActionUpdate}
             playerNationResourceTotals={playerNationResourceTotals}
           />
