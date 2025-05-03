@@ -546,6 +546,34 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
     }
   };
 
+  // Effect to handle Escape key press for closing modals
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        // Close modals in a specific order if multiple could be true
+        if (isModalOpen) {
+          setIsModalOpen(false);
+        } else if (isTaskModalOpen) {
+          setIsTaskModalOpen(false);
+        } else if (isHabitsModalOpen) {
+          setIsHabitsModalOpen(false);
+        } else if (isNationalPathModalOpen) {
+          setIsNationalPathModalOpen(false);
+        }
+        // Also clear province selection popup if escape is pressed
+        handleProvinceSelect(null);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    // Cleanup function to remove the event listener
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+    // Depend on the modal states so the listener always knows the current state
+  }, [isModalOpen, isTaskModalOpen, isHabitsModalOpen, isNationalPathModalOpen, handleProvinceSelect]);
+
   if (!localGame && !isDemo) {
     return <div>Loading game data...</div>;
   }
@@ -594,7 +622,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           selectedProvinceRef={selectedProvinceRef}
           onProvinceSelect={handleProvinceSelect}
           onMapReady={handleMapReady}
-          disableKeyboardControls={isModalOpen || isTaskModalOpen || isNationalPathModalOpen}
+          disableKeyboardControls={isModalOpen || isTaskModalOpen || isHabitsModalOpen || isNationalPathModalOpen}
           initialFocusProvinceId={initialCapitalId}
         />
       </div>

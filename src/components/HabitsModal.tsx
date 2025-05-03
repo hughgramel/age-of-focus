@@ -414,14 +414,14 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
                 <tr className="border-b border-gray-200">
                   <th className="py-3 px-2 text-sm font-semibold text-gray-600 w-1/3">Habit</th>
                   <th className="py-3 px-1 text-center text-sm font-semibold text-gray-600 w-[50px]">Streak</th>
-                  <th className="py-3 px-2 text-sm font-semibold text-gray-600 w-[200px]">Action</th>
+                  <th className="py-3 px-2 text-center text-sm font-semibold text-gray-600 w-[200px]">Action</th>
                   {weekDates.map(date => (
                     <th key={formatISO(date)} className="py-3 px-1 text-center text-sm font-semibold text-gray-600 w-[40px]">
                       {format(date, 'E')}<br/>{format(date, 'd')}
                     </th>
                   ))}
                   <th className="py-3 px-2 text-center text-sm font-semibold text-gray-600 w-[60px]">Bonus</th>
-                  <th className="py-3 px-1 text-center text-sm font-semibold text-gray-600 w-[40px]">Del</th>
+                  <th className="py-3 px-1 text-center text-sm font-semibold text-gray-600 w-[40px]"></th>
                 </tr>
               </thead>
               {/* Add ref to tbody */}
