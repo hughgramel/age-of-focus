@@ -36,6 +36,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
   const selectedProvinceRef = useRef<string | null>(null);
   const provincePopupRef = useRef<HTMLDivElement | null>(null);
   const nationPopupRef = useRef<HTMLDivElement | null>(null);
+  const conquestPopupRef = useRef<HTMLDivElement | null>(null);
   const [fadeIn, setFadeIn] = useState(false);
   const [playerGold, setPlayerGold] = useState<number | undefined>(undefined);
   const mapCanvasContainerRef = useRef<HTMLDivElement>(null);
@@ -46,6 +47,8 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isHabitsModalOpen, setIsHabitsModalOpen] = useState(false);
   const [isNationalPathModalOpen, setIsNationalPathModalOpen] = useState(false);
+  const [isInConqueringMode, setIsInConqueringMode] = useState(false);
+  const isInConqueringModeRef = useRef(isInConqueringMode);
   const [localGame, setLocalGame] = useState<Game | null>(game || null);
   const [playerNationResourceTotals, setPlayerNationResourceTotals] = useState<playerNationResourceTotals>({
     playerGold: 0,
@@ -119,6 +122,10 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
     };
   }, []);
 
+  useEffect(() => {
+    isInConqueringModeRef.current = isInConqueringMode;
+  }, [isInConqueringMode]);
+
   const handleProvinceSelect = useCallback((provinceId: string | null) => {
     selectedProvinceRef.current = provinceId;
     console.log('Selected Province:', provinceId);
@@ -127,98 +134,159 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
     provincePopupRef.current = null;
     nationPopupRef.current?.remove();
     nationPopupRef.current = null;
+    conquestPopupRef.current?.remove();
+    conquestPopupRef.current = null;
 
-    if (provinceId && localGame) {
-      const selectedProvince = localGame.provinces.find(p => p.id === provinceId);
+    const popup = document.createElement('div');
 
-      if (selectedProvince) {
-        const owningNation = localGame.nations.find(n => n.nationTag === selectedProvince.ownerTag);
-        const nationName = owningNation ? owningNation.name : 'Unknown';
+    console.log("isInConqueringMode (state)", isInConqueringMode);
+    console.log("isInConqueringMode (ref)", isInConqueringModeRef.current);
 
-        const popup = document.createElement('div');
-        popup.className = '[font-family:var(--font-mplus-rounded)] fixed bottom-4 left-4 z-50 bg-white p-6 rounded-lg';
-        popup.style.border = '1px solid rgb(229,229,229)';
-        popup.style.boxShadow = '0 4px 0 rgba(229,229,229,255)';
-        popup.style.transform = 'translateY(-2px)';
-        popup.style.width = '350px';
+    if (isInConqueringModeRef.current) {
+      console.log('In conquering mode');
+      if (provinceId && localGame) {
+        const selectedProvince = localGame.provinces.find(p => p.id === provinceId);
+  
+        if (selectedProvince) {
+          const owningNation = localGame.nations.find(n => n.nationTag === selectedProvince.ownerTag);
+          const nationName = owningNation ? owningNation.name : 'Unknown';
+  
+          const popup = document.createElement('div');
+          popup.className = '[font-family:var(--font-mplus-rounded)] fixed bottom-4 left-4 z-50 bg-white p-6 rounded-lg';
+          popup.style.border = '1px solid rgb(229,229,229)';
+          popup.style.boxShadow = '0 4px 0 rgba(229,229,229,255)';
+          popup.style.transform = 'translateY(-2px)';
+          popup.style.width = '350px';
+  
+          const capitalizeFirstLetter = (string: string): string => {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+          };
 
-        const capitalizeFirstLetter = (string: string): string => {
-          return string.charAt(0).toUpperCase() + string.slice(1);
-        };
+          popup.className = '[font-family:var(--font-mplus-rounded)] fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-white p-6 rounded-lg';
+          popup.style.border = '1px solid rgb(229,229,229)';
+          popup.style.boxShadow = '0 4px 0 rgba(229,229,229,255)';
+          popup.style.transform = 'translateY(-2px)';
+          popup.style.width = '450px';
 
-        popup.innerHTML = `
-          <div class="flex justify-between items-start mb-4">
-            <h3 class="text-2xl font-bold text-black">${selectedProvince.name}</h3>
-            <span class="text-base text-black/70">${nationName}</span>
-          </div>
-          <div class="grid grid-cols-2 gap-x-6 gap-y-3 text-base mb-4">
-            <div>👥 Population:</div> <p class="text-right font-bold text-black">${selectedProvince.population.toLocaleString()}</p>
-            <div>💰 Gold Income:</div> <p class="text-right font-bold text-black">${selectedProvince.goldIncome}</p>
-            <div>🏭 Industry:</div> <p class="text-right font-bold text-black">${selectedProvince.industry}</p>
-            <div>🌟 Resource:</div> <p class="text-right font-bold text-black">${capitalizeFirstLetter(selectedProvince.resourceType)}</p>
-            <div>⚔️ Army:</div> <p class="text-right font-bold text-black">${selectedProvince.army.toLocaleString()}</p>
-          </div>
-          ${owningNation ? `<button 
-            class="w-full px-4 py-2 bg-[#67b9e7] text-white rounded-lg font-bold text-xl hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-2"
-            style="box-shadow: 0 4px 0 #4792ba; transform: translateY(-2px);"
-            id="showNationButton"
-          >
-            <span class="text-2xl">🎯</span>
-            View Nation Details
-          </button>` : ''}
-        `;
-
-        document.body.appendChild(popup);
-        provincePopupRef.current = popup;
-
-        const showNationButton = popup.querySelector('#showNationButton');
-        if (showNationButton && owningNation) {
-          showNationButton.addEventListener('click', () => {
-            nationPopupRef.current?.remove();
-
-            const nationPopup = document.createElement('div');
-            nationPopup.className = '[font-family:var(--font-mplus-rounded)] fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-white p-6 rounded-lg';
-            nationPopup.style.border = '1px solid rgb(229,229,229)';
-            nationPopup.style.boxShadow = '0 4px 0 rgba(229,229,229,255)';
-            nationPopup.style.transform = 'translateY(-2px)';
-            nationPopup.style.width = '450px';
-
-            const nationProvinces = localGame.provinces.filter(p => p.ownerTag === owningNation.nationTag);
-            const totalPopulation = nationProvinces.reduce((sum, p) => sum + p.population, 0);
-            const totalGoldIncome = nationProvinces.reduce((sum, p) => sum + p.goldIncome, 0);
-            const totalIndustry = nationProvinces.reduce((sum, p) => sum + p.industry, 0);
-            const totalArmy = nationProvinces.reduce((sum, p) => sum + p.army, 0);
-
-            nationPopup.innerHTML = `
-              <div class="flex justify-between items-start mb-4">
-                <h3 class="text-2xl font-bold text-black">${owningNation.name}</h3>
-                <button id="closeNationButton" class="text-black/70 hover:text-black transition-colors duration-200 w-8 h-8 flex items-center justify-center rounded-full border border-black/30 hover:border-black/60">✕</button>
+  
+          popup.innerHTML = `
+            <div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] bg-white rounded-lg p-6 w-full max-w-2xl [font-family:var(--font-mplus-rounded)] border border-gray-200" style="box-shadow: 0 4px 0 rgba(229,229,229,255);">
+              <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                  <span class="text-3xl">⚔️</span>
+                  Conquest of ${selectedProvince.name}
+                </h2>
+                <button id="closeConquestPopupButton" class="text-gray-500 hover:text-gray-700 p-1">
+                  <span class="text-xl font-bold">✕</span>
+                </button>
               </div>
-              <div class="space-y-3 text-base">
-                <div>🏷️ Nation Tag: <span class="font-bold float-right">${owningNation.nationTag}</span></div>
-                <div>👥 Total Population: <span class="font-bold float-right">${totalPopulation.toLocaleString()}</span></div>
-                <div>💰 Total Gold Income: <span class="font-bold float-right">${totalGoldIncome}</span></div>
-                <div>🏭 Total Industry: <span class="font-bold float-right">${totalIndustry}</span></div>
-                <div>⚔️ Total Army: <span class="font-bold float-right">${totalArmy.toLocaleString()}</span></div>
-                <div>💎 Gold Reserves: <span class="font-bold float-right">${owningNation.gold}</span></div>
-                <div>🔬 Research Points: <span class="font-bold float-right">${owningNation.researchPoints}</span></div>
-                <div>📚 Current Research: <span class="font-bold float-right">${owningNation.currentResearchId || 'None'}</span></div>
-                <div>📊 Research Progress: <span class="font-bold float-right">${owningNation.currentResearchProgress}%</span></div>
-                <div>🗺️ Number of Provinces: <span class="font-bold float-right">${nationProvinces.length}</span></div>
+
+              <div class="min-h-[200px]">
+                  <p class="text-gray-700">Details about the conquest will go here...</p>
+                 
               </div>
-            `;
+            </div>
+          `;
+  
+          document.body.appendChild(popup);
+          conquestPopupRef.current = popup;
+        }
+      }
 
-            document.body.appendChild(nationPopup);
-            nationPopupRef.current = nationPopup;
-
-            nationPopup.querySelector('#closeNationButton')?.addEventListener('click', () => {
-              nationPopup.remove();
-              nationPopupRef.current = null;
+    } else {
+      if (provinceId && localGame) {
+        const selectedProvince = localGame.provinces.find(p => p.id === provinceId);
+  
+        if (selectedProvince) {
+          const owningNation = localGame.nations.find(n => n.nationTag === selectedProvince.ownerTag);
+          const nationName = owningNation ? owningNation.name : 'Unknown';
+  
+          const popup = document.createElement('div');
+          popup.className = '[font-family:var(--font-mplus-rounded)] fixed bottom-4 left-4 z-50 bg-white p-6 rounded-lg';
+          popup.style.border = '1px solid rgb(229,229,229)';
+          popup.style.boxShadow = '0 4px 0 rgba(229,229,229,255)';
+          popup.style.transform = 'translateY(-2px)';
+          popup.style.width = '350px';
+  
+          const capitalizeFirstLetter = (string: string): string => {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+          };
+  
+          popup.innerHTML = `
+            <div class="flex justify-between items-start mb-4">
+              <h3 class="text-2xl font-bold text-black">${selectedProvince.name}</h3>
+              <span class="text-base text-black/70">${nationName}</span>
+            </div>
+            <div class="grid grid-cols-2 gap-x-6 gap-y-3 text-base mb-4">
+              <div>👥 Population:</div> <p class="text-right font-bold text-black">${selectedProvince.population.toLocaleString()}</p>
+              <div>💰 Gold Income:</div> <p class="text-right font-bold text-black">${selectedProvince.goldIncome}</p>
+              <div>🏭 Industry:</div> <p class="text-right font-bold text-black">${selectedProvince.industry}</p>
+              <div>🌟 Resource:</div> <p class="text-right font-bold text-black">${capitalizeFirstLetter(selectedProvince.resourceType)}</p>
+              <div>⚔️ Army:</div> <p class="text-right font-bold text-black">${selectedProvince.army.toLocaleString()}</p>
+            </div>
+            ${owningNation ? `<button 
+              class="w-full px-4 py-2 bg-[#67b9e7] text-white rounded-lg font-bold text-xl hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-2"
+              style="box-shadow: 0 4px 0 #4792ba; transform: translateY(-2px);"
+              id="showNationButton"
+            >
+              <span class="text-2xl">🎯</span>
+              View Nation Details
+            </button>` : ''}
+          `;
+  
+          provincePopupRef.current = popup;
+          document.body.appendChild(popup);
+  
+          const showNationButton = popup.querySelector('#showNationButton');
+          if (showNationButton && owningNation) {
+            showNationButton.addEventListener('click', () => {
+              nationPopupRef.current?.remove();
+  
+              const nationPopup = document.createElement('div');
+              nationPopup.className = '[font-family:var(--font-mplus-rounded)] fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-white p-6 rounded-lg';
+              nationPopup.style.border = '1px solid rgb(229,229,229)';
+              nationPopup.style.boxShadow = '0 4px 0 rgba(229,229,229,255)';
+              nationPopup.style.transform = 'translateY(-2px)';
+              nationPopup.style.width = '450px';
+  
+              const nationProvinces = localGame.provinces.filter(p => p.ownerTag === owningNation.nationTag);
+              const totalPopulation = nationProvinces.reduce((sum, p) => sum + p.population, 0);
+              const totalGoldIncome = nationProvinces.reduce((sum, p) => sum + p.goldIncome, 0);
+              const totalIndustry = nationProvinces.reduce((sum, p) => sum + p.industry, 0);
+              const totalArmy = nationProvinces.reduce((sum, p) => sum + p.army, 0);
+  
+              nationPopup.innerHTML = `
+                <div class="flex justify-between items-start mb-4">
+                  <h3 class="text-2xl font-bold text-black">${owningNation.name}</h3>
+                  <button id="closeNationButton" class="text-black/70 hover:text-black transition-colors duration-200 w-8 h-8 flex items-center justify-center rounded-full border border-black/30 hover:border-black/60">✕</button>
+                </div>
+                <div class="space-y-3 text-base">
+                  <div>🏷️ Nation Tag: <span class="font-bold float-right">${owningNation.nationTag}</span></div>
+                  <div>👥 Total Population: <span class="font-bold float-right">${totalPopulation.toLocaleString()}</span></div>
+                  <div>💰 Total Gold Income: <span class="font-bold float-right">${totalGoldIncome}</span></div>
+                  <div>🏭 Total Industry: <span class="font-bold float-right">${totalIndustry}</span></div>
+                  <div>⚔️ Total Army: <span class="font-bold float-right">${totalArmy.toLocaleString()}</span></div>
+                  <div>💎 Gold Reserves: <span class="font-bold float-right">${owningNation.gold}</span></div>
+                  <div>🔬 Research Points: <span class="font-bold float-right">${owningNation.researchPoints}</span></div>
+                  <div>📚 Current Research: <span class="font-bold float-right">${owningNation.currentResearchId || 'None'}</span></div>
+                  <div>📊 Research Progress: <span class="font-bold float-right">${owningNation.currentResearchProgress}%</span></div>
+                  <div>🗺️ Number of Provinces: <span class="font-bold float-right">${nationProvinces.length}</span></div>
+                </div>
+              `;
+  
+              document.body.appendChild(nationPopup);
+              nationPopupRef.current = nationPopup;
+  
+              nationPopup.querySelector('#closeNationButton')?.addEventListener('click', () => {
+                nationPopup.remove();
+                nationPopupRef.current = null;
+              });
             });
-          });
+          }
         }
       }
     }
+
   }, [localGame]);
 
   const handleMapReady = useCallback((stateMap: Map<string, StateData>) => {
@@ -593,24 +661,33 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
 
   return (
     <div className={`fixed inset-0 overflow-hidden bg-[#0B1423] transition-opacity ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
-      <div className="absolute top-0 left-0 right-0 z-50 flex flex-col md:flex-row items-center p-4">
-        <div className="absolute left-4">
-          <BackButton onClick={onBack} />
+      {!isInConqueringMode && (
+        <div className="absolute top-0 left-0 right-0 z-40 flex flex-col md:flex-row items-center p-4">
+          <div className="absolute left-4">
+            <BackButton onClick={onBack} />
+          </div>
+          <div className="flex-1 flex justify-center">
+            {localGame && (
+              <ResourceBar
+                playerGold={currentGold}
+                totalPopulation={totalPopulation}
+                totalIndustry={totalIndustry}
+                totalArmy={totalArmy}
+                playerNationTag={localGame.playerNationTag}
+                gameDate={localGame.date}
+                fadeIn={fadeIn}
+              />
+            )}
+          </div>
         </div>
-        <div className="flex-1 flex justify-center">
-          {localGame && (
-            <ResourceBar
-              playerGold={currentGold}
-              totalPopulation={totalPopulation}
-              totalIndustry={totalIndustry}
-              totalArmy={totalArmy}
-              playerNationTag={localGame.playerNationTag}
-              gameDate={localGame.date}
-              fadeIn={fadeIn}
-            />
-          )}
+      )}
+
+      {/* Conquest Mode Text Prompt */}
+      {isInConqueringMode && (
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 px-8 py-4 bg-white/90 rounded-lg shadow-md border border-gray-200 [font-family:var(--font-mplus-rounded)]">
+          <p className="text-xl font-semibold text-gray-800">⚔️ Select a province to conquer ⚔️</p>
         </div>
-      </div>
+      )}
 
       <div
         className={`absolute inset-0 z-0 transition-all duration-1000 ease-in-out ${fadeIn ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}
@@ -627,21 +704,34 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         />
       </div>
 
-      <ButtonGroup
-        fadeIn={fadeIn}
-        hasActiveSession={hasActiveSession}
-        onTaskListClick={() => { if (user) { handleProvinceSelect(null); setIsTaskModalOpen(true); } }}
-        onFocusClick={() => {
-          if (user && localGame) {
+      {!isInConqueringMode && (
+        <ButtonGroup
+          fadeIn={fadeIn}
+          hasActiveSession={hasActiveSession}
+          onTaskListClick={() => { if (user) { handleProvinceSelect(null); setIsTaskModalOpen(true); } }}
+          onFocusClick={() => {
+            if (user && localGame) {
+              handleProvinceSelect(null);
+              console.log('Opening Focus Modal. Current Game State:', localGame);
+              console.log('Current Resource Totals:', playerNationResourceTotals);
+              setIsModalOpen(true);
+            }
+          }}
+          onHabitsClick={() => { handleProvinceSelect(null); setIsHabitsModalOpen(true); }}
+          onConquestClick={() => { 
+            console.log('Entering Conquest Mode');
+            // Clear selection and close modals BEFORE setting mode
             handleProvinceSelect(null);
-            console.log('Opening Focus Modal. Current Game State:', localGame);
-            console.log('Current Resource Totals:', playerNationResourceTotals);
-            setIsModalOpen(true);
-          }
-        }}
-        onHabitsClick={() => { handleProvinceSelect(null); setIsHabitsModalOpen(true); }}
-        focusTimeRemaining={focusTimeRemaining}
-      />
+            setIsModalOpen(false);
+            setIsTaskModalOpen(false);
+            setIsHabitsModalOpen(false);
+            setIsNationalPathModalOpen(false);
+            // Set mode AFTER clearing selection and closing modals
+            setIsInConqueringMode(true);
+          }}
+          focusTimeRemaining={focusTimeRemaining}
+        />
+      )}
 
       {isNationalPathModalOpen && (
         <NationalPathModal onClose={() => setIsNationalPathModalOpen(false)} />
@@ -694,6 +784,33 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           />
         )}
       </div>
+
+      {/* Conditionally render Cancel button for Conquest Mode */}
+      {isInConqueringMode && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+          <button
+            onClick={() => {
+              console.log('Exiting Conquest Mode');
+              // Set mode first
+              setIsInConqueringMode(false);
+              // Ensure modals are closed (redundant but safe)
+              setIsModalOpen(false);
+              setIsTaskModalOpen(false);
+              setIsHabitsModalOpen(false);
+              setIsNationalPathModalOpen(false);
+              // Clear selection AFTER exiting mode
+              handleProvinceSelect(null);
+            }}
+            className="px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors duration-200 shadow-md [font-family:var(--font-mplus-rounded)] text-lg"
+            style={{ 
+              boxShadow: '0 4px 0 #b91c1c', // Darker red shadow
+              transform: 'translateY(-2px)'
+            }}
+          >
+            Cancel Conquest
+          </button>
+        </div>
+      )}
 
     </div>
   );
