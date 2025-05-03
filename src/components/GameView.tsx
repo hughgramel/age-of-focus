@@ -45,7 +45,7 @@ const formatNumber = (num: number): string => {
 };
 
 // --- Conquest Constants ---
-const CONQUEST_GOLD_COST = 100; // Example cost, adjust as needed
+const CONQUEST_GOLD_COST = 1000; // Example cost, adjust as needed
 const VICTORY_POWER_RATIO = 1.2; // Attacker needs 1.2x defender power to guarantee win
 const MINIMUM_POWER_RATIO = 0.8; // Attacker needs at least 0.8x defender power to attempt
 // --- End Conquest Constants ---
@@ -315,7 +315,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
                     </div>
                     ${!meetsMinimumPower && hasSufficientArmy ? '<div class="text-xs text-red-500 mt-1">Warning: Forces significantly outmatched!</div>' : ''}
                     ${!hasSufficientArmy ? '<div class="text-xs text-red-500 mt-1">Warning: No army to attack with!</div>' : ''}
-                    ${!canAfford ? '<div class="text-xs text-red-500 mt-1">Warning: Insufficient gold for attack!</div>' : ''}
+                    ${!canAfford ? '<div class="text-xs text-red-500 mt-1"></div>' : ''}
                 </div>
             </div>
             
@@ -354,9 +354,10 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           if (canLaunchAttack) {
             launchButton?.addEventListener('click', () => {
                 console.log('Launch Attack clicked for province:', provinceId);
-                // TODO: Implement attack logic (cost deduction, battle simulation, potential province capture)
-                alert('Attack logic not yet implemented!');
-                closePopup(); // Close popup after action
+                // Call the new conquest function
+                executeProvinceConquest(provinceId, attackerLosses, CONQUEST_GOLD_COST);
+                // alert('Attack logic not yet implemented!'); // Remove alert
+                // closePopup(); // Conquest function handles closing
             });
           }
         }
@@ -458,6 +459,157 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
     }
 
   }, [localGame]);
+
+  // --- Execute Conquest Action ---
+  const executeProvinceConquest = async (
+    provinceId: string,
+    attackerCasualtyLosses: number,
+    goldCost: number
+  ) => {
+    if (!user || !localGame || !provinceId) {
+      console.error('Cannot execute conquest: Missing user, game, or provinceId.');
+      // Show error feedback?
+      return;
+    }
+
+    console.log(`Executing conquest for ${provinceId}. Cost: ${goldCost} Gold, Casualties: ${attackerCasualtyLosses}`);
+
+    try {
+      // 1. Find Save Slot
+      const allSaves = await GameService.getSaveGames(user.uid);
+      let slotNumber: number | null = null;
+      for (const [slot, save] of Object.entries(allSaves)) {
+        if (save && save.game.id === localGame.id) {
+          slotNumber = parseInt(slot);
+          break;
+        }
+      }
+      if (slotNumber === null) throw new Error('Could not find save slot for conquest');
+
+      // 2. Create Deep Copy & Find Indices
+      const updatedGame = JSON.parse(JSON.stringify(localGame));
+      const playerNationIndex = updatedGame.nations.findIndex(
+        (n: Nation) => n.nationTag === updatedGame.playerNationTag
+      );
+      const targetProvinceIndex = updatedGame.provinces.findIndex(
+        (p: Province) => p.id === provinceId
+      );
+
+      if (playerNationIndex === -1 || targetProvinceIndex === -1) {
+        throw new Error('Player nation or target province not found in game state copy.');
+      }
+
+      const playerNationTag = updatedGame.playerNationTag;
+      const playerNation = updatedGame.nations[playerNationIndex];
+
+      // 3. Validation
+      if (playerNation.gold < goldCost) {
+        console.error('Conquest failed: Insufficient gold.');
+        // Show feedback: Not enough gold
+        const feedback = document.createElement('div');
+        feedback.textContent = `Attack Failed: Insufficient Gold (Need ${goldCost})`;
+        feedback.className = 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded shadow-md [font-family:var(--font-mplus-rounded)]';
+        document.body.appendChild(feedback);
+        setTimeout(() => feedback.remove(), 3000);
+        return;
+      }
+
+      const playerProvincesBeforeConquest = updatedGame.provinces.filter(
+          (p: Province) => p.ownerTag === playerNationTag
+      );
+      const totalPlayerArmy = playerProvincesBeforeConquest.reduce((sum: number, p: { army: number }) => sum + p.army, 0);
+
+      if (totalPlayerArmy < attackerCasualtyLosses) {
+          console.warn(`Casualties (${attackerCasualtyLosses}) exceed total army (${totalPlayerArmy}). Reducing army to 0.`);
+          attackerCasualtyLosses = totalPlayerArmy; // Cannot lose more than available
+      }
+
+
+      // 4. Apply Changes to updatedGame
+      // a) Deduct Gold
+      updatedGame.nations[playerNationIndex].gold -= goldCost;
+
+      // b) Distribute Casualties Proportionaally
+      let remainingLosses = attackerCasualtyLosses;
+      if (totalPlayerArmy > 0) { // Avoid division by zero
+          playerProvincesBeforeConquest.forEach((prov: Province) => {
+              const provinceIndex = updatedGame.provinces.findIndex((p: Province) => p.id === prov.id);
+              if (provinceIndex !== -1) {
+                  const proportion = prov.army / totalPlayerArmy;
+                  const lossesToApply = Math.min(prov.army, Math.round(attackerCasualtyLosses * proportion));
+                  updatedGame.provinces[provinceIndex].army -= lossesToApply;
+                  remainingLosses -= lossesToApply; // Track remaining to handle rounding
+              }
+          });
+
+          // Distribute any remaining losses due to rounding (e.g., start from first province)
+          let provinceIdx = 0;
+          while (remainingLosses > 0 && provinceIdx < playerProvincesBeforeConquest.length) {
+              const currentProvId = playerProvincesBeforeConquest[provinceIdx].id;
+              const currentProvIndex = updatedGame.provinces.findIndex((p: Province) => p.id === currentProvId);
+               if (currentProvIndex !== -1 && updatedGame.provinces[currentProvIndex].army > 0) {
+                  updatedGame.provinces[currentProvIndex].army -= 1;
+                  remainingLosses -= 1;
+              }
+              provinceIdx++;
+          }
+      } else {
+          console.warn("Player has no army to distribute losses.");
+      }
+
+
+      // c) Change Province Ownership
+      const originalOwner = updatedGame.provinces[targetProvinceIndex].ownerTag;
+      updatedGame.provinces[targetProvinceIndex].ownerTag = playerNationTag;
+
+      console.log(`Province ${provinceId} owner changed from ${originalOwner} to ${playerNationTag}`);
+      console.log(`Gold reduced by ${goldCost}. Casualties distributed: ${attackerCasualtyLosses}.`);
+
+
+      // 5. Update Local React State
+      setLocalGame(updatedGame); // Trigger map color change etc.
+      setPlayerGold(updatedGame.nations[playerNationIndex].gold); // Update specific gold state
+
+      // Recalculate totals for the ResourceBar
+      const updatedPlayerProvinces = updatedGame.provinces.filter(
+          (p: Province) => p.ownerTag === playerNationTag
+      );
+      const newTotals = {
+          playerGold: updatedGame.nations[playerNationIndex].gold,
+          playerIndustry: updatedPlayerProvinces.reduce((sum: number, p: { industry: number }) => sum + p.industry, 0),
+          playerPopulation: updatedPlayerProvinces.reduce((sum: number, p: { population: number }) => sum + p.population, 0),
+          playerArmy: updatedPlayerProvinces.reduce((sum: number, p: { army: number }) => sum + p.army, 0)
+      };
+      setPlayerNationResourceTotals(newTotals);
+      console.log('Updated playerNationResourceTotals state after conquest:', newTotals);
+
+
+      // 6. Save to Database (don't await, let it run in background)
+      GameService.saveGame(user.uid, slotNumber, updatedGame, 'conquest-complete');
+
+
+      // 7. Close Conquest Popup & Show Success
+      conquestPopupRef.current?.remove();
+      conquestPopupRef.current = null;
+
+      const feedback = document.createElement('div');
+      const provinceName = updatedGame.provinces[targetProvinceIndex].name || provinceId;
+      feedback.textContent = `✅ Conquest Successful! ${provinceName} is now yours.`;
+      feedback.className = 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded shadow-md [font-family:var(--font-mplus-rounded)]';
+      document.body.appendChild(feedback);
+      setTimeout(() => feedback.remove(), 4000);
+
+    } catch (error) {
+      console.error('Error during province conquest:', error);
+      // Show generic error feedback?
+       const feedback = document.createElement('div');
+      feedback.textContent = `Error during conquest. Please check console.`;
+      feedback.className = 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded shadow-md [font-family:var(--font-mplus-rounded)]';
+      document.body.appendChild(feedback);
+      setTimeout(() => feedback.remove(), 4000);
+    }
+  };
+  // --- End Execute Conquest Action ---
 
   const handleMapReady = useCallback((stateMap: Map<string, StateData>) => {
     if (!localGame) return;
