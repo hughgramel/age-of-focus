@@ -17,6 +17,7 @@ import TaskModal from './TaskModal';
 import NationalPathModal from './NationalPathModal';
 import { countries_1836 } from '@/data/countries_1836';
 import HabitsModal from './HabitsModal';
+import { getNationFlag } from '@/utils/nationFlags';
 
 interface GameViewProps {
   game?: Game;
@@ -31,12 +32,25 @@ export interface playerNationResourceTotals {
   playerArmy: number;
 }
 
+// Helper function for number formatting (similar to ResourceBar)
+const formatNumber = (num: number): string => {
+  if (num === undefined || num === null) return '0';
+  if (num >= 1000000) {
+    return (Math.floor(num / 10000) / 100).toFixed(2) + 'M';
+  } else if (num >= 1000) {
+    return (Math.floor(num / 10) / 100).toFixed(2) + 'K';
+  } else {
+    return num.toLocaleString(); // Use localeString for smaller numbers/consistency
+  }
+};
+
 export default function GameView({ game, isDemo = false, onBack }: GameViewProps) {
   const { user } = useAuth();
   const selectedProvinceRef = useRef<string | null>(null);
   const provincePopupRef = useRef<HTMLDivElement | null>(null);
   const nationPopupRef = useRef<HTMLDivElement | null>(null);
   const conquestPopupRef = useRef<HTMLDivElement | null>(null);
+  const selfConquestErrorPopupRef = useRef<HTMLDivElement | null>(null);
   const [fadeIn, setFadeIn] = useState(false);
   const [playerGold, setPlayerGold] = useState<number | undefined>(undefined);
   const mapCanvasContainerRef = useRef<HTMLDivElement>(null);
@@ -136,6 +150,8 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
     nationPopupRef.current = null;
     conquestPopupRef.current?.remove();
     conquestPopupRef.current = null;
+    selfConquestErrorPopupRef.current?.remove();
+    selfConquestErrorPopupRef.current = null;
 
     const popup = document.createElement('div');
 
@@ -148,48 +164,124 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         const selectedProvince = localGame.provinces.find(p => p.id === provinceId);
   
         if (selectedProvince) {
+          // --- Check for conquering own province --- 
+          if (selectedProvince.ownerTag === localGame.playerNationTag) {
+            console.log("Attempted to conquer own province.");
+            const feedback = document.createElement('div');
+            feedback.textContent = 'You cannot conquer your own territory.';
+            feedback.className = 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded shadow-md [font-family:var(--font-mplus-rounded)]';
+            document.body.appendChild(feedback);
+            selfConquestErrorPopupRef.current = feedback;
+            setTimeout(() => {
+              feedback.remove();
+              if (selfConquestErrorPopupRef.current === feedback) {
+                 selfConquestErrorPopupRef.current = null;
+              }
+            }, 3000); 
+            return; // Stop further processing
+          }
+          // --- End check ---
+
           const owningNation = localGame.nations.find(n => n.nationTag === selectedProvince.ownerTag);
-          const nationName = owningNation ? owningNation.name : 'Unknown';
+          const playerNation = localGame.nations.find(n => n.nationTag === localGame.playerNationTag);
   
+          if (!owningNation || !playerNation) {
+            console.error("Could not find owning or player nation details.");
+            return; // Exit if essential data is missing
+          }
+
+          // Calculate owning nation's total resources
+          const owningNationProvinces = localGame.provinces.filter(p => p.ownerTag === owningNation.nationTag);
+          const owningNationTotalPopulation = owningNationProvinces.reduce((sum, p) => sum + p.population, 0);
+          const owningNationTotalIndustry = owningNationProvinces.reduce((sum, p) => sum + p.industry, 0);
+          const owningNationTotalArmy = owningNationProvinces.reduce((sum, p) => sum + p.army, 0);
+          const owningNationGold = owningNation.gold;
+
+          // Player resource totals are already available in playerNationResourceTotals state
+          const { playerGold, playerPopulation, playerIndustry, playerArmy } = playerNationResourceTotals;
+
           const popup = document.createElement('div');
-          popup.className = '[font-family:var(--font-mplus-rounded)] fixed bottom-4 left-4 z-50 bg-white p-6 rounded-lg';
-          popup.style.border = '1px solid rgb(229,229,229)';
+          // Keep existing popup styles
+          popup.className = '[font-family:var(--font-mplus-rounded)] fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] bg-white rounded-lg p-6 w-full max-w-3xl border border-gray-200';
           popup.style.boxShadow = '0 4px 0 rgba(229,229,229,255)';
-          popup.style.transform = 'translateY(-2px)';
-          popup.style.width = '350px';
-  
-          const capitalizeFirstLetter = (string: string): string => {
-            return string.charAt(0).toUpperCase() + string.slice(1);
-          };
+          
+          // Emoji style from ResourceBar
+          const emojiStyle = `text-shadow: -1px -1px 0 rgba(0,0,0,0.1), 1px -1px 0 rgba(0,0,0,0.1), -1px 1px 0 rgba(0,0,0,0.1), 1px 1px 0 rgba(0,0,0,0.1); display: inline-block;`;
+          const flagStyle = `display: inline-block; width: 1.5em; height: 1.5em; vertical-align: middle; margin-right: 0.5em; line-height: 1; font-size: 1.5em;`;
 
-          popup.className = '[font-family:var(--font-mplus-rounded)] fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-white p-6 rounded-lg';
-          popup.style.border = '1px solid rgb(229,229,229)';
-          popup.style.boxShadow = '0 4px 0 rgba(229,229,229,255)';
-          popup.style.transform = 'translateY(-2px)';
-          popup.style.width = '450px';
-
-  
           popup.innerHTML = `
-            <div class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] bg-white rounded-lg p-6 w-full max-w-2xl [font-family:var(--font-mplus-rounded)] border border-gray-200" style="box-shadow: 0 4px 0 rgba(229,229,229,255);">
-              <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                  <span class="text-3xl">⚔️</span>
-                  Conquest of ${selectedProvince.name}
-                </h2>
-                <button id="closeConquestPopupButton" class="text-gray-500 hover:text-gray-700 p-1">
-                  <span class="text-xl font-bold">✕</span>
-                </button>
+            <div class="relative flex justify-center items-center mb-4 pb-4 border-b border-gray-200">
+              <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                <span style="${emojiStyle} font-size: 1.5em;">⚔️</span>
+                Conquest Target: ${selectedProvince.name}
+              </h2>
+              <button id="closeConquestPopupButton" class="absolute top-0 right-0 text-gray-500 hover:text-gray-700 bg-white hover:bg-gray-100 rounded-full p-1 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                   <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+              </button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6 min-h-[150px]">
+              
+              <!-- Attacker Column (Player) -->
+              <div class="border-r border-gray-200 pr-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center justify-center">
+                  <span style="${flagStyle}">${getNationFlag(playerNation.nationTag)}</span>
+                  Attacker: ${playerNation.name}
+                </h3>
+                <div class="space-y-3 text-base">
+                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">💰</span> Gold: <span class="ml-auto font-bold text-gray-900">${formatNumber(playerGold)}</span></div>
+                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">👥</span> Population: <span class="ml-auto font-bold text-gray-900">${formatNumber(playerPopulation)}</span></div>
+                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">🏭</span> Industry: <span class="ml-auto font-bold text-gray-900">${formatNumber(playerIndustry)}</span></div>
+                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">⚔️</span> Army: <span class="ml-auto font-bold text-gray-900">${formatNumber(playerArmy)}</span></div>
+                </div>
               </div>
 
-              <div class="min-h-[200px]">
-                  <p class="text-gray-700">Details about the conquest will go here...</p>
-                 
+              <!-- Defender Column (Owner) -->
+              <div class="pl-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center justify-center">
+                  <span style="${flagStyle}">${getNationFlag(owningNation.nationTag)}</span>
+                  Defender: ${owningNation.name}
+                </h3>
+                 <div class="space-y-3 text-base">
+                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">💰</span> Gold: <span class="ml-auto font-bold text-gray-900">${formatNumber(owningNationGold)}</span></div>
+                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">👥</span> Population: <span class="ml-auto font-bold text-gray-900">${formatNumber(owningNationTotalPopulation)}</span></div>
+                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">🏭</span> Industry: <span class="ml-auto font-bold text-gray-900">${formatNumber(owningNationTotalIndustry)}</span></div>
+                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">⚔️</span> Army: <span class="ml-auto font-bold text-gray-900">${formatNumber(owningNationTotalArmy)}</span></div>
+                </div>
               </div>
+
+            </div>
+            
+            <div class="mt-6 pt-4 border-t border-gray-200 flex justify-center gap-3">
+                <button id="launchAttackButton" class="px-4 py-2 bg-red-600 text-white rounded-md font-semibold hover:bg-red-700 transition-colors text-sm">Launch Attack (Cost: X)</button> 
             </div>
           `;
   
           document.body.appendChild(popup);
           conquestPopupRef.current = popup;
+
+          // Add event listeners for the new buttons
+          const closeButton = popup.querySelector('#closeConquestPopupButton');
+          const cancelButton = popup.querySelector('#cancelConquestActionButton');
+          const launchButton = popup.querySelector('#launchAttackButton');
+
+          const closePopup = () => {
+            popup.remove();
+            conquestPopupRef.current = null;
+            // Optionally clear province selection when popup closes
+            // handleProvinceSelect(null); 
+          };
+
+          closeButton?.addEventListener('click', closePopup);
+          cancelButton?.addEventListener('click', closePopup);
+          launchButton?.addEventListener('click', () => {
+             console.log('Launch Attack clicked for province:', provinceId);
+             // TODO: Implement attack logic (cost deduction, battle simulation, potential province capture)
+             alert('Attack logic not yet implemented!');
+             closePopup(); // Close popup after action
+          });
         }
       }
 
