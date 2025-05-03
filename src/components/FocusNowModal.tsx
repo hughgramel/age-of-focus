@@ -11,7 +11,8 @@ import CustomDropdown from './CustomDropdown';
 import { CircularProgressbarWithChildren } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 
-// Add National Path types
+// --- Commented out National Path types ---
+/*
 interface PathMilestone {
   id: number;
   title: string;
@@ -32,8 +33,10 @@ interface PathMilestone {
     >;
   };
 }
+*/
 
-// National path data
+// --- Commented out National path data ---
+/*
 const NATIONAL_MILESTONES: PathMilestone[] = [
   {
     id: 1,
@@ -113,21 +116,23 @@ const NATIONAL_MILESTONES: PathMilestone[] = [
     }
   },
 ];
+*/
 
-// Path Button component for milestone display
+// --- Commented out Path Button component ---
+/*
 const PathButton = ({ milestone, onProgressChange }: { 
   milestone: PathMilestone; 
   onProgressChange?: (id: number, progress: number) => void;
 }) => {
   return (
     <div className="relative flex items-center justify-center w-full" style={{ marginTop: milestone.id === 1 ? 0 : 40 }}>
-      {/* Left side - Name and Description */}
-      <div className={`flex-1 text-right pr-6 ${milestone.locked ? 'opacity-50' : ''}`}>
+      {/* Left side - Name and Description *//*}
+      <div className={`flex-1 text-right pr-6 ${milestone.locked ? 'opacity-50' : ''}'>
         <h3 className="font-bold text-lg text-gray-800">{milestone.title}</h3>
         <p className="text-sm text-gray-600">{milestone.description}</p>
       </div>
 
-      {/* Center - Icon with Progress */}
+      {/* Center - Icon with Progress *//*}
       <div className="relative flex-shrink-0">
         <div className="relative h-[80px] w-[80px]">
           <CircularProgressbarWithChildren
@@ -151,13 +156,13 @@ const PathButton = ({ milestone, onProgressChange }: {
             }}
           >
             <div className={`h-[60px] w-[60px] rounded-full flex items-center justify-center bg-white`}>
-              <span className={`text-3xl ${milestone.locked ? 'opacity-30' : ''}`}>
+              <span className={`text-3xl ${milestone.locked ? 'opacity-30' : ''}'>
                 {milestone.icon}
               </span>
             </div>
           </CircularProgressbarWithChildren>
           
-          {/* Progress controls - only show for development/testing */}
+          {/* Progress controls - only show for development/testing *//*}
           {onProgressChange && (
             <div className="absolute -bottom-6 left-1/2 transform -translate-x-1/2 flex gap-1">
               <button 
@@ -177,8 +182,8 @@ const PathButton = ({ milestone, onProgressChange }: {
         </div>
       </div>
 
-      {/* Right side - Requirements and Rewards */}
-      <div className={`flex-1 pl-6 text-left ${milestone.locked ? 'opacity-50' : ''}`}>
+      {/* Right side - Requirements and Rewards *//*}
+      <div className={`flex-1 pl-6 text-left ${milestone.locked ? 'opacity-50' : ''}'>
         {milestone.requirements && (
           <div className="mb-1">
             <span className="text-xs font-semibold text-gray-500">Required:</span>
@@ -195,6 +200,7 @@ const PathButton = ({ milestone, onProgressChange }: {
     </div>
   );
 };
+*/
 
 interface playerNationResourceTotals {
   playerGold: number;
@@ -222,57 +228,56 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [showCompletionScreen, setShowCompletionScreen] = useState(false);
   
-  // Add state for milestone progress
-  const [milestones, setMilestones] = useState<PathMilestone[]>(NATIONAL_MILESTONES);
+  // --- Commented out state for milestone progress ---
+  // const [milestones, setMilestones] = useState<PathMilestone[]>(NATIONAL_MILESTONES);
   
   // Calculate number of actions based on duration
   const actionCount = calculateActionsFromDuration(duration);
   
   // Function to update milestone progress
   const handleProgressChange = (id: number, progress: number) => {
-    setMilestones(prevMilestones => {
-      const updatedMilestones = [...prevMilestones];
-      const index = updatedMilestones.findIndex(m => m.id === id);
-      
-      if (index !== -1) {
-        // Create a new milestone object with updated progress
-        const updatedMilestone = {
-          ...updatedMilestones[index],
-          progress
-        };
-        
-        // Check if milestone is now completed
-        if (progress >= 100 && !updatedMilestone.completed) {
-          updatedMilestone.completed = true;
-          
-          // Execute the actionUpdate if it exists
-          if (updatedMilestone.actionUpdate) {
-            try {
-              // Transform the milestone's actionUpdate into the correct format
-              const actionUpdate = updatedMilestone.actionUpdate;
-              executeActionUpdate(actionUpdate);
-              
-              console.log(`🏆 Milestone "${updatedMilestone.title}" completed! Executing action:`, actionUpdate);
-              
-              // Update next milestone to be current if there is one
-              if (index < updatedMilestones.length - 1) {
-                updatedMilestones[index + 1].locked = false;
-                
-                // Set the next milestone as current
-                updatedMilestone.current = false;
-                updatedMilestones[index + 1].current = true;
-              }
-            } catch (error) {
-              console.error('Error executing milestone action:', error);
-            }
-          }
-        }
-        
-        updatedMilestones[index] = updatedMilestone;
-      }
-      
-      return updatedMilestones;
-    });
+    // setMilestones(prevMilestones => {
+    //   const updatedMilestones = [...prevMilestones];
+    //   const index = updatedMilestones.findIndex(m => m.id === id);
+    //   
+    //   if (index !== -1) {
+    //     // Create a new milestone object with updated progress
+    //     const updatedMilestone = {
+    //       ...updatedMilestones[index],
+    //       progress
+    //     };
+    //     
+    //     // Check if milestone is now completed
+    //     if (progress >= 100 && !updatedMilestone.completed) {
+    //       updatedMilestone.completed = true;
+    //       
+    //       // Execute the actionUpdate if it exists
+    //       if (updatedMilestone.actionUpdate) {
+    //         try {
+    //           // Transform the milestone's actionUpdate into the correct format
+    //           const actionUpdate = updatedMilestone.actionUpdate;
+    //           executeActionUpdate(actionUpdate);
+    //           
+    //           console.log(`🏆 Milestone "${updatedMilestone.title}" completed! Executing action:`, actionUpdate);
+    //           
+    //           // Update next milestone to be current if there is one
+    //           if (index < updatedMilestones.length - 1) {
+    //             updatedMilestones[index + 1].locked = false;
+    //             
+    //             // Set the next milestone as current
+    //             updatedMilestone.current = false;
+    //             updatedMilestones[index + 1].current = true;
+    //           }
+    //         } catch (error) {
+    //           console.error('Error executing milestone action:', error);
+    //         }
+    //       }
+    //       
+    //       updatedMilestones[index] = updatedMilestone;
+    //     }
+    //     
+    //     return updatedMilestones;
+    //   });
   };
   
   // Load active session if hasActiveSession is true or check for active sessions on load
@@ -501,7 +506,7 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
       
       {/* Modal Content Container - Add scale transition */}
       <div 
-        className={`relative z-10 w-full max-w-5xl transition-transform duration-300 ease-in-out transform scale-100`}
+        className={`relative z-10 w-full max-w-3xl transition-transform duration-300 ease-in-out transform scale-100`}
       >
           {!sessionStarted && !activeSession && !showCompletionScreen ? (
             <div className="relative bg-white rounded-lg border border-gray-200 text-black p-6 [font-family:var(--font-mplus-rounded)]" style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}>
@@ -535,49 +540,17 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
                 />
               </div>
 
-              {/* Info Box (Moved to Absolute Top Right) */}
-              <div className="absolute top-10 right-8 p-3 rounded-lg border border-emerald-200 bg-emerald-50 w-60">
-                <h4 className="text-emerald-800 text-base mb-1 flex items-center gap-1">
-                  <span className="text-xl">ℹ️</span>
-                  What are actions?
-                </h4>
-                <p className="text-sm text-emerald-700 mb-0.5">
-                  • 30 mins focus = 1 action pt
-                </p>
-                <p className="text-sm text-emerald-700">
-                  • Action pts develop nation
-                </p>
-              </div>
-
-              {/* Main Content Area - Two Columns */}
-              <div className="flex gap-6 items-start">
-                {/* Left Column - National Path (Wider) */}
-                <div className="w-7/12 bg-gray-50 rounded-lg border border-gray-200 p-6 overflow-hidden flex flex-col self-stretch max-h-[55vh]" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
-                  <h3 className="text-2xl font-semibold mb-6 text-center flex items-center justify-center gap-2 flex-shrink-0">
-                    <span className="text-3xl">🌟</span>
-                    National Path
-                  </h3>
-                  <div className="relative flex-grow overflow-y-auto pr-2 -mr-2">
-                    <div className="absolute left-1/2 top-[35px] bottom-[35px] w-0.5 bg-[#67b9e7]/30 -translate-x-1/2" style={{ zIndex: 1 }} />
-                    <div className="relative flex flex-col items-stretch">
-                      {milestones.map((milestone) => (
-                        <div key={milestone.id} style={{ zIndex: 2, position: 'relative' }}>
-                           <PathButton milestone={milestone} onProgressChange={handleProgressChange} />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Column - Actions, Intention, Start */}
-                <div className="w-5/12 flex flex-col gap-3">
-                  {/* Actions Box (Reduced min-height further) */}
-                  <div className="bg-white rounded-lg border border-gray-200 p-4 flex-grow min-h-[250px]" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
+              {/* Main Content Area */} 
+              <div className="">
+                {/* Actions/Intention/Start Column - Changed to w-full */}
+                <div className="w-full flex flex-col gap-4">
+                  {/* Actions Box (Increased min-height) */}
+                  <div className="bg-white rounded-lg border border-gray-200 p-4 flex-grow min-h-[300px]" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
                     <h3 className="text-xl font-semibold mb-3 text-center flex items-center justify-center gap-2 flex-shrink-0">
                       <span className="text-2xl">🎯</span>
                       Choose your {actionCount} action{actionCount !== 1 ? 's' : ''}
                     </h3>
-                    <div className="space-y-3 pr-1 -mr-1">
+                    <div className="grid grid-cols-2 gap-3 pr-1 -mr-1">
                       {Array.from({ length: actionCount }, (_, i) => (
                         <div key={i} className="flex bg-white rounded-lg border border-gray-200 flex-shrink-0" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
                            <div className="py-2 px-3 border-r border-gray-200 min-w-[80px]">
@@ -609,12 +582,12 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
                     </div>
                   </div>
 
-                  {/* Intention Box (Reduced height) */}
+                  {/* Intention Box (Increased height) */}
                   <textarea
                     value={intention}
                     onChange={(e) => setIntention(e.target.value)}
                     placeholder="Write your intention..."
-                    className="bg-white text-gray-800 border border-gray-200 rounded-lg px-3 py-2 w-full outline-none text-sm resize-none h-[70px] flex-shrink-0"
+                    className="bg-white text-gray-800 border border-gray-200 rounded-lg px-3 py-2 w-full outline-none text-sm resize-none h-[100px] flex-shrink-0"
                     style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
                   />
 

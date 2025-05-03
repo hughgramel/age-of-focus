@@ -44,6 +44,12 @@ const formatNumber = (num: number): string => {
   }
 };
 
+// --- Conquest Constants ---
+const CONQUEST_GOLD_COST = 100; // Example cost, adjust as needed
+const VICTORY_POWER_RATIO = 1.2; // Attacker needs 1.2x defender power to guarantee win
+const MINIMUM_POWER_RATIO = 0.8; // Attacker needs at least 0.8x defender power to attempt
+// --- End Conquest Constants ---
+
 export default function GameView({ game, isDemo = false, onBack }: GameViewProps) {
   const { user } = useAuth();
   const selectedProvinceRef = useRef<string | null>(null);
@@ -197,8 +203,58 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           const owningNationTotalArmy = owningNationProvinces.reduce((sum, p) => sum + p.army, 0);
           const owningNationGold = owningNation.gold;
 
-          // Player resource totals are already available in playerNationResourceTotals state
-          const { playerGold, playerPopulation, playerIndustry, playerArmy } = playerNationResourceTotals;
+          // --- Recalculate Player Totals Directly --- 
+          const playerProvinces = localGame.provinces.filter(p => p.ownerTag === playerNation.nationTag);
+          const currentPlayerPopulation = playerProvinces.reduce((sum, p) => sum + p.population, 0);
+          const currentPlayerIndustry = playerProvinces.reduce((sum, p) => sum + p.industry, 0);
+          const currentPlayerArmy = playerProvinces.reduce((sum, p) => sum + p.army, 0);
+          const currentPlayerGold = playerNation.gold; // Get current gold directly from player nation object
+          // --- End Recalculation ---
+
+          // --- Battle Calculations --- 
+          const calculateBattlePower = (army: number, industry: number, gold: number): number => {
+            if (army <= 0) return 0;
+            const industryBonus = (industry || 0) / 1000;
+            const goldBonus = Math.log10(1 + (gold || 0));
+            // Ensure bonus calculation doesn't result in NaN or negative multipliers if inputs are weird
+            const totalMultiplier = Math.max(0, 1 + industryBonus + goldBonus);
+            return army * totalMultiplier;
+          };
+
+          const attackerPower = calculateBattlePower(currentPlayerArmy, currentPlayerIndustry, currentPlayerGold);
+          const defenderPower = calculateBattlePower(owningNationTotalArmy, owningNationTotalIndustry, owningNationGold);
+
+          let attackerCasualtyPercent = 0;
+          let defenderCasualtyPercent = 0;
+          if (attackerPower > 0 && defenderPower > 0) {
+              attackerCasualtyPercent = Math.min(100, (defenderPower / attackerPower) * 50);
+              defenderCasualtyPercent = Math.min(100, (attackerPower / defenderPower) * 60);
+          } else if (defenderPower <= 0 && attackerPower > 0) {
+              // Attacker wins decisively if defender has no power
+              attackerCasualtyPercent = 5; // Minimal casualties
+              defenderCasualtyPercent = 100;
+          } else if (attackerPower <= 0 && defenderPower > 0) {
+              // Attacker loses decisively if attacker has no power
+              attackerCasualtyPercent = 100;
+              defenderCasualtyPercent = 5; // Minimal casualties
+          } // If both are 0, percentages remain 0
+
+          const attackerLosses = Math.round(currentPlayerArmy * (attackerCasualtyPercent / 100));
+          const defenderLosses = Math.round(owningNationTotalArmy * (defenderCasualtyPercent / 100));
+
+          const isProjectedVictory = attackerPower > defenderPower * VICTORY_POWER_RATIO;
+          const meetsMinimumPower = attackerPower >= defenderPower * MINIMUM_POWER_RATIO;
+          const hasSufficientArmy = currentPlayerArmy > 0;
+          const canAfford = currentPlayerGold >= CONQUEST_GOLD_COST;
+
+          const canLaunchAttack = meetsMinimumPower && hasSufficientArmy && canAfford;
+          
+          let disabledReason = "";
+          if (!canAfford) disabledReason = `Insufficient Gold (Need ${CONQUEST_GOLD_COST})`;
+          else if (!hasSufficientArmy) disabledReason = "No army available to attack";
+          else if (!meetsMinimumPower) disabledReason = "Forces significantly outmatched";
+
+          // --- End Battle Calculations ---
 
           const popup = document.createElement('div');
           // Keep existing popup styles
@@ -231,10 +287,8 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
                   Attacker: ${playerNation.name}
                 </h3>
                 <div class="space-y-3 text-base">
-                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">💰</span> Gold: <span class="ml-auto font-bold text-gray-900">${formatNumber(playerGold)}</span></div>
-                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">👥</span> Population: <span class="ml-auto font-bold text-gray-900">${formatNumber(playerPopulation)}</span></div>
-                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">🏭</span> Industry: <span class="ml-auto font-bold text-gray-900">${formatNumber(playerIndustry)}</span></div>
-                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">⚔️</span> Army: <span class="ml-auto font-bold text-gray-900">${formatNumber(playerArmy)}</span></div>
+                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">⚔️</span> Power: <span class="ml-auto font-bold text-gray-900">${formatNumber(attackerPower)}</span></div>
+                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">👥</span> Est. Casualties: <span class="ml-auto font-bold text-red-600">${formatNumber(attackerLosses)}</span></div>
                 </div>
               </div>
 
@@ -245,17 +299,37 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
                   Defender: ${owningNation.name}
                 </h3>
                  <div class="space-y-3 text-base">
-                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">💰</span> Gold: <span class="ml-auto font-bold text-gray-900">${formatNumber(owningNationGold)}</span></div>
-                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">👥</span> Population: <span class="ml-auto font-bold text-gray-900">${formatNumber(owningNationTotalPopulation)}</span></div>
-                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">🏭</span> Industry: <span class="ml-auto font-bold text-gray-900">${formatNumber(owningNationTotalIndustry)}</span></div>
-                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">⚔️</span> Army: <span class="ml-auto font-bold text-gray-900">${formatNumber(owningNationTotalArmy)}</span></div>
+                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">⚔️</span> Power: <span class="ml-auto font-bold text-gray-900">${formatNumber(defenderPower)}</span></div>
+                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">👥</span> Est. Casualties: <span class="ml-auto font-bold text-red-600">${formatNumber(defenderLosses)}</span></div>
                 </div>
               </div>
 
             </div>
+
+            <!-- Battle Projection Section -->
+            <div class="mt-6 pt-2 ">
+                <!-- Outcome & Warnings -->
+                <div class="text-center text-gray-900">
+                    <div class="text-2xl font-semibold ${isProjectedVictory ? 'text-green-600' : 'text-red-600'}">
+                        ${isProjectedVictory ? '📈 Projected Victory' : '📉 Projected Defeat'}
+                    </div>
+                    ${!meetsMinimumPower && hasSufficientArmy ? '<div class="text-xs text-red-500 mt-1">Warning: Forces significantly outmatched!</div>' : ''}
+                    ${!hasSufficientArmy ? '<div class="text-xs text-red-500 mt-1">Warning: No army to attack with!</div>' : ''}
+                    ${!canAfford ? '<div class="text-xs text-red-500 mt-1">Warning: Insufficient gold for attack!</div>' : ''}
+                </div>
+            </div>
             
-            <div class="mt-6 pt-4 border-t border-gray-200 flex justify-center gap-3">
-                <button id="launchAttackButton" class="px-4 py-2 bg-red-600 text-white rounded-md font-semibold hover:bg-red-700 transition-colors text-sm">Launch Attack (Cost: X)</button> 
+            <div class=" pt-8 flex flex-col items-center gap-2">
+                 <button 
+                    id="launchAttackButton" 
+                    class="px-5 py-2 bg-red-600 text-white rounded-md font-semibold hover:bg-red-700 transition-colors text-base w-full max-w-xs ${!canLaunchAttack ? 'opacity-50 cursor-not-allowed' : ''}" 
+                    ${!canLaunchAttack ? 'disabled' : ''}
+                    title="${disabledReason}"
+                  >
+                    Launch Attack (Cost: ${CONQUEST_GOLD_COST}💰)
+                  </button>
+                  ${disabledReason ? `<span class="text-xs text-red-600">${disabledReason}</span>` : ''}
+                  <button id="cancelConquestActionButton" class="mt-2 text-gray-500 hover:text-gray-700 text-sm underline">Cancel</button>
             </div>
           `;
   
@@ -276,107 +350,111 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
 
           closeButton?.addEventListener('click', closePopup);
           cancelButton?.addEventListener('click', closePopup);
-          launchButton?.addEventListener('click', () => {
-             console.log('Launch Attack clicked for province:', provinceId);
-             // TODO: Implement attack logic (cost deduction, battle simulation, potential province capture)
-             alert('Attack logic not yet implemented!');
-             closePopup(); // Close popup after action
-          });
-        }
-      }
-
-    } else {
-      if (provinceId && localGame) {
-        const selectedProvince = localGame.provinces.find(p => p.id === provinceId);
-  
-        if (selectedProvince) {
-          const owningNation = localGame.nations.find(n => n.nationTag === selectedProvince.ownerTag);
-          const nationName = owningNation ? owningNation.name : 'Unknown';
-  
-          const popup = document.createElement('div');
-          popup.className = '[font-family:var(--font-mplus-rounded)] fixed bottom-4 left-4 z-50 bg-white p-6 rounded-lg';
-          popup.style.border = '1px solid rgb(229,229,229)';
-          popup.style.boxShadow = '0 4px 0 rgba(229,229,229,255)';
-          popup.style.transform = 'translateY(-2px)';
-          popup.style.width = '350px';
-  
-          const capitalizeFirstLetter = (string: string): string => {
-            return string.charAt(0).toUpperCase() + string.slice(1);
-          };
-  
-          popup.innerHTML = `
-            <div class="flex justify-between items-start mb-4">
-              <h3 class="text-2xl font-bold text-black">${selectedProvince.name}</h3>
-              <span class="text-base text-black/70">${nationName}</span>
-            </div>
-            <div class="grid grid-cols-2 gap-x-6 gap-y-3 text-base mb-4">
-              <div>👥 Population:</div> <p class="text-right font-bold text-black">${selectedProvince.population.toLocaleString()}</p>
-              <div>💰 Gold Income:</div> <p class="text-right font-bold text-black">${selectedProvince.goldIncome}</p>
-              <div>🏭 Industry:</div> <p class="text-right font-bold text-black">${selectedProvince.industry}</p>
-              <div>🌟 Resource:</div> <p class="text-right font-bold text-black">${capitalizeFirstLetter(selectedProvince.resourceType)}</p>
-              <div>⚔️ Army:</div> <p class="text-right font-bold text-black">${selectedProvince.army.toLocaleString()}</p>
-            </div>
-            ${owningNation ? `<button 
-              class="w-full px-4 py-2 bg-[#67b9e7] text-white rounded-lg font-bold text-xl hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-2"
-              style="box-shadow: 0 4px 0 #4792ba; transform: translateY(-2px);"
-              id="showNationButton"
-            >
-              <span class="text-2xl">🎯</span>
-              View Nation Details
-            </button>` : ''}
-          `;
-  
-          provincePopupRef.current = popup;
-          document.body.appendChild(popup);
-  
-          const showNationButton = popup.querySelector('#showNationButton');
-          if (showNationButton && owningNation) {
-            showNationButton.addEventListener('click', () => {
-              nationPopupRef.current?.remove();
-  
-              const nationPopup = document.createElement('div');
-              nationPopup.className = '[font-family:var(--font-mplus-rounded)] fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-white p-6 rounded-lg';
-              nationPopup.style.border = '1px solid rgb(229,229,229)';
-              nationPopup.style.boxShadow = '0 4px 0 rgba(229,229,229,255)';
-              nationPopup.style.transform = 'translateY(-2px)';
-              nationPopup.style.width = '450px';
-  
-              const nationProvinces = localGame.provinces.filter(p => p.ownerTag === owningNation.nationTag);
-              const totalPopulation = nationProvinces.reduce((sum, p) => sum + p.population, 0);
-              const totalGoldIncome = nationProvinces.reduce((sum, p) => sum + p.goldIncome, 0);
-              const totalIndustry = nationProvinces.reduce((sum, p) => sum + p.industry, 0);
-              const totalArmy = nationProvinces.reduce((sum, p) => sum + p.army, 0);
-  
-              nationPopup.innerHTML = `
-                <div class="flex justify-between items-start mb-4">
-                  <h3 class="text-2xl font-bold text-black">${owningNation.name}</h3>
-                  <button id="closeNationButton" class="text-black/70 hover:text-black transition-colors duration-200 w-8 h-8 flex items-center justify-center rounded-full border border-black/30 hover:border-black/60">✕</button>
-                </div>
-                <div class="space-y-3 text-base">
-                  <div>🏷️ Nation Tag: <span class="font-bold float-right">${owningNation.nationTag}</span></div>
-                  <div>👥 Total Population: <span class="font-bold float-right">${totalPopulation.toLocaleString()}</span></div>
-                  <div>💰 Total Gold Income: <span class="font-bold float-right">${totalGoldIncome}</span></div>
-                  <div>🏭 Total Industry: <span class="font-bold float-right">${totalIndustry}</span></div>
-                  <div>⚔️ Total Army: <span class="font-bold float-right">${totalArmy.toLocaleString()}</span></div>
-                  <div>💎 Gold Reserves: <span class="font-bold float-right">${owningNation.gold}</span></div>
-                  <div>🔬 Research Points: <span class="font-bold float-right">${owningNation.researchPoints}</span></div>
-                  <div>📚 Current Research: <span class="font-bold float-right">${owningNation.currentResearchId || 'None'}</span></div>
-                  <div>📊 Research Progress: <span class="font-bold float-right">${owningNation.currentResearchProgress}%</span></div>
-                  <div>🗺️ Number of Provinces: <span class="font-bold float-right">${nationProvinces.length}</span></div>
-                </div>
-              `;
-  
-              document.body.appendChild(nationPopup);
-              nationPopupRef.current = nationPopup;
-  
-              nationPopup.querySelector('#closeNationButton')?.addEventListener('click', () => {
-                nationPopup.remove();
-                nationPopupRef.current = null;
-              });
+          // Only add listener if the button is not disabled
+          if (canLaunchAttack) {
+            launchButton?.addEventListener('click', () => {
+                console.log('Launch Attack clicked for province:', provinceId);
+                // TODO: Implement attack logic (cost deduction, battle simulation, potential province capture)
+                alert('Attack logic not yet implemented!');
+                closePopup(); // Close popup after action
             });
           }
         }
       }
+
+    } else {
+    if (provinceId && localGame) {
+      const selectedProvince = localGame.provinces.find(p => p.id === provinceId);
+
+      if (selectedProvince) {
+        const owningNation = localGame.nations.find(n => n.nationTag === selectedProvince.ownerTag);
+        const nationName = owningNation ? owningNation.name : 'Unknown';
+
+        const popup = document.createElement('div');
+        popup.className = '[font-family:var(--font-mplus-rounded)] fixed bottom-4 left-4 z-50 bg-white p-6 rounded-lg';
+        popup.style.border = '1px solid rgb(229,229,229)';
+        popup.style.boxShadow = '0 4px 0 rgba(229,229,229,255)';
+        popup.style.transform = 'translateY(-2px)';
+        popup.style.width = '350px';
+
+        const capitalizeFirstLetter = (string: string): string => {
+             if (!string) return '';
+          return string.charAt(0).toUpperCase() + string.slice(1);
+        };
+
+        popup.innerHTML = `
+          <div class="flex justify-between items-start mb-4">
+            <h3 class="text-2xl font-bold text-black">${selectedProvince.name}</h3>
+            <span class="text-base text-black/70">${nationName}</span>
+          </div>
+          <div class="grid grid-cols-2 gap-x-6 gap-y-3 text-base mb-4">
+            <div>👥 Population:</div> <p class="text-right font-bold text-black">${selectedProvince.population.toLocaleString()}</p>
+            <div>💰 Gold Income:</div> <p class="text-right font-bold text-black">${selectedProvince.goldIncome}</p>
+            <div>🏭 Industry:</div> <p class="text-right font-bold text-black">${selectedProvince.industry}</p>
+            <div>🌟 Resource:</div> <p class="text-right font-bold text-black">${capitalizeFirstLetter(selectedProvince.resourceType)}</p>
+            <div>⚔️ Army:</div> <p class="text-right font-bold text-black">${selectedProvince.army.toLocaleString()}</p>
+          </div>
+          ${owningNation ? `<button 
+            class="w-full px-4 py-2 bg-[#67b9e7] text-white rounded-lg font-bold text-xl hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-2"
+            style="box-shadow: 0 4px 0 #4792ba; transform: translateY(-2px);"
+            id="showNationButton"
+          >
+            <span class="text-2xl">🎯</span>
+            View Nation Details
+          </button>` : ''}
+        `;
+
+          provincePopupRef.current = popup;
+        document.body.appendChild(popup);
+
+        const showNationButton = popup.querySelector('#showNationButton');
+        if (showNationButton && owningNation) {
+          showNationButton.addEventListener('click', () => {
+            nationPopupRef.current?.remove();
+
+            const nationPopup = document.createElement('div');
+            nationPopup.className = '[font-family:var(--font-mplus-rounded)] fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-white p-6 rounded-lg';
+            nationPopup.style.border = '1px solid rgb(229,229,229)';
+            nationPopup.style.boxShadow = '0 4px 0 rgba(229,229,229,255)';
+            nationPopup.style.transform = 'translateY(-2px)';
+            nationPopup.style.width = '450px';
+
+            const nationProvinces = localGame.provinces.filter(p => p.ownerTag === owningNation.nationTag);
+            const totalPopulation = nationProvinces.reduce((sum, p) => sum + p.population, 0);
+            const totalGoldIncome = nationProvinces.reduce((sum, p) => sum + p.goldIncome, 0);
+            const totalIndustry = nationProvinces.reduce((sum, p) => sum + p.industry, 0);
+            const totalArmy = nationProvinces.reduce((sum, p) => sum + p.army, 0);
+
+            nationPopup.innerHTML = `
+              <div class="flex justify-between items-start mb-4">
+                <h3 class="text-2xl font-bold text-black">${owningNation.name}</h3>
+                <button id="closeNationButton" class="text-black/70 hover:text-black transition-colors duration-200 w-8 h-8 flex items-center justify-center rounded-full border border-black/30 hover:border-black/60">✕</button>
+              </div>
+              <div class="space-y-3 text-base">
+                <div>🏷️ Nation Tag: <span class="font-bold float-right">${owningNation.nationTag}</span></div>
+                <div>👥 Total Population: <span class="font-bold float-right">${totalPopulation.toLocaleString()}</span></div>
+                <div>💰 Total Gold Income: <span class="font-bold float-right">${totalGoldIncome}</span></div>
+                <div>🏭 Total Industry: <span class="font-bold float-right">${totalIndustry}</span></div>
+                <div>⚔️ Total Army: <span class="font-bold float-right">${totalArmy.toLocaleString()}</span></div>
+                <div>💎 Gold Reserves: <span class="font-bold float-right">${owningNation.gold}</span></div>
+                <div>🔬 Research Points: <span class="font-bold float-right">${owningNation.researchPoints}</span></div>
+                <div>📚 Current Research: <span class="font-bold float-right">${owningNation.currentResearchId || 'None'}</span></div>
+                <div>📊 Research Progress: <span class="font-bold float-right">${owningNation.currentResearchProgress}%</span></div>
+                <div>🗺️ Number of Provinces: <span class="font-bold float-right">${nationProvinces.length}</span></div>
+              </div>
+            `;
+
+            document.body.appendChild(nationPopup);
+            nationPopupRef.current = nationPopup;
+
+            nationPopup.querySelector('#closeNationButton')?.addEventListener('click', () => {
+              nationPopup.remove();
+              nationPopupRef.current = null;
+            });
+          });
+        }
+      }
+    }
     }
 
   }, [localGame]);
@@ -755,23 +833,23 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
     <div className={`fixed inset-0 overflow-hidden bg-[#0B1423] transition-opacity ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
       {!isInConqueringMode && (
         <div className="absolute top-0 left-0 right-0 z-40 flex flex-col md:flex-row items-center p-4">
-          <div className="absolute left-4">
-            <BackButton onClick={onBack} />
-          </div>
-          <div className="flex-1 flex justify-center">
-            {localGame && (
-              <ResourceBar
-                playerGold={currentGold}
-                totalPopulation={totalPopulation}
-                totalIndustry={totalIndustry}
-                totalArmy={totalArmy}
-                playerNationTag={localGame.playerNationTag}
-                gameDate={localGame.date}
-                fadeIn={fadeIn}
-              />
-            )}
-          </div>
+        <div className="absolute left-4">
+          <BackButton onClick={onBack} />
         </div>
+        <div className="flex-1 flex justify-center">
+          {localGame && (
+            <ResourceBar
+              playerGold={currentGold}
+              totalPopulation={totalPopulation}
+              totalIndustry={totalIndustry}
+              totalArmy={totalArmy}
+              playerNationTag={localGame.playerNationTag}
+              gameDate={localGame.date}
+              fadeIn={fadeIn}
+            />
+          )}
+        </div>
+      </div>
       )}
 
       {/* Conquest Mode Text Prompt */}
@@ -797,18 +875,18 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
       </div>
 
       {!isInConqueringMode && (
-        <ButtonGroup
-          fadeIn={fadeIn}
-          hasActiveSession={hasActiveSession}
-          onTaskListClick={() => { if (user) { handleProvinceSelect(null); setIsTaskModalOpen(true); } }}
-          onFocusClick={() => {
-            if (user && localGame) {
-              handleProvinceSelect(null);
-              console.log('Opening Focus Modal. Current Game State:', localGame);
-              console.log('Current Resource Totals:', playerNationResourceTotals);
-              setIsModalOpen(true);
-            }
-          }}
+      <ButtonGroup
+        fadeIn={fadeIn}
+        hasActiveSession={hasActiveSession}
+        onTaskListClick={() => { if (user) { handleProvinceSelect(null); setIsTaskModalOpen(true); } }}
+        onFocusClick={() => {
+          if (user && localGame) {
+            handleProvinceSelect(null);
+            console.log('Opening Focus Modal. Current Game State:', localGame);
+            console.log('Current Resource Totals:', playerNationResourceTotals);
+            setIsModalOpen(true);
+          }
+        }}
           onHabitsClick={() => { handleProvinceSelect(null); setIsHabitsModalOpen(true); }}
           onConquestClick={() => { 
             console.log('Entering Conquest Mode');
@@ -821,8 +899,8 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             // Set mode AFTER clearing selection and closing modals
             setIsInConqueringMode(true);
           }}
-          focusTimeRemaining={focusTimeRemaining}
-        />
+        focusTimeRemaining={focusTimeRemaining}
+      />
       )}
 
       {isNationalPathModalOpen && (
@@ -856,13 +934,13 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
       {/* Task Modal - always render but control visibility with style */}
       <div id="task-modal" style={{ display: isTaskModalOpen ? 'block' : 'none' }}>
         {user && localGame && (
-          <TaskModal
-            userId={user.uid}
-            onClose={() => setIsTaskModalOpen(false)}
-            onTaskComplete={(task) => console.log('Task completed:', task)}
-            executeActionUpdate={executeActionUpdate}
-            playerNationResourceTotals={playerNationResourceTotals}
-          />
+        <TaskModal
+          userId={user.uid}
+          onClose={() => setIsTaskModalOpen(false)}
+          onTaskComplete={(task) => console.log('Task completed:', task)}
+          executeActionUpdate={executeActionUpdate}
+          playerNationResourceTotals={playerNationResourceTotals}
+        />
         )}
       </div>
       {/* Habits Modal - always render but control visibility with style */}
