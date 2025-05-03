@@ -108,9 +108,20 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
   const completedTasks = tasks.filter(task => task.completed);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black opacity-60" onClick={onClose}></div>
-      <div className="relative bg-white rounded-lg p-6 w-full max-w-2xl [font-family:var(--font-mplus-rounded)]" style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)' }}>
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ease-in-out opacity-100"
+    >
+      {/* Transparent Backdrop for closing */}
+      <div 
+        className="absolute inset-0 z-0"
+        onClick={onClose}
+      ></div>
+
+      {/* Make modal content relative and higher z-index - Add scale transition */}
+      <div 
+        className="relative z-10 bg-white rounded-lg p-6 w-full max-w-2xl [font-family:var(--font-mplus-rounded)] transition-transform duration-300 ease-in-out transform scale-100"
+        style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)' }}
+      >
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
             <span className="text-3xl">📋</span>

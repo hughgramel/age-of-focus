@@ -9,7 +9,7 @@ export default function TaskListButton({ fadeIn, onClick }: TaskListButtonProps)
   return (
     <button
       onClick={onClick}
-      className={`[font-family:var(--font-mplus-rounded)] py-3 sm:py-4 w-full sm:w-1/3 rounded-xl text-white hover:opacity-90 transition-all duration-300 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}
+      className={`[font-family:var(--font-mplus-rounded)] py-3 sm:py-4 w-full sm:w-[275px] rounded-xl text-white hover:opacity-90 transition-all duration-300 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}
       style={{ 
         backgroundColor: '#67b9e7',
         fontSize: '22px',

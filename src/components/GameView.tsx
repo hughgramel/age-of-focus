@@ -601,7 +601,6 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
 
       <ButtonGroup
         fadeIn={fadeIn}
-        isModalOpen={isModalOpen || isTaskModalOpen || isNationalPathModalOpen}
         hasActiveSession={hasActiveSession}
         onTaskListClick={() => { if (user) { handleProvinceSelect(null); setIsTaskModalOpen(true); } }}
         onFocusClick={() => {
@@ -612,7 +611,6 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             setIsModalOpen(true);
           }
         }}
-        // onNationalPathClick={() => { handleProvinceSelect(null); setIsNationalPathModalOpen(true); }}
         onHabitsClick={() => { handleProvinceSelect(null); setIsHabitsModalOpen(true); }}
         focusTimeRemaining={focusTimeRemaining}
       />
@@ -663,7 +661,6 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           <HabitsModal
             userId={user.uid}
             onClose={() => setIsHabitsModalOpen(false)}
-            onHabitComplete={(habit) => console.log('Habit completed:', habit)}
             executeActionUpdate={executeActionUpdate}
             playerNationResourceTotals={playerNationResourceTotals}
           />

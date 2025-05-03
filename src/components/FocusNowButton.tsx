@@ -6,7 +6,6 @@ import { SessionService } from '@/services/sessionService';
 
 interface FocusNowButtonProps {
   fadeIn: boolean;
-  isModalOpen: boolean;
   hasActiveSession: boolean;
   onClick: () => void;
   focusTimeRemaining: number;
@@ -33,7 +32,6 @@ const convertSecondsToTimeFormat = (seconds: number): string => {
 
 export default function FocusNowButton({ 
   fadeIn, 
-  isModalOpen, 
   hasActiveSession, 
   onClick,
   focusTimeRemaining
@@ -41,7 +39,7 @@ export default function FocusNowButton({
   return (
     <button
       onClick={onClick}
-      className={`[font-family:var(--font-mplus-rounded)] px-2 py-3 sm:py-4 w-full sm:w-[275px] rounded-xl text-white hover:opacity-90 transition-all duration-300 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} ${isModalOpen ? 'hidden' : ''}`}
+      className={`[font-family:var(--font-mplus-rounded)] px-2 py-3 sm:py-4 w-full sm:w-[275px] rounded-xl text-white hover:opacity-90 transition-all duration-300 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
       style={{ 
         backgroundColor: '#6ec53e',
         fontSize: '22px',

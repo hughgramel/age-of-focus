@@ -9,7 +9,7 @@ export default function HabitsButton({ fadeIn, onClick }: HabitsButtonProps) {
   return (
     <button
       onClick={onClick}
-      className={`[font-family:var(--font-mplus-rounded)] px-2 py-3 sm:py-4 w-full sm:w-4/10 rounded-xl text-white hover:opacity-90 transition-all duration-300 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}
+      className={`[font-family:var(--font-mplus-rounded)] px-2 py-3 sm:py-4 w-full sm:w-[275px] rounded-xl text-white hover:opacity-90 transition-all duration-300 ease-in-out ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}
       style={{ 
         backgroundColor: '#e28d24',
         fontSize: '22px',

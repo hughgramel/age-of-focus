@@ -166,6 +166,12 @@ export default function MapCanvas({ mapName, children, onStateClick, onMapReady,
     const shiftMultiplier = 3;  // Shift key speed multiplier
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore keydown if an input element has focus
+      if (document.activeElement instanceof HTMLInputElement || document.activeElement instanceof HTMLTextAreaElement) {
+          console.log('Input focused, ignoring map keydown.');
+          return;
+      }
+
       // Add pressed key to tracking set
       keysPressed.current.add(e.key.toLowerCase());
       

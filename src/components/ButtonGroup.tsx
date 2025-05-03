@@ -7,7 +7,6 @@ import HabitsButton from './HabitsButton';
 
 interface ButtonGroupProps {
   fadeIn: boolean;
-  isModalOpen: boolean;
   hasActiveSession: boolean;
   onTaskListClick: () => void;
   onFocusClick: () => void;
@@ -17,7 +16,6 @@ interface ButtonGroupProps {
 
 export default function ButtonGroup({
   fadeIn,
-  isModalOpen,
   hasActiveSession,
   onTaskListClick,
   onFocusClick,
@@ -32,7 +30,6 @@ export default function ButtonGroup({
       <div className="flex-shrink-0">
         <FocusNowButton 
           fadeIn={fadeIn} 
-          isModalOpen={isModalOpen} 
           hasActiveSession={hasActiveSession} 
           onClick={onFocusClick} 
           focusTimeRemaining={focusTimeRemaining}

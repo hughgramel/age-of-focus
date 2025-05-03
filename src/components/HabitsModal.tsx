@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Habit, HabitCreate } from '@/types/habit';
 import { HabitsService } from '@/services/habitsService';
 import { FOCUS_ACTIONS, FocusAction, ActionType } from '@/data/actions';
@@ -62,6 +62,12 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
     };
   });
   const [isLoading, setIsLoading] = useState(true);
+  const [isHabitListScrollable, setIsHabitListScrollable] = useState(false);
+
+  // Refs for scroll detection
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const tableBodyRef = useRef<HTMLTableSectionElement>(null);
+
   const weekDates = useMemo(() => getWeekDates(), []); // Dates for the current week (Sun-Sat)
   const todayObj = useMemo(() => startOfToday(), []); // Use object for comparisons
   const todayStr = useMemo(() => formatISO(todayObj, { representation: 'date' }), [todayObj]);
@@ -107,6 +113,29 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
     }
   }, [userId, loadHabitsAndCompletions]); // Add userId as a direct dependency
 
+  // Effect to check scrollability
+  useEffect(() => {
+    const checkScrollability = () => {
+      const container = scrollContainerRef.current;
+      const tableBody = tableBodyRef.current;
+
+      if (container && tableBody) {
+        // Change check to >= to trigger when content height equals or exceeds container height
+        const scrollable = tableBody.scrollHeight >= container.clientHeight;
+        setIsHabitListScrollable(scrollable);
+        console.log('Checking scrollability:', { scrollHeight: tableBody.scrollHeight, clientHeight: container.clientHeight, scrollable });
+      } else {
+        setIsHabitListScrollable(false);
+      }
+    };
+
+    // Increase timeout for DOM updates
+    const timer = setTimeout(checkScrollability, 250); 
+
+    return () => clearTimeout(timer); // Cleanup timer
+
+  }, [habits, isLoading]); // Dependencies
+
   const handleCreateHabit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newHabit.title.trim()) return;
@@ -127,36 +156,39 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
     }
   };
 
-  // Refactored Action Execution Logic with corrected bonus application
-  const executeHabitActionWithBonus = (habit: Habit, date: Date, currentCompletions: Set<string>) => {
+  // Refactored Action Execution Logic: Executes action and returns the processed updates.
+  const executeHabitActionWithBonus = (habit: Habit, date: Date, currentCompletions: Set<string>): (ResourceUpdate | NationResourceUpdate)[] | null => {
       const actionDef = FOCUS_ACTIONS.find(a => a.id === habit.actionType);
-      if (actionDef) {
-          const isTodayCompletion = isSameDay(date, todayObj);
-          const streak = calculateStreak(currentCompletions);
-          const bonusMultiplier = isTodayCompletion ? calculateBonusMultiplier(streak) : 1.0; // Apply bonus only if completed today
+      if (!actionDef) return null;
 
-          if (isTodayCompletion && bonusMultiplier > 1.0) {
-              console.log(`Habit ${habit.id} completed today - Streak: ${streak}, Bonus: ${bonusMultiplier.toFixed(1)}x`);
-          }
+      const isTodayCompletion = isSameDay(date, todayObj);
+      const streak = calculateStreak(currentCompletions);
+      const bonusMultiplier = isTodayCompletion ? calculateBonusMultiplier(streak) : 1.0;
 
-          // Create a boosted version of player resources for calculation if bonus applies
-          const boostedTotals: playerNationResourceTotals = bonusMultiplier > 1.0 ? {
-              playerGold: Math.floor(playerNationResourceTotals.playerGold * bonusMultiplier),
-              playerIndustry: Math.floor(playerNationResourceTotals.playerIndustry * bonusMultiplier),
-              playerPopulation: Math.floor(playerNationResourceTotals.playerPopulation * bonusMultiplier),
-              playerArmy: playerNationResourceTotals.playerArmy // Typically army gain isn't % based on current army
-          } : playerNationResourceTotals; // Use original totals if no bonus
-
-          // --- This wrapper simply passes the action to the original prop --- 
-          // The bonus effect is now handled by passing boostedTotals to actionDef.execute
-          const passthroughExecuteWrapper = (action: Omit<ActionUpdate, 'target'>) => {
-              console.log(`Executing habit action (Bonus incorporated via boosted totals):`, action);
-              executeActionUpdate(action); // Call the original prop function from GameView
-          };
-
-          // Call the action's execute method with the passthrough wrapper and potentially boosted totals
-          actionDef.execute(passthroughExecuteWrapper, boostedTotals);
+      if (isTodayCompletion && bonusMultiplier > 1.0) {
+          console.log(`Habit ${habit.id} completed today - Streak: ${streak}, Bonus: ${bonusMultiplier.toFixed(1)}x`);
       }
+
+      const boostedTotals: playerNationResourceTotals = bonusMultiplier > 1.0 ? {
+          playerGold: Math.floor(playerNationResourceTotals.playerGold * bonusMultiplier),
+          playerIndustry: Math.floor(playerNationResourceTotals.playerIndustry * bonusMultiplier),
+          playerPopulation: Math.floor(playerNationResourceTotals.playerPopulation * bonusMultiplier),
+          playerArmy: playerNationResourceTotals.playerArmy
+      } : playerNationResourceTotals;
+
+      let processedUpdates: (ResourceUpdate | NationResourceUpdate)[] = [];
+
+      // Wrapper captures the action details *before* executing the state update
+      const captureAndExecuteWrapper = (action: Omit<ActionUpdate, 'target'>) => {
+          processedUpdates = [...action.updates]; // Capture the exact updates
+          console.log(`Executing habit action (Bonus incorporated via boosted totals):`, action);
+          executeActionUpdate(action); // Call the original prop function from GameView
+      };
+
+      // Call the action's execute method
+      actionDef.execute(captureAndExecuteWrapper, boostedTotals);
+
+      return processedUpdates; // Return the updates that were processed
   };
 
   // Refactored handler for toggling completion status
@@ -170,37 +202,7 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
     const habitCompletions = completions.get(habit.id) || new Set();
     const isCurrentlyCompleted = habitCompletions.has(dateKey);
     const isToday = isSameDay(date, todayObj);
-    const actionDef = FOCUS_ACTIONS.find(a => a.id === habit.actionType);
-
-    // --- Calculate and Store *ACTUAL* resources gained/lost (using boosted totals if applicable) --- //
-    let actualResourcesChanged: Record<string, number> = {};
-    if (actionDef) {
-        // Correctly create the set for streak calculation based on whether we are completing or uncompleting
-        const completionsForStreakCalc = new Set(habitCompletions);
-        if (isCurrentlyCompleted) {
-            completionsForStreakCalc.delete(dateKey);
-        } else {
-            completionsForStreakCalc.add(dateKey);
-        }
-        const streak = calculateStreak(completionsForStreakCalc);
-        const bonusMultiplier = (isToday && !isCurrentlyCompleted) ? calculateBonusMultiplier(streak) : 1.0; // Bonus only when completing today
-
-        const totalsForCalculation: playerNationResourceTotals = bonusMultiplier > 1.0 ? {
-            playerGold: Math.floor(playerNationResourceTotals.playerGold * bonusMultiplier),
-            playerIndustry: Math.floor(playerNationResourceTotals.playerIndustry * bonusMultiplier),
-            playerPopulation: Math.floor(playerNationResourceTotals.playerPopulation * bonusMultiplier),
-            playerArmy: playerNationResourceTotals.playerArmy
-        } : playerNationResourceTotals;
-
-        const captureResources = (actionUpdate: Omit<ActionUpdate, 'target'>) => {
-            actionUpdate.updates.forEach((update: ResourceUpdate | NationResourceUpdate) => {
-                actualResourcesChanged[update.resource] = (actualResourcesChanged[update.resource] || 0) + update.amount;
-            });
-        };
-        actionDef.execute(captureResources, totalsForCalculation);
-    }
-     console.log(`[Toggle ${dateKey}] ${isCurrentlyCompleted ? 'Reversal' : 'Completion'} Calculated Actual Resources:`, actualResourcesChanged);
-
+    // No need to find actionDef here, it's handled later
 
     // --- Optimistic UI Update --- //
     const updatedCompletionsSet = new Set(habitCompletions);
@@ -219,20 +221,17 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
         const storedResources = await HabitsService.uncompleteHabit(userId, habit.id, date);
         console.log(`Uncompleted habit ${habit.id} for ${dateKey}`);
 
-        // Use the actual calculated reversal amounts, fallback to stored if needed
-        const resourcesToReverse = Object.keys(actualResourcesChanged).length > 0 ? actualResourcesChanged : storedResources;
-
-        if (resourcesToReverse) {
-          console.log("Reversing resources:", resourcesToReverse);
-          const reversalUpdates: (ResourceUpdate | NationResourceUpdate)[] = Object.entries(resourcesToReverse)
+        if (storedResources) {
+          console.log("Reversing stored resources:", storedResources);
+          const reversalUpdates: (ResourceUpdate | NationResourceUpdate)[] = Object.entries(storedResources)
             .map(([resource, amount]) => ({
-              resource: resource as any, // Cast needed here
-              amount: -amount // Negate the amount
+              resource: resource as any,
+              amount: -amount
             }))
             .filter(update => update.amount !== 0);
 
           if (reversalUpdates.length > 0) {
-             // Split updates and execute reversal actions
+             // Split and execute reversal actions
              const provinceResourceKeys: Array<ResourceUpdate['resource']> = ['goldIncome', 'industry', 'army', 'population'];
              const nationResourceKeys: Array<NationResourceUpdate['resource']> = ['gold', 'researchPoints'];
              const provinceReversalUpdates = reversalUpdates.filter(u => provinceResourceKeys.includes(u.resource as any));
@@ -249,17 +248,52 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
 
       } else {
         // --- COMPLETING --- //
-        // Store the actual calculated resources
+        let actualResourcesChanged: Record<string, number> = {};
+        let processedUpdatesForStorage: (ResourceUpdate | NationResourceUpdate)[] = [];
+
+        // Execute the action *first* if completing for today
+        if (isToday) {
+            const updatesResult = executeHabitActionWithBonus(habit, date, updatedCompletionsSet);
+            if (updatesResult) {
+                processedUpdatesForStorage = updatesResult;
+                // Convert the updates array to the Record format for storage & popup
+                updatesResult.forEach(update => {
+                     actualResourcesChanged[update.resource] = (actualResourcesChanged[update.resource] || 0) + update.amount;
+                });
+            }
+        }
+        // If completing for a past day, actualResourcesChanged remains empty, action isn't triggered.
+
+        // Store the completion record with the *actual* calculated resource changes (or empty if past day)
         const completionRecord = await HabitsService.completeHabit(userId, habit.id, date, actualResourcesChanged);
 
         if (completionRecord) {
           console.log(`Completed habit ${habit.id} for ${dateKey}, stored gains:`, actualResourcesChanged);
-          // Trigger the *actual* action execution (which uses executeActionUpdate via wrapper)
-          if (actionDef) {
-            executeHabitActionWithBonus(habit, date, updatedCompletionsSet);
+
+          // --- Show Popup Notification (using actualResourcesChanged) --- //
+          if (isToday && Object.keys(actualResourcesChanged).length > 0) {
+              const popup = document.createElement('div');
+              popup.className = 'fixed bottom-6 right-6 z-[100] bg-white p-6 rounded-lg border border-gray-200 text-gray-800 [font-family:var(--font-mplus-rounded)] shadow-lg min-w-[320px]';
+              popup.style.boxShadow = '0 4px 0 rgba(229,229,229,255)';
+              popup.style.transform = 'translateY(-2px)';
+              let content = `<h4 class="font-bold text-xl mb-3 text-green-600">🗓️ Habit Completed!</h4>`;
+              content += `<ul class="text-base space-y-1.5">`;
+              for (const [resource, amount] of Object.entries(actualResourcesChanged)) {
+                if (amount !== 0) {
+                  const sign = amount > 0 ? '+' : '';
+                  const icon = getActionIcon(resource as ActionType);
+                  content += `<li class="flex items-center gap-2">${icon} <span class="font-medium">${sign}${amount.toLocaleString()}</span> ${resource.charAt(0).toUpperCase() + resource.slice(1)}</li>`;
+                }
+              }
+              content += `</ul>`;
+              popup.innerHTML = content;
+              document.body.appendChild(popup);
+              setTimeout(() => popup.remove(), 4000);
           }
+           // --- End Popup --- //
+
         } else {
-          console.log("Habit completion failed (maybe already done?), reverting UI.");
+          console.log("Habit completion storage failed (maybe already done?), reverting UI.");
           setCompletions(prev => new Map(prev).set(habit.id, new Set(habitCompletions))); // Revert UI
         }
       }
@@ -305,9 +339,20 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black opacity-60" onClick={onClose}></div>
-      <div className="relative bg-white rounded-lg p-6 w-full max-w-4xl [font-family:var(--font-mplus-rounded)]" style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)' }}>
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ease-in-out opacity-100"
+    >
+      {/* Transparent Backdrop for closing */}
+      <div 
+        className="absolute inset-0 z-0"
+        onClick={onClose}
+      ></div>
+
+      {/* Make modal content relative and higher z-index - Add scale transition */}
+      <div 
+        className="relative z-10 bg-white rounded-lg p-6 w-full max-w-4xl [font-family:var(--font-mplus-rounded)] transition-transform duration-300 ease-in-out transform scale-100"
+        style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)' }}
+      >
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
             <span className="text-3xl">🗓️</span>
@@ -357,8 +402,8 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
           </div>
         </form>
 
-        {/* Habit Table */}
-        <div className="max-h-[60vh] overflow-y-auto pr-2">
+        {/* Habit Table Container - Add ref */}
+        <div ref={scrollContainerRef} className="max-h-[40vh] overflow-y-auto pr-2 relative"> { /* Added relative positioning */ }
           {isLoading ? (
             <div className="text-center py-10 text-gray-800">Loading habits...</div>
           ) : habits.length === 0 ? (
@@ -368,6 +413,7 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
               <thead>
                 <tr className="border-b border-gray-200">
                   <th className="py-3 px-2 text-sm font-semibold text-gray-600 w-1/3">Habit</th>
+                  <th className="py-3 px-1 text-center text-sm font-semibold text-gray-600 w-[50px]">Streak</th>
                   <th className="py-3 px-2 text-sm font-semibold text-gray-600 w-[200px]">Action</th>
                   {weekDates.map(date => (
                     <th key={formatISO(date)} className="py-3 px-1 text-center text-sm font-semibold text-gray-600 w-[40px]">
@@ -378,22 +424,33 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
                   <th className="py-3 px-1 text-center text-sm font-semibold text-gray-600 w-[40px]">Del</th>
                 </tr>
               </thead>
-              <tbody>
+              {/* Add ref to tbody */}
+              <tbody ref={tableBodyRef}>
                 {habits.map(habit => {
                   const habitCompletions = completions.get(habit.id) || new Set();
-                  // Calculate streak based directly on habitCompletions
                   const streak = calculateStreak(habitCompletions);
                   const bonusMultiplier = calculateBonusMultiplier(streak);
                   const bonusText = bonusMultiplier > 1.0 ? `+${((bonusMultiplier - 1.0) * 100).toFixed(0)}%` : '-';
+                  const isCompletedToday = habitCompletions.has(todayStr);
 
-                  // Add more logging inside the loop
-                  // console.log(`Rendering Habit: ${habit.title} (${habit.id}), Completions:`, habitCompletions);
+                  // Determine emoji style
+                  const showGrayscale = streak === 0 && !isCompletedToday;
 
                   return (
                     <tr key={habit.id} className="border-b border-gray-100 hover:bg-gray-50">
                       {/* Habit Title */}
                       <td className="py-3 px-2 text-base text-gray-800 font-medium align-middle">
                         {habit.title}
+                      </td>
+                      {/* Streak Indicator Cell */}
+                      <td className="py-3 px-1 text-center align-middle">
+                        <span
+                            className={`inline-block text-lg ${showGrayscale ? 'grayscale' : ''}`}
+                            style={{ filter: showGrayscale ? 'grayscale(100%)' : 'none' }}
+                            title={`Current Streak: ${streak}`}>
+                                🔥
+                        </span>
+                        <span className="ml-1 text-sm font-semibold text-gray-700">{streak}</span>
                       </td>
                       {/* Action Dropdown */}
                       <td className="py-2 px-1 align-middle">
@@ -408,29 +465,32 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
                           className="w-full text-sm"
                         />
                       </td>
-                      {/* Weekly Completion Cells - Updated for toggling */}
+                      {/* Weekly Completion Cells - Updated for toggling ONLY today */}
                       {weekDates.map(date => {
                         const dateKey = formatISO(date, { representation: 'date' });
                         const isCompleted = habitCompletions.has(dateKey);
-                        const canToggle = !isFuture(date);
                         const isToday = isSameDay(date, todayObj);
+                        const isPast = !isToday && !isFuture(date);
 
                         return (
                           <td key={dateKey} className="py-2 px-1 text-center align-middle">
-                            {canToggle ? (
+                            {isToday ? (
+                              // Render the button ONLY for today
                               <button
                                 onClick={() => handleToggleCompletion(habit, date)}
                                 className={`w-7 h-7 rounded-full border-2 flex items-center justify-center mx-auto transition-colors text-lg font-bold ${isCompleted
                                     ? 'bg-green-500 border-green-600 text-white hover:bg-green-600'
-                                    : 'bg-gray-100 border-gray-300 text-gray-400 hover:border-green-500 hover:bg-green-100 hover:text-green-600'
-                                  } ${isToday && !isCompleted ? 'border-blue-500' : (isToday ? 'border-green-700' : '')}`}
-                                title={isCompleted ? `Mark as incomplete for ${format(date, 'MMM d')}` : `Mark as complete for ${format(date, 'MMM d')}`}
+                                    : 'bg-gray-100 border-blue-500 text-gray-400 hover:border-green-500 hover:bg-green-100 hover:text-green-600' // Add blue border when today & incomplete
+                                  }`}
+                                title={isCompleted ? `Mark as incomplete for today` : `Mark as complete for today`}
                               >
                                 {isCompleted ? '✓' : ''}
                               </button>
                             ) : (
-                              // Future date - non-interactive
-                              <div className="w-7 h-7 rounded-full flex items-center justify-center mx-auto bg-gray-200 opacity-50">
+                              // Render static indicator for past or future days
+                              <div className={`w-7 h-7 rounded-full flex items-center justify-center mx-auto ${isCompleted ? 'bg-green-500 text-white' : (isPast ? 'bg-gray-200' : 'bg-gray-200 opacity-50')}`}>
+                                {isCompleted && <span className="text-lg font-bold">✓</span>}
+                                {/* Optionally display something different for past empty vs future empty */}
                               </div>
                             )}
                           </td>
@@ -455,6 +515,17 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
                 })}
               </tbody>
             </table>
+          )}
+
+          {/* Scroll Down Indicator */}
+          {isHabitListScrollable && (
+              // Use relative/absolute positioning for finer control
+              <div className="sticky bottom-0 left-0 right-0 h-8 pointer-events-none bg-gradient-to-t from-white via-white/90 to-white/0 relative"> { /* Add relative, set height, remove padding */ }
+                  {/* Position span absolutely at the bottom center */}
+                  <span className="absolute bottom-0 top-3 left-1/2 -translate-x-1/2 text-sm font-semibold text-gray-600">
+                      Scroll down for more habits ↓
+                  </span>
+              </div>
           )}
         </div>
       </div>

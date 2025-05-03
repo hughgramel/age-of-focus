@@ -490,149 +490,164 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center pt-16">
+    <div 
+      className="fixed inset-0 z-50 flex items-start justify-center pt-26 transition-opacity duration-300 ease-in-out opacity-100"
+    >
+      {/* Transparent Backdrop for closing */}
       <div 
-        className="absolute inset-0 bg-black opacity-60 z-0 border-2"
+        className="absolute inset-0 z-0"
         onClick={handleModalClose}
       ></div>
       
-      {/* Only show the start session view if there's no active session and no completion screen */}
-      {!sessionStarted && !activeSession && !showCompletionScreen ? (
-        <div className="relative z-10 bg-white rounded-lg border border-gray-200 text-black p-8 w-full max-w-5xl [font-family:var(--font-mplus-rounded)] relative" style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}>
-          {/* Top section - Duration centered */}
-          <div className="mb-8 max-w-md mx-auto">
-            <h3 className="text-2xl font-semibold mb-4 text-center flex items-center justify-center gap-2">
-              <span className="text-3xl">⏱️</span>
-              Focus Session Duration
-            </h3>
-            <CustomDropdown
-              options={[
-                { value: "30", label: "30 minutes", icon: "⏱️" },
-                { value: "45", label: "45 minutes", icon: "⏱️" },
-                { value: "60", label: "1 hour", icon: "⏱️" },
-                { value: "90", label: "1.5 hours", icon: "⏱️" },
-                { value: "120", label: "2 hours", icon: "⏱️" },
-                { value: "180", label: "3 hours", icon: "⏱️" },
-                { value: "240", label: "4 hours", icon: "⏱️" }
-              ]}
-              value={duration.toString()}
-              onChange={(value) => setDuration(parseInt(value))}
-              className="w-full"
-            />
-          </div>
-
-          {/* Info Box (Moved to Absolute Top Right) */}
-          <div className="absolute top-10 right-8 p-3 rounded-lg border border-emerald-200 bg-emerald-50 w-60">
-            <h4 className="text-emerald-800 text-base mb-1 flex items-center gap-1">
-              <span className="text-xl">ℹ️</span>
-              What are actions?
-            </h4>
-            <p className="text-sm text-emerald-700 mb-0.5">
-              • 30 mins focus = 1 action pt
-            </p>
-            <p className="text-sm text-emerald-700">
-              • Action pts develop nation
-            </p>
-          </div>
-
-          {/* Main Content Area - Two Columns */}
-          <div className="flex gap-6 items-start">
-            {/* Left Column - National Path (Wider) */}
-            <div className="w-7/12 bg-gray-50 rounded-lg border border-gray-200 p-6 overflow-hidden flex flex-col self-stretch" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
-              <h3 className="text-2xl font-semibold mb-6 text-center flex items-center justify-center gap-2 flex-shrink-0">
-                <span className="text-3xl">🌟</span>
-                National Path
-              </h3>
-              <div className="relative flex-grow overflow-y-auto pr-2 -mr-2">
-                <div className="absolute left-1/2 top-[35px] bottom-[35px] w-0.5 bg-[#67b9e7]/30 -translate-x-1/2" style={{ zIndex: 1 }} />
-                <div className="relative flex flex-col items-stretch">
-                  {milestones.map((milestone) => (
-                    <div key={milestone.id} style={{ zIndex: 2, position: 'relative' }}>
-                       <PathButton milestone={milestone} onProgressChange={handleProgressChange} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column - Actions, Intention, Start */}
-            <div className="w-5/12 flex flex-col gap-4">
-              {/* Actions Box (Will now be at the top and grow, with min height) */}
-              <div className="bg-white rounded-lg border border-gray-200 p-6 flex-grow min-h-[450px]" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
-                <h3 className="text-2xl font-semibold mb-4 text-center flex items-center justify-center gap-2 flex-shrink-0">
-                  <span className="text-3xl">🎯</span>
-                  Choose your {actionCount} action{actionCount !== 1 ? 's' : ''}
-                </h3>
-                <div className="space-y-4 flex-grow pr-2 -mr-2">
-                  {Array.from({ length: actionCount }, (_, i) => (
-                    <div key={i} className="flex bg-white rounded-lg border border-gray-200 flex-shrink-0" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
-                       <div className="py-3 px-4 border-r border-gray-200 min-w-[100px]">
-                         <span className="text-lg text-gray-700">Action {i + 1}</span>
-                       </div>
-                       <CustomDropdown
-                        options={[
-                          { value: "auto", label: "Auto (Random)", icon: "🎲" },
-                          ...FOCUS_ACTIONS.filter(action => action.id !== 'auto').map(action => ({
-                            value: action.id,
-                            label: action.name,
-                            icon: (() => {
-                              switch (action.id) {
-                                case 'invest': return '💰';
-                                case 'develop': return '🏭';
-                                case 'improve_army': return '⚔️';
-                                case 'population_growth': return '👥';
-                                default: return '🎯';
-                              }
-                            })()
-                          }))
-                        ]}
-                        value={selectedActions[i] || 'auto'}
-                        onChange={(value) => handleActionChange(i, value as ActionType)}
-                        className="flex-1"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Intention Box */}
-              <textarea
-                value={intention}
-                onChange={(e) => setIntention(e.target.value)}
-                placeholder="Write your intention for this focus session"
-                className="bg-white text-gray-800 border border-gray-200 rounded-lg px-4 py-3 w-full outline-none text-base resize-none h-[100px] flex-shrink-0"
-                style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
-              />
-
-              {/* Start Button (Aligned Bottom Right) */}
+      {/* Modal Content Container - Add scale transition */}
+      <div 
+        className={`relative z-10 w-full max-w-5xl transition-transform duration-300 ease-in-out transform scale-100`}
+      >
+          {!sessionStarted && !activeSession && !showCompletionScreen ? (
+            <div className="relative bg-white rounded-lg border border-gray-200 text-black p-6 [font-family:var(--font-mplus-rounded)]" style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}>
+              {/* Add Close Button */}
               <button 
-                onClick={startFocusSession}
-                className="mt-auto px-12 py-3 bg-[#6ec53e] text-white rounded-lg font-bold text-2xl hover:opacity-90 transition-all duration-200 w-full flex items-center justify-center gap-2 flex-shrink-0"
-                style={{ boxShadow: '0 4px 0 rgba(89,167,0,255)', transform: 'translateY(-2px)' }}
+                onClick={handleModalClose} 
+                className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 transition-colors z-20 p-2" 
               >
-                <span className="text-3xl">▶️</span>
-                Start Focus
+                <span className="text-xl font-bold">✕</span>
               </button>
+
+              {/* Top section - Duration centered */}
+              <div className="mb-8 max-w-md mx-auto">
+                <h3 className="text-2xl font-semibold mb-4 text-center flex items-center justify-center gap-2">
+                  <span className="text-3xl">⏱️</span>
+                  Focus Session Duration
+                </h3>
+                <CustomDropdown
+                  options={[
+                    { value: "30", label: "30 minutes", icon: "⏱️" },
+                    { value: "45", label: "45 minutes", icon: "⏱️" },
+                    { value: "60", label: "1 hour", icon: "⏱️" },
+                    { value: "90", label: "1.5 hours", icon: "⏱️" },
+                    { value: "120", label: "2 hours", icon: "⏱️" },
+                    { value: "180", label: "3 hours", icon: "⏱️" },
+                    { value: "240", label: "4 hours", icon: "⏱️" }
+                  ]}
+                  value={duration.toString()}
+                  onChange={(value) => setDuration(parseInt(value))}
+                  className="w-full"
+                />
+              </div>
+
+              {/* Info Box (Moved to Absolute Top Right) */}
+              <div className="absolute top-10 right-8 p-3 rounded-lg border border-emerald-200 bg-emerald-50 w-60">
+                <h4 className="text-emerald-800 text-base mb-1 flex items-center gap-1">
+                  <span className="text-xl">ℹ️</span>
+                  What are actions?
+                </h4>
+                <p className="text-sm text-emerald-700 mb-0.5">
+                  • 30 mins focus = 1 action pt
+                </p>
+                <p className="text-sm text-emerald-700">
+                  • Action pts develop nation
+                </p>
+              </div>
+
+              {/* Main Content Area - Two Columns */}
+              <div className="flex gap-6 items-start">
+                {/* Left Column - National Path (Wider) */}
+                <div className="w-7/12 bg-gray-50 rounded-lg border border-gray-200 p-6 overflow-hidden flex flex-col self-stretch max-h-[55vh]" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
+                  <h3 className="text-2xl font-semibold mb-6 text-center flex items-center justify-center gap-2 flex-shrink-0">
+                    <span className="text-3xl">🌟</span>
+                    National Path
+                  </h3>
+                  <div className="relative flex-grow overflow-y-auto pr-2 -mr-2">
+                    <div className="absolute left-1/2 top-[35px] bottom-[35px] w-0.5 bg-[#67b9e7]/30 -translate-x-1/2" style={{ zIndex: 1 }} />
+                    <div className="relative flex flex-col items-stretch">
+                      {milestones.map((milestone) => (
+                        <div key={milestone.id} style={{ zIndex: 2, position: 'relative' }}>
+                           <PathButton milestone={milestone} onProgressChange={handleProgressChange} />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column - Actions, Intention, Start */}
+                <div className="w-5/12 flex flex-col gap-3">
+                  {/* Actions Box (Reduced min-height further) */}
+                  <div className="bg-white rounded-lg border border-gray-200 p-4 flex-grow min-h-[250px]" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
+                    <h3 className="text-xl font-semibold mb-3 text-center flex items-center justify-center gap-2 flex-shrink-0">
+                      <span className="text-2xl">🎯</span>
+                      Choose your {actionCount} action{actionCount !== 1 ? 's' : ''}
+                    </h3>
+                    <div className="space-y-3 pr-1 -mr-1">
+                      {Array.from({ length: actionCount }, (_, i) => (
+                        <div key={i} className="flex bg-white rounded-lg border border-gray-200 flex-shrink-0" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
+                           <div className="py-2 px-3 border-r border-gray-200 min-w-[80px]">
+                             <span className="text-base text-gray-700">Action {i + 1}</span>
+                           </div>
+                           <CustomDropdown
+                            options={[
+                              { value: "auto", label: "Auto (Random)", icon: "🎲" },
+                              ...FOCUS_ACTIONS.filter(action => action.id !== 'auto').map(action => ({
+                                value: action.id,
+                                label: action.name,
+                                icon: (() => {
+                                  switch (action.id) {
+                                    case 'invest': return '💰';
+                                    case 'develop': return '🏭';
+                                    case 'improve_army': return '⚔️';
+                                    case 'population_growth': return '👥';
+                                    default: return '🎯';
+                                  }
+                                })()
+                              }))
+                            ]}
+                            value={selectedActions[i] || 'auto'}
+                            onChange={(value) => handleActionChange(i, value as ActionType)}
+                            className="flex-1"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Intention Box (Reduced height) */}
+                  <textarea
+                    value={intention}
+                    onChange={(e) => setIntention(e.target.value)}
+                    placeholder="Write your intention..."
+                    className="bg-white text-gray-800 border border-gray-200 rounded-lg px-3 py-2 w-full outline-none text-sm resize-none h-[70px] flex-shrink-0"
+                    style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
+                  />
+
+                  {/* Start Button (Reduced text/padding) */}
+                  <button 
+                    onClick={startFocusSession}
+                    className="mt-auto px-8 py-2 bg-[#6ec53e] text-white rounded-lg font-bold text-xl hover:opacity-90 transition-all duration-200 w-full flex items-center justify-center gap-2 flex-shrink-0"
+                    style={{ boxShadow: '0 4px 0 rgba(89,167,0,255)', transform: 'translateY(-2px)' }}
+                  >
+                    <span className="text-2xl">▶️</span>
+                    Start Focus
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      ) : (
-        <div className="relative z-10">
-          <FocusTimer 
-            userId={userId}
-            initialDuration={duration * 60}
-            onSessionComplete={handleSessionComplete}
-            selectedActions={processedActions}
-            existingSessionId={activeSession?.id}
-            handleModalClose={handleModalClose}
-            executeActionUpdate={executeActionUpdate}
-            playerNationResourceTotals={playerNationResourceTotals}
-            intention={intention}
-            setFocusTimeRemaining={setFocusTimeRemaining}
-            showFocusModal={handleReturnToMap}
-          />
-        </div>
-      )}
+          ) : (
+            <div className="relative z-10">
+              <FocusTimer 
+                userId={userId}
+                initialDuration={duration * 60}
+                onSessionComplete={handleSessionComplete}
+                selectedActions={processedActions}
+                existingSessionId={activeSession?.id}
+                handleModalClose={handleModalClose}
+                executeActionUpdate={executeActionUpdate}
+                playerNationResourceTotals={playerNationResourceTotals}
+                intention={intention}
+                setFocusTimeRemaining={setFocusTimeRemaining}
+                showFocusModal={handleReturnToMap}
+              />
+            </div>
+          )}
+      </div>
     </div>
   );
 };
