@@ -24,32 +24,6 @@ const getWeekDates = () => {
   return eachDayOfInterval({ start, end });
 };
 
-// Calculate streak ending today within the last 7 days
-const calculateStreak = (completedDates: Set<string>): number => {
-  let streak = 0;
-  const todayStr = formatISO(startOfToday(), { representation: 'date' });
-
-  if (!completedDates.has(todayStr)) {
-      return 0; // Must be completed today to have a streak ending today
-  }
-
-  for (let i = 0; i < 7; i++) {
-    const dateToCheck = subDays(startOfToday(), i);
-    const dateStr = formatISO(dateToCheck, { representation: 'date' });
-    if (completedDates.has(dateStr)) {
-      streak++;
-    } else {
-      break; // Streak broken
-    }
-  }
-  return streak;
-};
-
-// Calculate bonus multiplier (1.0x to 1.7x)
-const calculateBonusMultiplier = (streak: number): number => {
-  return 1.0 + Math.min(streak, 7) * 0.1;
-};
-
 export default function HabitsModal({ userId, onClose, executeActionUpdate, playerNationResourceTotals }: HabitsModalProps) {
   const [habits, setHabits] = useState<Habit[]>([]);
   // Map<habitId, Set<YYYY-MM-DD completion dates>>
@@ -157,36 +131,21 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
   };
 
   // Refactored Action Execution Logic: Executes action and returns the processed updates.
-  const executeHabitActionWithBonus = (habit: Habit, date: Date, currentCompletions: Set<string>): (ResourceUpdate | NationResourceUpdate)[] | null => {
+  const executeHabitAction = (habit: Habit): (ResourceUpdate | NationResourceUpdate)[] | null => {
       const actionDef = FOCUS_ACTIONS.find(a => a.id === habit.actionType);
       if (!actionDef) return null;
-
-      const isTodayCompletion = isSameDay(date, todayObj);
-      const streak = calculateStreak(currentCompletions);
-      const bonusMultiplier = isTodayCompletion ? calculateBonusMultiplier(streak) : 1.0;
-
-      if (isTodayCompletion && bonusMultiplier > 1.0) {
-          console.log(`Habit ${habit.id} completed today - Streak: ${streak}, Bonus: ${bonusMultiplier.toFixed(1)}x`);
-      }
-
-      const boostedTotals: playerNationResourceTotals = bonusMultiplier > 1.0 ? {
-          playerGold: Math.floor(playerNationResourceTotals.playerGold * bonusMultiplier),
-          playerIndustry: Math.floor(playerNationResourceTotals.playerIndustry * bonusMultiplier),
-          playerPopulation: Math.floor(playerNationResourceTotals.playerPopulation * bonusMultiplier),
-          playerArmy: playerNationResourceTotals.playerArmy
-      } : playerNationResourceTotals;
 
       let processedUpdates: (ResourceUpdate | NationResourceUpdate)[] = [];
 
       // Wrapper captures the action details *before* executing the state update
       const captureAndExecuteWrapper = (action: Omit<ActionUpdate, 'target'>) => {
           processedUpdates = [...action.updates]; // Capture the exact updates
-          console.log(`Executing habit action (Bonus incorporated via boosted totals):`, action);
+          console.log(`Executing habit action:`, action);
           executeActionUpdate(action); // Call the original prop function from GameView
       };
 
       // Call the action's execute method
-      actionDef.execute(captureAndExecuteWrapper, boostedTotals);
+      actionDef.execute(captureAndExecuteWrapper, playerNationResourceTotals);
 
       return processedUpdates; // Return the updates that were processed
   };
@@ -253,7 +212,7 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
 
         // Execute the action *first* if completing for today
         if (isToday) {
-            const updatesResult = executeHabitActionWithBonus(habit, date, updatedCompletionsSet);
+            const updatesResult = executeHabitAction(habit);
             if (updatesResult) {
                 processedUpdatesForStorage = updatesResult;
                 // Convert the updates array to the Record format for storage & popup
@@ -350,12 +309,12 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
 
       {/* Make modal content relative and higher z-index - Add scale transition */}
       <div 
-        className="relative z-10 bg-white rounded-lg p-6 w-full max-w-4xl [font-family:var(--font-mplus-rounded)] transition-transform duration-300 ease-in-out transform scale-100"
+        className="relative z-10 bg-white rounded-lg p-4 sm:p-6 w-full max-w-md sm:max-w-4xl [font-family:var(--font-mplus-rounded)] transition-transform duration-300 ease-in-out transform scale-100 mx-6 sm:mx-auto"
         style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)' }}
       >
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <span className="text-3xl">🗓️</span>
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <span className="text-2xl sm:text-3xl">🗓️</span>
             Weekly Habits
           </h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
@@ -364,41 +323,53 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
         </div>
 
         {/* Habit Creation Form */}
-        <form onSubmit={handleCreateHabit} className="mb-6 border-b border-gray-200 pb-6">
-          <div className="flex flex-col sm:flex-row gap-4 items-end">
+        <form onSubmit={handleCreateHabit} className="mb-4 sm:mb-6 border-b border-gray-200 pb-4 sm:pb-6">
+          {/* Single row layout for form */}
+          <div className="flex flex-row gap-3 sm:gap-4 items-end w-full"> 
+            {/* Title Input (takes most space) */} 
             <div className="flex-1">
-              <label htmlFor="habitTitle" className="block text-sm font-medium text-gray-700 mb-1">New Habit Title</label>
+              <label htmlFor="habitTitle" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">New Habit Title</label>
               <input
                 id="habitTitle"
                 type="text"
                 placeholder="Enter habit name..."
                 value={newHabit.title}
                 onChange={(e) => setNewHabit({ ...newHabit, title: e.target.value })}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-800 text-base"
+                className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-800 text-sm sm:text-base"
                 required
               />
             </div>
-            <div className="w-full sm:w-[240px]">
-              <label htmlFor="habitActionDropdown" className="block text-sm font-medium text-gray-700 mb-1">Associated Action</label>
+
+            {/* Action Dropdown (width matches table column) */} 
+            <div className="w-[150px] sm:w-[200px] flex-shrink-0">
+              <label htmlFor="habitActionDropdown" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Associated Action</label>
               <CustomDropdown
                 options={FOCUS_ACTIONS.filter(a => a.id !== 'auto').map(action => ({
                   value: action.id,
-                  label: action.name,
-                  icon: getActionIcon(action.id) // Use helper function for icon
+                  label: action.id === 'invest' ? 'Economy' :
+                         action.id === 'develop' ? 'Industry' :
+                         action.id === 'improve_army' ? 'Army' :
+                         action.id === 'population_growth' ? 'Pop.' :
+                         action.name,
+                  icon: getActionIcon(action.id)
                 }))}
                 value={newHabit.actionType}
                 onChange={(value) => setNewHabit({ ...newHabit, actionType: value as ActionType })}
-                className="w-full"
+                className="w-full text-sm"
               />
             </div>
-            <button
-              type="submit"
-              className="bg-[#67b9e7] text-white py-3 px-4 rounded-lg font-semibold hover:opacity-90 transition-all duration-200 text-base w-full sm:w-auto flex items-center justify-center gap-2 cursor-pointer hover:transform hover:-translate-y-0.5 active:translate-y-0 whitespace-nowrap"
-              style={{ boxShadow: '0 4px 0 #4792ba' }}
-            >
-              <span className="text-xl text-white">➕</span>
-              Add Habit
-            </button>
+
+            {/* Add Button (nudged up for better alignment) */}
+            <div className="flex-shrink-0 relative" style={{ top: '-2px'}}>
+              <button
+                type="submit"
+                className="bg-[#67b9e7] text-white py-2 px-3 sm:py-3 sm:px-4 rounded-lg font-semibold hover:opacity-90 transition-all duration-200 text-sm sm:text-base w-auto flex items-center justify-center gap-1 sm:gap-2 cursor-pointer hover:transform hover:-translate-y-0.5 active:translate-y-0 whitespace-nowrap" 
+                style={{ boxShadow: '0 4px 0 #4792ba' }}
+              >
+                <span className="text-lg sm:text-xl text-white">➕</span>
+                <span className="hidden sm:inline">Add Habit</span>
+              </button>
+            </div>
           </div>
         </form>
 
@@ -412,57 +383,47 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
             <table className="w-full border-collapse text-left">
               <thead>
                 <tr className="border-b border-gray-200">
-                  <th className="py-3 px-2 text-sm font-semibold text-gray-600 w-1/3">Habit</th>
-                  <th className="py-3 px-1 text-center text-sm font-semibold text-gray-600 w-[50px]">Streak</th>
-                  <th className="py-3 px-2 text-center text-sm font-semibold text-gray-600 w-[200px]">Action</th>
+                  <th className="py-2 px-1 sm:py-3 sm:px-2 text-xs sm:text-sm font-semibold text-gray-600 w-1/3">Habit</th>
+                  {/* Width definition for Action column header */}
+                  <th className="py-2 px-1 sm:py-3 sm:px-2 text-center text-xs sm:text-sm font-semibold text-gray-600 w-[150px] sm:w-[200px]">Action</th>
                   {weekDates.map(date => (
-                    <th key={formatISO(date)} className="py-3 px-1 text-center text-sm font-semibold text-gray-600 w-[40px]">
+                    <th key={formatISO(date)} className="py-2 px-1 text-center text-xs sm:text-sm font-semibold text-gray-600 w-[35px] sm:w-[40px]">
                       {format(date, 'E')}<br/>{format(date, 'd')}
                     </th>
                   ))}
-                  <th className="py-3 px-2 text-center text-sm font-semibold text-gray-600 w-[60px]">Bonus</th>
-                  <th className="py-3 px-1 text-center text-sm font-semibold text-gray-600 w-[40px]"></th>
+                  <th className="py-2 px-1 text-center text-xs sm:text-sm font-semibold text-gray-600 w-[35px] sm:w-[40px]"></th>
                 </tr>
               </thead>
               {/* Add ref to tbody */}
               <tbody ref={tableBodyRef}>
                 {habits.map(habit => {
                   const habitCompletions = completions.get(habit.id) || new Set();
-                  const streak = calculateStreak(habitCompletions);
-                  const bonusMultiplier = calculateBonusMultiplier(streak);
-                  const bonusText = bonusMultiplier > 1.0 ? `+${((bonusMultiplier - 1.0) * 100).toFixed(0)}%` : '-';
                   const isCompletedToday = habitCompletions.has(todayStr);
 
                   // Determine emoji style
-                  const showGrayscale = streak === 0 && !isCompletedToday;
+                  const showGrayscale = !isCompletedToday;
 
                   return (
                     <tr key={habit.id} className="border-b border-gray-100 hover:bg-gray-50">
                       {/* Habit Title */}
-                      <td className="py-3 px-2 text-base text-gray-800 font-medium align-middle">
+                      <td className="py-2 px-1 sm:py-3 sm:px-2 text-sm sm:text-base text-gray-800 font-medium align-middle">
                         {habit.title}
                       </td>
-                      {/* Streak Indicator Cell */}
-                      <td className="py-3 px-1 text-center align-middle">
-                        <span
-                            className={`inline-block text-lg ${showGrayscale ? 'grayscale' : ''}`}
-                            style={{ filter: showGrayscale ? 'grayscale(100%)' : 'none' }}
-                            title={`Current Streak: ${streak}`}>
-                                🔥
-                        </span>
-                        <span className="ml-1 text-sm font-semibold text-gray-700">{streak}</span>
-                      </td>
                       {/* Action Dropdown */}
-                      <td className="py-2 px-1 align-middle">
+                      <td className="py-1 sm:py-2 px-1 align-middle">
                         <CustomDropdown
                           options={FOCUS_ACTIONS.filter(a => a.id !== 'auto').map(action => ({
                             value: action.id,
-                            label: action.name,
+                            label: action.id === 'invest' ? 'Economy' :
+                                   action.id === 'develop' ? 'Industry' :
+                                   action.id === 'improve_army' ? 'Army' :
+                                   action.id === 'population_growth' ? 'Pop.' :
+                                   action.name,
                             icon: getActionIcon(action.id) // Use helper function
                           }))}
                           value={habit.actionType}
                           onChange={(value) => handleActionChange(habit.id, value as ActionType)}
-                          className="w-full text-sm"
+                          className="w-full text-xs sm:text-sm"
                         />
                       </td>
                       {/* Weekly Completion Cells - Updated for toggling ONLY today */}
@@ -473,12 +434,12 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
                         const isPast = !isToday && !isFuture(date);
 
                         return (
-                          <td key={dateKey} className="py-2 px-1 text-center align-middle">
+                          <td key={dateKey} className="py-1 sm:py-2 px-1 text-center align-middle">
                             {isToday ? (
                               // Render the button ONLY for today
                               <button
                                 onClick={() => handleToggleCompletion(habit, date)}
-                                className={`w-7 h-7 rounded-full border-2 flex items-center justify-center mx-auto transition-colors text-lg font-bold ${isCompleted
+                                className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full border-2 flex items-center justify-center mx-auto transition-colors text-base sm:text-lg font-bold ${isCompleted
                                     ? 'bg-green-500 border-green-600 text-white hover:bg-green-600'
                                     : 'bg-gray-100 border-blue-500 text-gray-400 hover:border-green-500 hover:bg-green-100 hover:text-green-600' // Add blue border when today & incomplete
                                   }`}
@@ -488,23 +449,19 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
                               </button>
                             ) : (
                               // Render static indicator for past or future days
-                              <div className={`w-7 h-7 rounded-full flex items-center justify-center mx-auto ${isCompleted ? 'bg-green-500 text-white' : (isPast ? 'bg-gray-200' : 'bg-gray-200 opacity-50')}`}>
-                                {isCompleted && <span className="text-lg font-bold">✓</span>}
+                              <div className={`w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center mx-auto ${isCompleted ? 'bg-green-500 text-white' : (isPast ? 'bg-gray-200' : 'bg-gray-200 opacity-50')}`}>
+                                {isCompleted && <span className="text-base sm:text-lg font-bold">✓</span>}
                                 {/* Optionally display something different for past empty vs future empty */}
                               </div>
                             )}
                           </td>
                         );
                       })}
-                      {/* Bonus Percentage */}
-                      <td className={`py-3 px-2 text-center align-middle text-sm font-semibold ${bonusMultiplier > 1.0 ? 'text-green-600' : 'text-gray-500'}`}>
-                        {bonusText}
-                      </td>
                       {/* Delete Button */}
-                      <td className="py-2 px-1 text-center align-middle">
+                      <td className="py-1 sm:py-2 px-1 text-center align-middle">
                         <button
                           onClick={() => handleDeleteHabit(habit.id)}
-                          className="w-7 h-7 rounded-full text-red-500 hover:bg-red-100 flex items-center justify-center mx-auto transition-colors font-bold text-lg"
+                          className="w-6 h-6 sm:w-7 sm:h-7 rounded-full text-red-500 hover:bg-red-100 flex items-center justify-center mx-auto transition-colors font-bold text-base sm:text-lg"
                           title="Delete habit"
                         >
                           ✕

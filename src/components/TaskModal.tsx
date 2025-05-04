@@ -109,7 +109,7 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ease-in-out opacity-100"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-40 sm:pt-28 md:pt-21 lg:pt-21 xl:pt-21 2xl:pt-21  transition-opacity duration-300 ease-in-out opacity-100"
     >
       {/* Transparent Backdrop for closing */}
       <div 
@@ -117,14 +117,14 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
         onClick={onClose}
       ></div>
 
-      {/* Make modal content relative and higher z-index - Add scale transition */}
+      {/* Modal Content Container - Add scale transition */}
       <div 
-        className="relative z-10 bg-white rounded-lg p-6 w-full max-w-2xl [font-family:var(--font-mplus-rounded)] transition-transform duration-300 ease-in-out transform scale-100"
+        className={`relative z-10 bg-white rounded-lg p-4 sm:p-6 w-full max-w-lg sm:max-w-2xl [font-family:var(--font-mplus-rounded)] transition-transform duration-300 ease-in-out transform scale-100 mx-4 sm:mx-auto`}
         style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)' }}
       >
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-            <span className="text-3xl">📋</span>
+        <div className="flex justify-between items-center mb-4 sm:mb-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <span className="text-2xl sm:text-3xl">📋</span>
             Tasks
           </h2>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
@@ -132,21 +132,26 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
           </button>
         </div>
 
-        <form onSubmit={handleCreateTask} className="mb-6">
-          <div className="flex flex-col gap-4">
-            <div className="flex gap-4">
+        <form onSubmit={handleCreateTask} className="mb-4 sm:mb-6">
+          <div className="flex flex-col gap-3 sm:gap-4">
+            {/* Stack input and dropdown on small screens */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               <input
                 type="text"
-                placeholder="Enter your task here..."
+                placeholder="Enter task..."
                 value={newTask.title}
                 onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 text-lg"
+                className="flex-1 px-3 py-2 sm:px-4 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 text-base sm:text-lg"
                 required
               />
               <CustomDropdown
                 options={FOCUS_ACTIONS.map(action => ({
                   value: action.id,
-                  label: action.name,
+                  label: action.id === 'invest' ? 'Economy' : 
+                         action.id === 'develop' ? 'Industry' : 
+                         action.id === 'improve_army' ? 'Army' : 
+                         action.id === 'population_growth' ? 'Pop.' : 
+                         action.name,
                   icon: (() => {
                     switch (action.id) {
                       case 'invest': return '💰';
@@ -159,49 +164,49 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
                 }))}
                 value={newTask.actionType}
                 onChange={(value) => setNewTask({ ...newTask, actionType: value as any })}
-                className="w-[240px]"
+                className="w-full sm:w-[240px] text-sm sm:text-base"
               />
             </div>
             <button
               type="submit"
-              className="bg-[#67b9e7] text-white py-3 px-4 rounded-lg font-semibold hover:opacity-90 transition-all duration-200 text-lg w-full flex items-center justify-center gap-2 cursor-pointer hover:transform hover:-translate-y-0.5 active:translate-y-0"
+              className="bg-[#67b9e7] text-white py-2 sm:py-3 px-4 rounded-lg font-semibold hover:opacity-90 transition-all duration-200 text-base sm:text-lg w-full flex items-center justify-center gap-2 cursor-pointer hover:transform hover:-translate-y-0.5 active:translate-y-0"
               style={{ boxShadow: '0 4px 0 #4792ba' }}
             >
-              <span className="text-2xl text-white">➕</span>
+              <span className="text-xl sm:text-2xl text-white">➕</span>
               Add Task
             </button>
           </div>
         </form>
 
         <div className="border-t border-gray-200">
-          <div className="flex gap-4 -mb-px">
+          <div className="flex gap-2 sm:gap-4 -mb-px">
             <button
               onClick={() => setActiveTab('active')}
-              className={`px-4 py-2 font-semibold text-lg border-b-2 transition-colors ${
+              className={`px-3 py-2 sm:px-4 font-semibold text-base sm:text-lg border-b-2 transition-colors ${
                 activeTab === 'active'
                   ? 'border-[#67b9e7] text-[#67b9e7]'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              Active Tasks ({activeTasks.length})
+              Active ({activeTasks.length})
             </button>
             <button
               onClick={() => setActiveTab('completed')}
-              className={`px-4 py-2 font-semibold text-lg border-b-2 transition-colors ${
+              className={`px-3 py-2 sm:px-4 font-semibold text-base sm:text-lg border-b-2 transition-colors ${
                 activeTab === 'completed'
                   ? 'border-[#67b9e7] text-[#67b9e7]'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              Completed Tasks ({completedTasks.length})
+              Completed ({completedTasks.length})
             </button>
           </div>
           
-          <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 pt-6">
+          <div className="space-y-3 sm:space-y-4 max-h-[300px] sm:max-h-[400px] overflow-y-auto pr-2 pt-4 sm:pt-6">
             {isLoading ? (
-              <div className="text-center py-4 text-gray-800">Loading tasks...</div>
+              <div className="text-center py-4 text-gray-800 text-sm sm:text-base">Loading tasks...</div>
             ) : filteredTasks.length === 0 ? (
-              <div className="text-center py-4 text-gray-800">
+              <div className="text-center py-4 text-gray-800 text-sm sm:text-base">
                 {activeTab === 'active' ? 'No active tasks' : 'No completed tasks'}
               </div>
             ) : (
@@ -210,17 +215,17 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
                 return (
                   <div
                     key={task.id}
-                    className={`p-4 rounded-lg border ${
+                    className={`p-2 sm:p-4 rounded-lg border ${
                       task.completed ? 'bg-gray-50 border-gray-200' : 'bg-white border-gray-200'
                     }`}
                     style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
                   >
-                    <div className="flex justify-between items-center">
-                      <div className="flex-1">
-                        <h3 className={`text-lg font-semibold ${task.completed ? 'text-gray-500 line-through' : 'text-gray-800'}`}>
+                    <div className="flex flex-row justify-between items-center">
+                      <div className="flex-1 mr-2">
+                        <h3 className={`text-base sm:text-lg font-semibold ${task.completed ? 'text-gray-500 line-through' : 'text-gray-800'} leading-tight`}>
                           {task.title}
                         </h3>
-                        <div className="mt-2 flex items-center gap-2 text-sm text-gray-800">
+                        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0 text-xs sm:text-sm text-gray-800">
                           {(() => {
                             const getActionEffect = () => {
                               switch (task.actionType) {
@@ -246,7 +251,7 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
                             };
 
                             return (
-                              <span className="text-base font-medium">
+                              <span className="text-sm sm:text-base font-medium">
                                 {getActionEffect()}
                               </span>
                             );
@@ -255,24 +260,24 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
                           <span>🕒 {format(new Date(task.createdAt), 'MMM d, yyyy')}</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 ml-4">
+                      <div className="flex items-center gap-2 flex-shrink-0">
                         {!task.completed && (
                           <button
                             onClick={() => handleCompleteTask(task)}
-                            className="px-3 py-2 rounded-lg text-white hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-2 text-base [font-family:var(--font-mplus-rounded)] cursor-pointer hover:transform hover:-translate-y-0.5 active:translate-y-0"
+                            className="px-2 py-1 sm:px-3 sm:py-2 rounded-lg text-white hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-1 text-sm sm:text-base [font-family:var(--font-mplus-rounded)] cursor-pointer hover:transform hover:-translate-y-0.5 active:translate-y-0"
                             style={{ 
                               backgroundColor: '#6ec53e',
                               boxShadow: '0 3px 0 rgba(89,167,0,255)',
                               transform: 'translateY(-1px)'
                             }}
                           >
-                            <span className="text-lg">✓</span>
-                            <span>Complete</span>
+                            <span className="text-base sm:text-lg">✓</span>
+                            <span className="hidden sm:inline">Complete</span>
                           </button>
                         )}
                         <button
                           onClick={() => handleDeleteTask(task.id)}
-                          className="w-10 h-10 rounded-lg text-white hover:opacity-90 transition-all duration-200 flex items-center justify-center text-xl ml-2 [font-family:var(--font-mplus-rounded)] font-bold cursor-pointer hover:transform hover:-translate-y-0.5 active:translate-y-0"
+                          className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg text-white hover:opacity-90 transition-all duration-200 flex items-center justify-center text-lg sm:text-xl ml-1 sm:ml-2 [font-family:var(--font-mplus-rounded)] font-bold cursor-pointer hover:transform hover:-translate-y-0.5 active:translate-y-0"
                           style={{ 
                             backgroundColor: '#dc2626',
                             boxShadow: '0 3px 0 #991b1b',

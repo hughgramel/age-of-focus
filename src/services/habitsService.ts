@@ -3,7 +3,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Habit, HabitCreate, HabitUpdate, HabitCompletion, HabitCompletionFirestore } from '@/types/habit';
-import { startOfWeek, endOfWeek, eachDayOfInterval, formatISO, parseISO, startOfDay, endOfDay, startOfToday } from 'date-fns'; // Correct date-fns imports
+import { startOfWeek, endOfWeek, formatISO, startOfDay, endOfDay, subDays } from 'date-fns'; // Removed unused eachDayOfInterval, parseISO, startOfToday; Added subDays
 
 export class HabitsService {
   private static HABITS_COLLECTION = 'habits';
@@ -141,10 +141,13 @@ export class HabitsService {
     const completionsMap = new Map<string, Set<string>>();
     if (habitIds.length === 0) return completionsMap;
 
-    const weekStartDateCorrected = startOfWeek(weekStartDate, { weekStartsOn: 0 }); // Ensure we start from the actual week start
-    const weekEndDate = endOfWeek(weekStartDateCorrected, { weekStartsOn: 0 }); // Use endOfWeek
-    const startDateTimestamp = Timestamp.fromDate(startOfDay(weekStartDateCorrected)); // Use startOfDay
-    const endDateTimestamp = Timestamp.fromDate(endOfDay(weekEndDate)); // Use endOfDay
+    // Fetch data for the current week plus the previous 7 days to ensure streak calculation is correct
+    const currentWeekStart = startOfWeek(weekStartDate, { weekStartsOn: 0 });
+    const queryStartDate = subDays(currentWeekStart, 7); // Start query 7 days before the current week starts
+    const queryEndDate = endOfWeek(currentWeekStart, { weekStartsOn: 0 }); // End query at the end of the current week
+
+    const startDateTimestamp = Timestamp.fromDate(startOfDay(queryStartDate));
+    const endDateTimestamp = Timestamp.fromDate(endOfDay(queryEndDate));
 
     // Firestore 'in' query is limited to 30 elements, chunk if necessary
     const chunkSize = 30;

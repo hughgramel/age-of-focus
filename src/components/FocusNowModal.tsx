@@ -496,7 +496,7 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-start justify-center pt-26 transition-opacity duration-300 ease-in-out opacity-100"
+      className="fixed inset-0 z-50 flex items-start justify-center pt-30 sm:pt-28 md:pt-24 lg:pt-22 xl:pt-22 2xl:pt-22 transition-opacity duration-300 ease-in-out opacity-100"
     >
       {/* Transparent Backdrop for closing */}
       <div 
@@ -506,7 +506,7 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
       
       {/* Modal Content Container - Add scale transition */}
       <div 
-        className={`relative z-10 w-full max-w-md sm:max-w-3xl transition-transform duration-300 ease-in-out transform scale-100`}
+        className={`relative z-10 w-full max-w-md sm:max-w-3xl transition-transform duration-300 ease-in-out transform scale-100 px-4 sm:px-0`}
       >
           {!sessionStarted && !activeSession && !showCompletionScreen ? (
             <div className="relative bg-white rounded-lg border border-gray-200 text-black p-4 sm:p-6 [font-family:var(--font-mplus-rounded)]" style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}>
@@ -555,7 +555,7 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
                       {Array.from({ length: actionCount }, (_, i) => (
                         <div key={i} className="flex bg-white rounded-lg border border-gray-200 flex-shrink-0" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
                            {/* Adjusted label padding/width */}
-                           <div className="py-2 px-2 sm:px-3 border-r border-gray-200 min-w-[70px] sm:min-w-[80px] flex items-center">
+                           <div className="py-2 px-2 sm:px-3 border-r border-gray-200 min-w-[60px] sm:min-w-[60px] flex items-center">
                              <span className="text-sm sm:text-base text-gray-700">Action {i + 1}</span>
                            </div>
                            <CustomDropdown
@@ -567,7 +567,7 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
                                 label: action.id === 'invest' ? 'Economy' : 
                                        action.id === 'develop' ? 'Industry' : 
                                        action.id === 'improve_army' ? 'Army' : 
-                                       action.id === 'population_growth' ? 'Pop.' : 
+                                       action.id === 'population_growth' ? 'Population' : 
                                        action.name, // Fallback if ID doesn't match known types
                                 icon: (() => {
                                   switch (action.id) {
@@ -582,7 +582,7 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
                             ]}
                             value={selectedActions[i] || 'auto'}
                             onChange={(value) => handleActionChange(i, value as ActionType)}
-                            className="flex-1"
+                            className="flex-1 text-sm sm:text-base [&>button]:justify-center sm:[&>button]:justify-between"
                           />
                         </div>
                       ))}
