@@ -506,10 +506,10 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
       
       {/* Modal Content Container - Add scale transition */}
       <div 
-        className={`relative z-10 w-full max-w-3xl transition-transform duration-300 ease-in-out transform scale-100`}
+        className={`relative z-10 w-full max-w-md sm:max-w-3xl transition-transform duration-300 ease-in-out transform scale-100`}
       >
           {!sessionStarted && !activeSession && !showCompletionScreen ? (
-            <div className="relative bg-white rounded-lg border border-gray-200 text-black p-6 [font-family:var(--font-mplus-rounded)]" style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}>
+            <div className="relative bg-white rounded-lg border border-gray-200 text-black p-4 sm:p-6 [font-family:var(--font-mplus-rounded)]" style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}>
               {/* Add Close Button */}
               <button 
                 onClick={handleModalClose} 
@@ -550,18 +550,25 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
                       <span className="text-2xl">🎯</span>
                       Choose your {actionCount} action{actionCount !== 1 ? 's' : ''}
                     </h3>
-                    <div className="grid grid-cols-2 gap-3 pr-1 -mr-1">
+                    {/* Always 2 columns, adjust gap */}
+                    <div className="grid grid-cols-2 gap-2 pr-1 -mr-1">
                       {Array.from({ length: actionCount }, (_, i) => (
                         <div key={i} className="flex bg-white rounded-lg border border-gray-200 flex-shrink-0" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
-                           <div className="py-2 px-3 border-r border-gray-200 min-w-[80px]">
-                             <span className="text-base text-gray-700">Action {i + 1}</span>
+                           {/* Adjusted label padding/width */}
+                           <div className="py-2 px-2 sm:px-3 border-r border-gray-200 min-w-[70px] sm:min-w-[80px] flex items-center">
+                             <span className="text-sm sm:text-base text-gray-700">Action {i + 1}</span>
                            </div>
                            <CustomDropdown
                             options={[
-                              { value: "auto", label: "Auto (Random)", icon: "🎲" },
+                              { value: "auto", label: "Auto", icon: "🎲" }, 
                               ...FOCUS_ACTIONS.filter(action => action.id !== 'auto').map(action => ({
                                 value: action.id,
-                                label: action.name,
+                                // Use resource type as label based on ID
+                                label: action.id === 'invest' ? 'Economy' : 
+                                       action.id === 'develop' ? 'Industry' : 
+                                       action.id === 'improve_army' ? 'Army' : 
+                                       action.id === 'population_growth' ? 'Pop.' : 
+                                       action.name, // Fallback if ID doesn't match known types
                                 icon: (() => {
                                   switch (action.id) {
                                     case 'invest': return '💰';
@@ -582,12 +589,12 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
                     </div>
                   </div>
 
-                  {/* Intention Box (Increased height) */}
+                  {/* Intention Box (Increased height and font size) */}
                   <textarea
                     value={intention}
                     onChange={(e) => setIntention(e.target.value)}
                     placeholder="Write your intention..."
-                    className="bg-white text-gray-800 border border-gray-200 rounded-lg px-3 py-2 w-full outline-none text-sm resize-none h-[100px] flex-shrink-0"
+                    className="bg-white text-gray-800 border border-gray-200 rounded-lg px-3 py-2 w-full outline-none text-base resize-none h-[100px] flex-shrink-0"
                     style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
                   />
 
