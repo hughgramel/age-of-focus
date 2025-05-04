@@ -26,7 +26,7 @@ export default function ButtonGroup({
   focusTimeRemaining
 }: ButtonGroupProps) {
   return (
-    <div className="fixed bottom-8 left-0 right-0 flex justify-center items-center gap-4 sm:gap-6">
+    <div className="fixed bottom-4 sm:bottom-8 left-0 right-0 flex justify-center items-center gap-2 sm:gap-6 px-2 sm:px-0">
       <div className="flex-shrink-0">
         <TaskListButton fadeIn={fadeIn} onClick={onTaskListClick} />
       </div>

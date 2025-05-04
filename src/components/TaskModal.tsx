@@ -225,13 +225,12 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
                             const getActionEffect = () => {
                               switch (task.actionType) {
                                 case 'invest': {
-                                  const goldGain = Math.floor(playerNationResourceTotals.playerGold * 0.15);
+                                  const goldGain = 1000 + Math.floor(playerNationResourceTotals.playerGold * 0.15);
                                   return `+${goldGain.toLocaleString()} 💰`;
                                 }
                                 case 'develop': {
-                                  const industryGain = Math.floor(playerNationResourceTotals.playerIndustry * 0.1);
-                                  const developGoldGain = Math.floor(playerNationResourceTotals.playerGold * 0.03);
-                                  return `+${industryGain.toLocaleString()} 🏭, +${developGoldGain.toLocaleString()} 💰`;
+                                  const industryGain = 200 + Math.floor(playerNationResourceTotals.playerIndustry * 0.1);
+                                  return `+${industryGain.toLocaleString()} 🏭`;
                                 }
                                 case 'improve_army': {
                                   const armyGain = Math.floor(playerNationResourceTotals.playerPopulation * 0.0006);

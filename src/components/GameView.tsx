@@ -405,7 +405,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           </button>` : ''}
         `;
 
-          provincePopupRef.current = popup;
+        provincePopupRef.current = popup;
         document.body.appendChild(popup);
 
         const showNationButton = popup.querySelector('#showNationButton');
@@ -780,86 +780,105 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
       if (slotNumber === null) throw new Error('Could not find save slot');
 
       // --- Local State Update --- Create a deep copy for calculation/saving
-      const updatedGame = JSON.parse(JSON.stringify(localGame));
-      const provinceIndex = updatedGame.provinces.findIndex((p: Province) => p.id === targetProvinceId);
-      const nationIndex = updatedGame.nations.findIndex((n: Nation) => n.nationTag === updatedGame.playerNationTag);
+      // const updatedGame = JSON.parse(JSON.stringify(localGame)); 
+      // --- Optimistic UI Update --- 
+      const nationIndex = localGame.nations.findIndex((n: Nation) => n.nationTag === localGame.playerNationTag);
       let needsResourceRecalc = false;
       let nationGoldChanged = false; // Track if nation gold specifically changed
+      let tempNationGold = playerNationResourceTotals.playerGold; // Start with current UI gold
+      let tempPopulation = playerNationResourceTotals.playerPopulation;
+      let tempIndustry = playerNationResourceTotals.playerIndustry;
+      let tempArmy = playerNationResourceTotals.playerArmy;
 
-      if (provinceIndex !== -1) {
+      // Calculate the expected changes based on the action
         action.updates.forEach(update => {
           const { resource, amount } = update;
+        needsResourceRecalc = true; // Assume any resource update requires recalc for simplicity
           switch (resource) {
             case 'population':
-              updatedGame.provinces[provinceIndex].population += amount;
-              needsResourceRecalc = true;
+            tempPopulation += amount;
               break;
-            case 'gold': // Apply gold updates to the NATION in the copied state
-              if (nationIndex !== -1) {
-                updatedGame.nations[nationIndex].gold += amount;
-                needsResourceRecalc = true; // Gold affects totals
+          case 'gold': // Apply gold updates to the NATION 
+             if (nationIndex !== -1) { // Check if player nation exists
+               tempNationGold += amount;
                 nationGoldChanged = true;   // Mark that nation gold changed
               }
               break;
             case 'industry':
-              updatedGame.provinces[provinceIndex].industry += amount;
-              needsResourceRecalc = true;
+            tempIndustry += amount;
               break;
             case 'army':
-              updatedGame.provinces[provinceIndex].army += amount;
-              needsResourceRecalc = true;
+            tempArmy += amount;
               break;
-            // Handle other resource types if necessary
-            // case 'goldIncome': // NOTE: goldIncome update logic might be different
-            //   updatedGame.provinces[provinceIndex].goldIncome += amount;
-            //   needsResourceRecalc = true;
-            //   break;
-          }
-        });
+        }
+      });
 
-        // --- Update Display State ONLY --- Calculate new totals based on updatedGame
-        if (needsResourceRecalc && nationIndex !== -1) {
-            const playerProvinces = updatedGame.provinces.filter(
-                (p: Province) => p.ownerTag === updatedGame.playerNationTag
-            );
+      // Update Display State ONLY with calculated optimistic values
+      if (needsResourceRecalc) {
             const newTotals = {
-                playerGold: updatedGame.nations[nationIndex].gold,
-                playerIndustry: playerProvinces.reduce((sum: number, p: { industry: number }) => sum + p.industry, 0),
-                playerPopulation: playerProvinces.reduce((sum: number, p: { population: number }) => sum + p.population, 0),
-                playerArmy: playerProvinces.reduce((sum: number, p: { army: number }) => sum + p.army, 0)
+              playerGold: tempNationGold,
+              playerIndustry: tempIndustry, 
+              playerPopulation: tempPopulation,
+              playerArmy: tempArmy
             };
             setPlayerNationResourceTotals(newTotals);
-            console.log('Updated playerNationResourceTotals state:', newTotals);
-        }
+          console.log('Optimistically updated playerNationResourceTotals state:', newTotals);
+      }
+      // If nation gold specifically changed, update the playerGold state for the resource bar
+      if (nationGoldChanged) {
+          setPlayerGold(tempNationGold);
+          console.log('Optimistically updated playerGold state:', tempNationGold);
+      }
+      // --- End Optimistic UI Update ---
 
-        // If nation gold specifically changed, update the playerGold state
-        if (nationGoldChanged && nationIndex !== -1) {
-            setPlayerGold(updatedGame.nations[nationIndex].gold);
-            console.log('Updated playerGold state:', updatedGame.nations[nationIndex].gold);
-        }
-        // --- End Display State Update ---
+      // Process action and save using the *original* localGame state. 
+      // ActionService should handle applying the action to this state and saving.
+      // await ActionService.processActions(user.uid, slotNumber, localGame, [actionWithTarget]); 
+      
+      // --- Apply changes and Save Directly --- 
+      const updatedGame = JSON.parse(JSON.stringify(localGame));
+      const playerNationIndex = updatedGame.nations.findIndex((n: Nation) => n.nationTag === updatedGame.playerNationTag);
+      const targetProvinceForUpdateIndex = updatedGame.provinces.findIndex((p: Province) => p.id === targetProvinceId);
 
-        // REMOVED: setLocalGame(updatedGame); // Do NOT update the main localGame state here
-
-        console.log(`Calculated update for province ${targetProvinceName}:`, updatedGame.provinces[provinceIndex]);
-        if (nationIndex !== -1) console.log(`Calculated update for nation ${updatedGame.nations[nationIndex].nationTag}:`, updatedGame.nations[nationIndex]);
-
-      } else {
-          console.error(`Target province ${targetProvinceId} not found in local game state copy.`);
-          return; // Don't proceed if province not found
+      if (playerNationIndex === -1) {
+         console.error('Player nation not found in game state copy for saving.');
+         return;
+      }
+      if (targetProvinceForUpdateIndex === -1) {
+          console.warn(`Target province ${targetProvinceId} for resource update not found. Some non-gold resources may not be applied.`);
+          // Allow continuing for gold updates, but other resource updates might fail. 
       }
 
-      // Process action and save the UPDATED game state to Firebase in the background
-      await ActionService.processActions(user.uid, slotNumber, updatedGame, [actionWithTarget]);
-
-      // Show feedback for each update
       action.updates.forEach(update => {
-          const feedback = document.createElement('div');
-          feedback.textContent = `+${update.amount} ${update.resource} in ${targetProvinceName}!`;
-          feedback.className = 'fixed bottom-24 left-4 z-50 bg-[#0B1423] p-3 rounded-lg border border-[#FFD700] text-[#FFD700] historical-game-title';
-          document.body.appendChild(feedback);
-          setTimeout(() => feedback.remove(), 2000);
+          const { resource, amount } = update;
+          switch (resource) {
+              case 'population':
+                  if (targetProvinceForUpdateIndex !== -1) {
+                      updatedGame.provinces[targetProvinceForUpdateIndex].population = Math.max(0, updatedGame.provinces[targetProvinceForUpdateIndex].population + amount);
+                  }
+                  break;
+              case 'gold':
+                  updatedGame.nations[playerNationIndex].gold = Math.max(0, updatedGame.nations[playerNationIndex].gold + amount);
+                  break;
+              case 'industry':
+                   if (targetProvinceForUpdateIndex !== -1) {
+                      updatedGame.provinces[targetProvinceForUpdateIndex].industry = Math.max(0, updatedGame.provinces[targetProvinceForUpdateIndex].industry + amount);
+                  }
+                  break;
+              case 'army':
+                   if (targetProvinceForUpdateIndex !== -1) {
+                      updatedGame.provinces[targetProvinceForUpdateIndex].army = Math.max(0, updatedGame.provinces[targetProvinceForUpdateIndex].army + amount);
+                  }
+                  break;
+          }
       });
+
+       console.log(`Saving updated game state after action. Gold: ${updatedGame.nations[playerNationIndex].gold}, Target Province (${targetProvinceId}) Pop: ${targetProvinceForUpdateIndex !== -1 ? updatedGame.provinces[targetProvinceForUpdateIndex].population: 'N/A'}`);
+
+      // Save the explicitly updated game state
+      await GameService.saveGame(user.uid, slotNumber, updatedGame, 'habit-toggle-update');
+      // --- End Apply changes and Save Directly ---
+
 
       console.log('Action executed successfully');
     } catch (error) {
@@ -984,11 +1003,11 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
   return (
     <div className={`fixed inset-0 overflow-hidden bg-[#0B1423] transition-opacity ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
       {!isInConqueringMode && (
-        <div className="absolute top-0 left-0 right-0 z-40 flex flex-col md:flex-row items-center p-4">
-        <div className="absolute left-4">
+        <div className="absolute top-0 left-0 right-0 z-40 flex flex-row items-center justify-between p-2 sm:p-4 w-full">
+          <div className="flex-shrink-0">
           <BackButton onClick={onBack} />
         </div>
-        <div className="flex-1 flex justify-center">
+          <div className="flex justify-center flex-grow px-2">
           {localGame && (
             <ResourceBar
               playerGold={currentGold}
@@ -1001,7 +1020,10 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             />
           )}
         </div>
+          <div className="flex-shrink-0 invisible" style={{width: '48px', height: '48px'}}>
+            <BackButton onClick={() => {}} />
       </div>
+        </div>
       )}
 
       {/* Conquest Mode Text Prompt */}
@@ -1093,7 +1115,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           executeActionUpdate={executeActionUpdate}
           playerNationResourceTotals={playerNationResourceTotals}
         />
-        )}
+      )}
       </div>
       {/* Habits Modal - always render but control visibility with style */}
       <div id="habits-modal" style={{ display: isHabitsModalOpen ? 'block' : 'none' }}>

@@ -26,7 +26,7 @@ export const FOCUS_ACTIONS: FocusAction[] = [
     name: 'Invest in the Economy',
     description: 'Invest in the economy and production',
     execute: (executeActionUpdate: (action: Omit<ActionUpdate, 'target'>) => void, playerNationResourceTotals: playerNationResourceTotals) => {
-      const goldToInvest = 1000 + Math.floor(playerNationResourceTotals.playerGold * 0.15);
+      const goldToInvest = 1000 + Math.floor(playerNationResourceTotals.playerIndustry * 0.15);
 
       // Invest in the Economy adds (gold * 0.15) gold to the player's gold
       const action = {
@@ -45,13 +45,11 @@ export const FOCUS_ACTIONS: FocusAction[] = [
     execute: (executeActionUpdate: (action: Omit<ActionUpdate, 'target'>) => void, playerNationResourceTotals: playerNationResourceTotals) => {
       console.log('Executing develop action');
       // -  develop industry adds (industry * 0.1) industry and (gold * 0.03) gold. 
-      const goldToInvest = Math.floor(playerNationResourceTotals.playerGold * 0.03);
-      const industryToInvest = Math.floor(playerNationResourceTotals.playerIndustry * 0.1);
+      const industryToInvest = 200 + Math.floor(playerNationResourceTotals.playerIndustry * 0.1);
 
       const action = {
         type: 'resources',
         updates: [
-          { resource: 'gold', amount: goldToInvest },
           { resource: 'industry', amount: industryToInvest }
         ]
       };
