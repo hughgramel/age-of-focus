@@ -258,8 +258,8 @@ export default function MapCanvas({ mapName, children, onStateClick, onMapReady,
     const state = stateDataRef.current.get(provinceId)!;
     const bbox = state.path.getBBox();
     // Restore original cx, cy calculation
-    const cx = (bbox.x + bbox.width / 2) * 1.31;
-    const cy = (bbox.y + bbox.height / 2) * 1.96;
+    const cx = (bbox.x + bbox.width / 2) * 1;
+    const cy = (bbox.y + bbox.height / 2) * 1;
 
     // Use known/calculated min/max zoom values directly
     const minZoom = initialZoomRef.current * 0.8;
@@ -313,9 +313,10 @@ export default function MapCanvas({ mapName, children, onStateClick, onMapReady,
         const svg = svgContainerRef.current.querySelector('svg');
         if (!svg) return;
 
-        // Set up SVG for proper display
-        svg.style.width = '100%';
-        svg.style.height = '100%';
+        // Set up SVG for proper display - FIXED dimensions
+        svg.style.display = 'block';
+        svg.style.maxWidth = 'none';
+        svg.style.maxHeight = 'none';
         svg.style.border = 'none';
         svg.style.outline = 'none';
         svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');

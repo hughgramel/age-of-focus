@@ -811,7 +811,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             tempArmy += amount;
               break;
         }
-      });
+        });
 
       // Update Display State ONLY with calculated optimistic values
       if (needsResourceRecalc) {
@@ -823,12 +823,12 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             };
             setPlayerNationResourceTotals(newTotals);
           console.log('Optimistically updated playerNationResourceTotals state:', newTotals);
-      }
+        }
       // If nation gold specifically changed, update the playerGold state for the resource bar
       if (nationGoldChanged) {
           setPlayerGold(tempNationGold);
           console.log('Optimistically updated playerGold state:', tempNationGold);
-      }
+        }
       // --- End Optimistic UI Update ---
 
       // Process action and save using the *original* localGame state. 
