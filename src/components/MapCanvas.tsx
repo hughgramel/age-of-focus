@@ -124,7 +124,7 @@ export default function MapCanvas({ mapName, children, onStateClick, onMapReady,
       initialZoom: initialZoomLevel,
       smoothScroll: false,
       bounds: true,
-      boundsPadding: 0.1
+      boundsPadding: 0.6
     });
 
     panzoomInstanceRef.current = panzoomInstance;

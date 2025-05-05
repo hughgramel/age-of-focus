@@ -79,8 +79,9 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
       // Execute the action associated with this task
       const action = FOCUS_ACTIONS.find(a => a.id === task.actionType);
       if (action) {
-        console.log("Executing task action:", action);
-        executeActions([action], true, executeActionUpdate, playerNationResourceTotals);
+        console.log("Calling action.execute for task:", action);
+        // Directly call the action's execute method, passing the callback
+        action.execute(executeActionUpdate, playerNationResourceTotals);
       }
 
       if (onTaskComplete) {

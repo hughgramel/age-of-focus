@@ -512,7 +512,7 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     const endSession = async () => {
       try {
         const totalMinutes = Math.floor(secondsElapsed.current / 60);
-        const roundedMinutes = Math.round(totalMinutes / 15) * 15;
+        const roundedMinutes = Math.max(0, Math.floor(totalMinutes / 15) * 15);
         
         console.log('📊 Session completion stats:', {
           totalMinutes,
@@ -565,7 +565,7 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
           intervalRef.current = null;
         }
 
-        // Set completion state
+        // Set completion state AFTER calling the callback
         isCompleted.current = true;
         setRerender(prev => prev + 1);
 
@@ -678,31 +678,12 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
 
   const checkTime = () => {
     if (secondsRemaining.current <= 0) {
-      const overflowSeconds = -1 * secondsRemaining.current;
-      secondsElapsed.current = secondsElapsed.current - overflowSeconds;
-      
-      // Calculate minutes for completed session
-      const totalFocusMinutes = Math.floor(secondsElapsed.current / 60);
-      const totalFocusMinutesRoundedToNearestFifteenMinutes = Math.floor(totalFocusMinutes / 15) * 15;
-      
       if (isBreak.current) {
         returnToFocus();
       } else {
-        // For naturally ended sessions (through tick), directly complete without confirmation
-        console.log("Session naturally completed - directly showing completion screen");
-        
-        // Apply values directly
-        actualMinutesElapsed.current = totalFocusMinutes;
-        totalMinutesElapsedRoundedToFifteen.current = totalFocusMinutesRoundedToNearestFifteenMinutes;
-        pendingValues.current = {
-          minutesElapsed: totalFocusMinutes,
-          minutesRounded: totalFocusMinutesRoundedToNearestFifteenMinutes,
-          startTime: currFocusStartTime.current,
-          endTime: new Date().toUTCString()
-        };
-        
-        // Skip confirmation and directly end the session
-        handleSessionEnd();
+        // If timer runs out during focus, end the session
+        console.log("Focus timer reached zero, initiating session end.");
+        handleSessionEnd(); // Call the standard end handler
       }
     }
   };
