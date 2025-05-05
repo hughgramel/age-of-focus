@@ -323,7 +323,7 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
         </div>
 
         {/* Habit Creation Form */}
-        <form onSubmit={handleCreateHabit} className="mb-4 sm:mb-6 border-b border-gray-200 pb-4 sm:pb-6">
+        <form onSubmit={handleCreateHabit} className="mb-1 sm:mb-2 pb-2 sm:pb-3">
           {/* Single row layout for form */}
           <div className="flex flex-row gap-3 sm:gap-4 items-end w-full"> 
             {/* Title Input (takes most space) */} 
@@ -382,13 +382,13 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
           ) : (
             <table className="w-full border-collapse text-left">
               <thead>
-                <tr className="border-b border-gray-200">
+                <tr className="">
                   <th className="py-2 px-1 sm:py-3 sm:px-2 text-xs sm:text-sm font-semibold text-gray-600 w-1/3">Habit</th>
                   {/* Width definition for Action column header */}
                   <th className="py-2 px-1 sm:py-3 sm:px-2 text-center text-xs sm:text-sm font-semibold text-gray-600 w-[150px] sm:w-[200px]">Action</th>
                   {weekDates.map(date => (
                     <th key={formatISO(date)} className="py-2 px-1 text-center text-xs sm:text-sm font-semibold text-gray-600 w-[35px] sm:w-[40px]">
-                      {format(date, 'E')}<br/>{format(date, 'd')}
+                      {format(date, 'E')}
                     </th>
                   ))}
                   <th className="py-2 px-1 text-center text-xs sm:text-sm font-semibold text-gray-600 w-[35px] sm:w-[40px]"></th>

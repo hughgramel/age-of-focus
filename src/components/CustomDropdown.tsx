@@ -12,6 +12,7 @@ interface CustomDropdownProps {
   onChange: (value: string) => void;
   className?: string;
   placeholder?: string;
+  forceLabelVisible?: boolean;
 }
 
 const CustomDropdown: React.FC<CustomDropdownProps> = ({
@@ -19,7 +20,8 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
   value,
   onChange,
   className = '',
-  placeholder = 'Select an option'
+  placeholder = 'Select an option',
+  forceLabelVisible = false
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -46,7 +48,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
       >
         <div className="flex items-center gap-2 sm:flex-1">
           {selectedOption?.icon && <span className="text-xl ml-2">{selectedOption.icon}</span>}
-          <span className="hidden sm:inline truncate">
+          <span className={`${forceLabelVisible ? 'inline' : 'hidden sm:inline'} truncate`}>
             {selectedOption ? selectedOption.label : placeholder}
           </span>
         </div>
@@ -71,7 +73,7 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
               }}
             >
               {option.icon && <span className="text-xl ml-2">{option.icon}</span>}
-              <span className="hidden sm:inline flex-1 truncate">{option.label}</span>
+              <span className={`${forceLabelVisible ? 'inline' : 'hidden sm:inline'} flex-1 truncate`}>{option.label}</span>
             </div>
           ))}
         </div>

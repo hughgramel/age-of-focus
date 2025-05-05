@@ -10,7 +10,7 @@ import { GameService } from '@/services/gameService';
 // CSS to hide unwanted UI elements
 const hideFocusAndTutorial = `
   /* Hide the Focus Now and Tutorial buttons */
-  button:has(span:contains("Focus Now")),
+  button:has(span:contains("Focus")),
   button:contains("Tutorial"),
   div:contains("Tutorial"):not(:has(*)) {
     display: none !important;

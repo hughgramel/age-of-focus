@@ -263,18 +263,16 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           
           // Emoji style from ResourceBar
           const emojiStyle = `text-shadow: -1px -1px 0 rgba(0,0,0,0.1), 1px -1px 0 rgba(0,0,0,0.1), -1px 1px 0 rgba(0,0,0,0.1), 1px 1px 0 rgba(0,0,0,0.1); display: inline-block;`;
-          const flagStyle = `display: inline-block; width: 1.5em; height: 1.5em; vertical-align: middle; margin-right: 0.5em; line-height: 1; font-size: 1.5em;`;
+          const flagStyle = `display: inline-block; width: 1.8em; height: 1.8em; vertical-align: middle; margin-right: 0.5em; line-height: 1; font-size: 1.8em;`;
 
           popup.innerHTML = `
-            <div class="relative flex justify-center items-center mb-4 pb-4 border-b border-gray-200">
+            <div class="relative bg-white flex justify-center items-center mb-4 pb-4">
               <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
                 <span style="${emojiStyle} font-size: 1.5em;">⚔️</span>
-                Conquest Target: ${selectedProvince.name}
+                Conquest of ${selectedProvince.name}
               </h2>
-              <button id="closeConquestPopupButton" class="absolute top-0 right-0 text-gray-500 hover:text-gray-700 bg-white hover:bg-gray-100 rounded-full p-1 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                   <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                </svg>
+              <button id="closeConquestPopupButton" class="absolute top-0 right-0 rounded-full p-1 transition-colors hover:bg-gray-100 text-gray-500 hover:text-gray-700">
+                <span class="text-xl font-bold w-5 h-5 flex items-center justify-center">✕</span>
               </button>
             </div>
 
@@ -307,7 +305,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             </div>
 
             <!-- Battle Projection Section -->
-            <div class="mt-6 pt-2 ">
+            <div class="mt-4 pt-2 ">
                 <!-- Outcome & Warnings -->
                 <div class="text-center text-gray-900">
                     <div class="text-2xl font-semibold ${isProjectedVictory ? 'text-green-600' : 'text-red-600'}">
@@ -319,17 +317,16 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
                 </div>
             </div>
             
-            <div class=" pt-8 flex flex-col items-center gap-2">
+            <div class=" pt-6 flex flex-col items-center gap-2">
                  <button 
                     id="launchAttackButton" 
                     class="px-5 py-2 bg-red-600 text-white rounded-md font-semibold hover:bg-red-700 transition-colors text-base w-full max-w-xs ${!canLaunchAttack ? 'opacity-50 cursor-not-allowed' : ''}" 
                     ${!canLaunchAttack ? 'disabled' : ''}
                     title="${disabledReason}"
                   >
-                    Launch Attack (Cost: ${CONQUEST_GOLD_COST}💰)
+                    Launch Attack (${CONQUEST_GOLD_COST}💰)
                   </button>
                   ${disabledReason ? `<span class="text-xs text-red-600">${disabledReason}</span>` : ''}
-                  <button id="cancelConquestActionButton" class="mt-2 text-gray-500 hover:text-gray-700 text-sm underline">Cancel</button>
             </div>
           `;
   
@@ -338,7 +335,6 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
 
           // Add event listeners for the new buttons
           const closeButton = popup.querySelector('#closeConquestPopupButton');
-          const cancelButton = popup.querySelector('#cancelConquestActionButton');
           const launchButton = popup.querySelector('#launchAttackButton');
 
           const closePopup = () => {
@@ -349,7 +345,6 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           };
 
           closeButton?.addEventListener('click', closePopup);
-          cancelButton?.addEventListener('click', closePopup);
           // Only add listener if the button is not disabled
           if (canLaunchAttack) {
             launchButton?.addEventListener('click', () => {
@@ -372,11 +367,12 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         const nationName = owningNation ? owningNation.name : 'Unknown';
 
         const popup = document.createElement('div');
-        popup.className = '[font-family:var(--font-mplus-rounded)] fixed bottom-4 left-4 z-50 bg-white p-6 rounded-lg';
+        // Center the popup and adjust styles
+        popup.className = '[font-family:var(--font-mplus-rounded)] fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-white p-6 rounded-lg';
         popup.style.border = '1px solid rgb(229,229,229)';
         popup.style.boxShadow = '0 4px 0 rgba(229,229,229,255)';
-        popup.style.transform = 'translateY(-2px)';
-        popup.style.width = '350px';
+        // Removed transform: translateY(-2px) as centering handles positioning
+        popup.style.width = '350px'; 
 
         const capitalizeFirstLetter = (string: string): string => {
              if (!string) return '';
@@ -384,19 +380,26 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         };
 
         popup.innerHTML = `
-          <div class="flex justify-between items-start mb-4">
-            <h3 class="text-2xl font-bold text-black">${selectedProvince.name}</h3>
-            <span class="text-base text-black/70">${nationName}</span>
+          <div class="relative mb-4">
+            <div class="flex justify-between items-start">
+              <h3 class="text-2xl font-bold text-black pr-8">${selectedProvince.name}</h3> 
+              <span class="text-base text-black/70 pt-1 mr-8">${nationName}</span> 
+            </div>
+
+
+            <button id="closeProvincePopup" class="absolute top-[-6px] right-0 p-2 text-gray-500 hover:text-gray-700 transition-colors">
+              <span class="text-xl font-bold">✕</span>
+            </button>
           </div>
           <div class="grid grid-cols-2 gap-x-6 gap-y-3 text-base mb-4">
-            <div>👥 Population:</div> <p class="text-right font-bold text-black">${selectedProvince.population.toLocaleString()}</p>
-            <div>💰 Gold Income:</div> <p class="text-right font-bold text-black">${selectedProvince.goldIncome}</p>
-            <div>🏭 Industry:</div> <p class="text-right font-bold text-black">${selectedProvince.industry}</p>
-            <div>🌟 Resource:</div> <p class="text-right font-bold text-black">${capitalizeFirstLetter(selectedProvince.resourceType)}</p>
-            <div>⚔️ Army:</div> <p class="text-right font-bold text-black">${selectedProvince.army.toLocaleString()}</p>
+            <div class="text-black">👥 Population:</div> <p class="text-right font-bold text-black">${selectedProvince.population.toLocaleString()}</p>
+
+            <div class="text-black">🏭 Industry:</div> <p class="text-right font-bold text-black">${selectedProvince.industry}</p>
+
+            <div class="text-black">⚔️ Army:</div> <p class="text-right font-bold text-black">${selectedProvince.army.toLocaleString()}</p>
           </div>
           ${owningNation ? `<button 
-            class="w-full px-4 py-2 bg-[#67b9e7] text-white rounded-lg font-bold text-xl hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-2"
+            class="w-full px-4 py-2 bg-[#67b9e7] text-white rounded-lg font-bold text-xl hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-2 mt-2" { /* Add margin-top */}
             style="box-shadow: 0 4px 0 #4792ba; transform: translateY(-2px);"
             id="showNationButton"
           >
@@ -407,6 +410,13 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
 
         provincePopupRef.current = popup;
         document.body.appendChild(popup);
+
+        // Event listener for the new close button
+        const closeButton = popup.querySelector('#closeProvincePopup');
+        closeButton?.addEventListener('click', () => {
+          popup.remove();
+          provincePopupRef.current = null;
+        });
 
         const showNationButton = popup.querySelector('#showNationButton');
         if (showNationButton && owningNation) {
@@ -507,7 +517,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         console.error('Conquest failed: Insufficient gold.');
         // Show feedback: Not enough gold
         const feedback = document.createElement('div');
-        feedback.textContent = `Attack Failed: Insufficient Gold (Need ${goldCost})`;
+        feedback.textContent = `Attack Failed: Insufficient Gold, Focus to earn more!`;
         feedback.className = 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded shadow-md [font-family:var(--font-mplus-rounded)]';
         document.body.appendChild(feedback);
         setTimeout(() => feedback.remove(), 3000);

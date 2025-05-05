@@ -64,6 +64,11 @@ import { Game } from '@/types/game';
 import { ActionType, FOCUS_ACTIONS, executeActions, getRandomAction } from '@/data/actions';
 import { ActionUpdate } from '@/services/actionService';
 
+// Moved interface definition outside component
+interface DebugToolsState {
+  show: boolean;
+}
+
 interface playerNationResourceTotals {
   playerGold: number;
   playerIndustry: number;
@@ -82,14 +87,6 @@ interface FocusTimerProps {
   intention?: string; // Add intention prop
   setFocusTimeRemaining: (time: number) => void;
   showFocusModal?: () => void; // Add this new prop
-}
-
-interface SessionCompleteProps {
-  minutesElapsed: number;
-  level: string;
-  startTime: string;
-  endTime: string;
-  onReturnHome?: () => void;
 }
 
 // New component for session confirmation popup
@@ -158,155 +155,6 @@ const SessionConfirmation = ({
   );
 };
 
-const SessionComplete = ({ 
-  minutesElapsed, 
-  level, 
-  startTime, 
-  endTime, 
-  onReturnHome,
-  selectedActions,
-  playerNationResourceTotals
-}: SessionCompleteProps & { 
-  selectedActions?: ActionType[],
-  playerNationResourceTotals: playerNationResourceTotals 
-}) => {
-  const router = useRouter();
-  
-  const { currentGame, gameLoading } = useGame();
-  
-  // Calculate total resources gained
-  const calculateResourceGains = () => {
-    if (!selectedActions) return null;
-
-    const gains = {
-      gold: 0,
-      industry: 0,
-      army: 0,
-      population: 0
-    };
-
-    selectedActions.forEach(action => {
-      switch (action) {
-        case 'invest':
-          gains.gold += Math.floor(playerNationResourceTotals.playerGold * 0.15);
-          break;
-        case 'develop':
-          gains.industry += Math.floor(playerNationResourceTotals.playerIndustry * 0.1);
-          gains.gold += Math.floor(playerNationResourceTotals.playerGold * 0.03);
-          break;
-        case 'improve_army':
-          gains.army += Math.floor(playerNationResourceTotals.playerPopulation * 0.0006);
-          break;
-        case 'population_growth':
-          gains.population += Math.floor(playerNationResourceTotals.playerPopulation * 0.0010);
-          break;
-      }
-    });
-
-    return gains;
-  };
-
-  const resourceGains = calculateResourceGains();
-
-  const formatTimeElapsed = (minutes: number): string => {
-    if (minutes < 60) {
-      return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
-    } else {
-      const hours = Math.floor(minutes / 60);
-      const remainingMinutes = minutes % 60;
-      
-      if (remainingMinutes === 0) {
-        return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
-      } else {
-        return `${hours} ${hours === 1 ? 'hour' : 'hours'} and ${remainingMinutes} ${remainingMinutes === 1 ? 'minute' : 'minutes'}`;
-      }
-    }
-  };
-
-  const formatTimeStamp = (timeString: string): string => {
-    const date = new Date(timeString);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
-  const handleReturnHome = () => {
-    if (onReturnHome) {
-      onReturnHome();
-    }
-  };
-
-  return (
-    <div className="w-full max-w-[700px] mx-auto">
-      <div className="bg-white rounded-xl overflow-hidden shadow-lg border border-gray-200 [font-family:var(--font-mplus-rounded)]" style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}>
-        <div className="bg-[#6ec53e] py-6 px-6 text-center">
-          <h1 className="text-[2.5rem] text-white m-0 font-bold flex items-center justify-center gap-3">
-            <span className="text-4xl">🎉</span>
-            Session Complete!
-          </h1>
-        </div>
-        
-        <div className="p-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-            <div className="flex items-center gap-4">
-              <div className="text-[2.5rem]">⏱️</div>
-              <div>
-                <h3 className="text-[1.2rem] text-gray-600 mb-2">Focused for</h3>
-                <p className="text-[1.5rem] text-gray-800 font-semibold">{formatTimeElapsed(minutesElapsed)}</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="text-[2.5rem]">🕒</div>
-              <div>
-                <h3 className="text-[1.2rem] text-gray-600 mb-2">Session Details</h3>
-                <p className="text-base text-gray-600 my-1">Start: {formatTimeStamp(startTime)}</p>
-                <p className="text-base text-gray-600 my-1">End: {formatTimeStamp(endTime)}</p>
-              </div>
-            </div>
-          </div>
-
-          {resourceGains && (
-            <div className="bg-gray-50 rounded-lg p-6 mb-8 border border-gray-200">
-              <h3 className="text-[1.2rem] text-gray-800 mb-4 flex items-center gap-2">
-                <span className="text-2xl">🎁</span>
-                Resources Gained
-              </h3>
-              <div className="space-y-3">
-                {resourceGains.gold > 0 && (
-                  <p className="text-lg text-gray-700">+{resourceGains.gold.toLocaleString()} 💰</p>
-                )}
-                {resourceGains.industry > 0 && (
-                  <p className="text-lg text-gray-700">+{resourceGains.industry.toLocaleString()} 🏭</p>
-                )}
-                {resourceGains.army > 0 && (
-                  <p className="text-lg text-gray-700">+{resourceGains.army.toLocaleString()} ⚔️</p>
-                )}
-                {resourceGains.population > 0 && (
-                  <p className="text-lg text-gray-700">+{resourceGains.population.toLocaleString()} 👥</p>
-                )}
-              </div>
-            </div>
-          )}
-          
-          <div className="text-center my-8">
-            <p className="text-[1.2rem] text-gray-700">Well done! You've completed a focus session!</p>
-          </div>
-          
-          <div className="flex justify-center mt-6">
-            <button 
-              className="bg-[#6ec53e] text-white py-3 px-8 rounded-lg text-[1.2rem] font-semibold cursor-pointer transition-all duration-200 hover:opacity-90 flex items-center justify-center gap-2" 
-              style={{ boxShadow: '0 4px 0 rgba(89,167,0,255)', transform: 'translateY(-2px)' }}
-              onClick={handleReturnHome}
-            >
-              <span className="text-2xl">🗺️</span>
-              Return to Map
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
 const FocusTimer: React.FC<FocusTimerProps> = ({ 
   userId, 
   initialDuration = 60 * 60, // Default to 1 hour
@@ -330,6 +178,7 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [, setRerender] = useState(0);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [debugToolsState, setDebugToolsState] = useState<DebugToolsState>({ show: false });
   
   // Refs to track timer state
   const secondsRemaining = useRef(0);
@@ -783,26 +632,15 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
   const printGameState = () => {
     console.log("Current Game State:", currentGame);
     console.log("Game Loading:", gameLoading);
-    
-    // Also display in alert for easy viewing during testing
-    alert(
-      `Game State:\n` +
-      `Loading: ${gameLoading}\n` +
-      `Game: ${currentGame ? JSON.stringify(currentGame, null, 2) : 'No game data'}`
-    );
   };
 
   const tick = () => {
-
     // Make sure isBreak is set correctly
     if (isBreak.current) {
       console.log("Is break is true");
     } else {
       console.log("Is break is false");
     }
-
-
-
 
     // Detailed state logging at start of tick
     // console.log('🔄 TICK START ==================');
@@ -1185,29 +1023,8 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
         />
       )}
       
-      {isCompleted.current ? (
-        <SessionComplete 
-          minutesElapsed={totalMinutesElapsedRoundedToFifteen.current}
-          level="L1"
-          startTime={pendingValues.current.startTime || currFocusStartTime.current}
-          endTime={pendingValues.current.endTime || new Date().toUTCString()}
-          onReturnHome={() => {
-            if (showFocusModal) showFocusModal();
-            if (onSessionComplete) onSessionComplete(totalMinutesElapsedRoundedToFifteen.current);
-          }}
-          selectedActions={selectedActions}
-          playerNationResourceTotals={playerNationResourceTotals}
-        />
-      ) : (
-        <div className="bg-white rounded-xl p-8 w-full max-w-[700px] mx-auto shadow-lg text-gray-800 border border-gray-200" style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}>
-          {/* Close button */}
-          <button 
-            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 text-gray-600 hover:bg-gray-50 transition-all duration-200"
-            onClick={handleModalClose}
-          >
-            ✕
-          </button>
-         
+      {!isCompleted.current && ( 
+        <div className="bg-white rounded-xl p-6 sm:p-8 w-full max-w-[700px] mx-auto text-gray-800" style={{ transform: 'translateY(-2px)' }}>
           <div>
             <h1 className="text-center text-2xl mb-0 font-semibold text-gray-800 flex items-center justify-center gap-2">
               <span className="text-3xl">{isBreak.current ? "☕" : "🎯"}</span>
@@ -1250,7 +1067,7 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
                 onClick={promptSessionEnd}
               >
                 <span className="text-2xl">💾</span>
-                Save session
+                Save
               </button>
               
               {/* Break button - center and highlighted */}
@@ -1282,7 +1099,7 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
                   disabled={breakTimeRemaining.current === 0}
                 >
                   <span className="text-2xl">☕</span>
-                  5m break
+                  Take break
                 </button>
               )}
               
@@ -1298,44 +1115,28 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
             </div>
           </div>
 
-          {/* Debug buttons section - separated at the bottom */}
-          <div className="flex justify-center flex-wrap gap-3 mt-12 pt-6 border-t border-gray-200 opacity-70 hover:opacity-100 transition-opacity">
-            <p className="w-full text-center text-gray-500 text-sm mb-2">Debug Tools</p>
+          {/* Debug Section */} 
+          <div className="mt-12 pt-6 border-t border-gray-200 opacity-70 hover:opacity-100 transition-opacity"> 
             <button 
-              className="bg-white text-gray-600 border border-gray-200 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-gray-50" 
-              style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
-              onClick={testFifteenMinutes}
-            >
-              Test 15 min
-            </button>
-            <button 
-              className="bg-white text-gray-600 border border-gray-200 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-gray-50" 
-              style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
-              onClick={adjustSessionTimeMinus15}
-            >
-              Adjust -15min
-            </button>
-            <button 
-              className="bg-white text-gray-600 border border-gray-200 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-gray-50" 
-              style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
-              onClick={adjustSessionTimePlus60}
-            >
-              Adjust -60min
-            </button>
-            <button 
-              className="bg-white text-gray-600 border border-gray-200 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-gray-50" 
-              style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
-              onClick={printSessionData}
-            >
-              Debug session
-            </button>
-            <button 
-              className="bg-white text-gray-600 border border-gray-200 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-gray-50" 
-              style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
-              onClick={printGameState}
-            >
-              Debug game
-            </button>
+              className="bg-white text-gray-600 border border-gray-200 py-1 px-3 rounded-lg text-xs cursor-pointer transition-all duration-200 hover:bg-gray-50 mx-auto block mb-3" 
+              style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }} 
+              onClick={() => setDebugToolsState((prev: DebugToolsState) => ({ ...prev, show: !prev.show }))}
+            > 
+              {debugToolsState.show ? 'Hide' : 'Show'} Debug Tools 
+            </button> 
+
+            {/* Conditionally displayed debug buttons */} 
+            {debugToolsState.show && ( 
+              <div className="flex justify-center flex-wrap gap-3"> 
+                <button 
+                  className="bg-white text-gray-600 border border-gray-200 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-gray-50" 
+                  style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }} 
+                  onClick={adjustSessionTimePlus60} 
+                > 
+                  Adjust -60min 
+                </button> 
+              </div> 
+            )} 
           </div>
         </div>
       )}

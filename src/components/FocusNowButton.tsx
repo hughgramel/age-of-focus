@@ -51,7 +51,7 @@ export default function FocusNowButton({
       <div className="flex items-center justify-center gap-1">
         <span className="text-2xl sm:text-3xl">⏱️</span>
         <span className="text-base sm:text-xl whitespace-nowrap">
-          {hasActiveSession ? `${convertSecondsToTimeFormat(focusTimeRemaining)}` : 'Focus Now'}
+          {hasActiveSession ? `${convertSecondsToTimeFormat(Math.max(0, focusTimeRemaining))}` : 'Focus Now'}
         </span>
       </div>
     </button>

@@ -20,7 +20,7 @@ export default function ConquestButton({ fadeIn, onClick }: ConquestButtonProps)
     >
       <div className="flex items-center justify-center gap-2">
         <span className="text-2xl sm:text-3xl">⚔️</span> {/* Conquest Icon */}
-        <span className="hidden sm:inline text-xl sm:text-2xl">Conquest</span>
+        <span className="hidden sm:inline text-xl sm:text-2xl">Conquer</span>
       </div>
     </button>
   );

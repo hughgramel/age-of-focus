@@ -55,7 +55,7 @@ export default function TimerDisplay({
             onClick={onStart}
             className="px-6 py-3 bg-[#FFD700] text-[#0B1423] font-bold rounded-lg transition-all hover:bg-[#FFD700]/80 shadow-md"
           >
-            Focus Now
+            Focus
           </button>
         </div>
       )}

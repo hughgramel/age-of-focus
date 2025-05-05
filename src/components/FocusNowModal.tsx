@@ -1,15 +1,17 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { FOCUS_ACTIONS, ActionType, calculateActionsFromDuration, getRandomAction } from '@/data/actions';
 import FocusTimer from './FocusTimer';
 import { SessionService } from '@/services/sessionService';
-import { Session } from '@/types/session';
+import { Session, SessionUpdate, SessionInsert } from '@/types/session';
 import { ActionUpdate } from '@/services/actionService';
 import CustomDropdown from './CustomDropdown';
 import { CircularProgressbarWithChildren } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
+import { playerNationResourceTotals } from './GameView';
+import { set } from 'date-fns';
 
 // --- Commented out National Path types ---
 /*
@@ -202,12 +204,6 @@ const PathButton = ({ milestone, onProgressChange }: {
 };
 */
 
-interface playerNationResourceTotals {
-  playerGold: number;
-  playerIndustry: number;
-  playerPopulation: number;
-  playerArmy: number;
-}
 interface FocusNowModalProps {
   userId: string;
   onClose: () => void;
@@ -227,6 +223,9 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
   const [activeSession, setActiveSession] = useState<Session | null>(null);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [showCompletionScreen, setShowCompletionScreen] = useState(false);
+  const [completionMinutes, setCompletionMinutes] = useState<number | null>(null);
+  const [completionStartTime, setCompletionStartTime] = useState<string | null>(null);
+  const [completionEndTime, setCompletionEndTime] = useState<string | null>(null);
   
   // --- Commented out state for milestone progress ---
   // const [milestones, setMilestones] = useState<PathMilestone[]>(NATIONAL_MILESTONES);
@@ -315,9 +314,8 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
           }
           
           // Set intention if it exists
-          if (session.intention) {
-            setIntention(session.intention);
-          }
+          setIntention(session.intention || '');
+          setShowCompletionScreen(false); // Ensure completion screen is hidden
         } else {
           console.log('❌ No active sessions found or session is already completed');
           // Reset states to show the creation screen
@@ -410,57 +408,34 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
 
   // Handle session completion
   const handleSessionComplete = (minutesElapsed: number) => {
-    console.log('🏁 Session completed', { minutesElapsed });
+    console.log('🏁 FocusNowModal: Session completed callback received', { minutesElapsed });
+    setCompletionMinutes(minutesElapsed);
+    setCompletionStartTime(activeSession?.focus_start_time || new Date().toISOString());
+    setCompletionEndTime(new Date().toISOString());
     setShowCompletionScreen(true);
+    setActiveSession(null); // Clear the active session state 
+    setSessionStarted(false); // Reset session started flag
+    setFocusTimeRemaining(0); // Reset time remaining in GameView
   };
 
   // Handle final return to map
-  const handleReturnToMap = async () => {
-    console.log('🏁 Returning to map, resetting session state');
-    
-    try {
-      // If there's an active session ID, ensure it's properly marked as complete in Firebase
-      onClose();
-      if (activeSession?.id) {
-        console.log('✅ Marking session as complete:', activeSession.id);
-        await SessionService.updateSession(activeSession.id, {
-          session_state: 'complete'
-        });
-      }
-
-      // Reset all state
-      setShowCompletionScreen(false);
-      setSessionStarted(false);
-      setActiveSession(null);
-      setSelectedActions([]);
-      setProcessedActions([]);
-      setIntention('');
-      setDuration(60); // Reset to default duration
-      // Close the modal
-      
-    } catch (error) {
-      console.error('❌ Error closing session:', error);
-    }
+  const handleReturnToMap = () => {
+    console.log('🗺️ Returning to map');
+    setShowCompletionScreen(false);
+    setCompletionMinutes(null);
+    setCompletionStartTime(null);
+    setCompletionEndTime(null);
+    onClose(); // Close the modal
   };
 
   // Handle modal close
   const handleModalClose = () => {
-    if (showCompletionScreen) {
-      // If we're showing completion screen, don't allow closing with backdrop click
-      return;
-    }
-    console.log('🚪 Modal closing...', {
-      activeSession,
-      sessionStarted,
-      hasActiveSession
-    });
-    
-    // Don't reset the active session state if there's an actual active session
-    // This way when reopening, it will resume the session
-    
-    // Only reset states related to the modal UI
-    setShowCompletionScreen(false);
-    
+    // Handle case where user closes modal during active session (timer will continue)
+    // Or closes after completion
+    setShowCompletionScreen(false); // Reset completion screen if shown
+    setCompletionMinutes(null);
+    setCompletionStartTime(null);
+    setCompletionEndTime(null);
     onClose();
   };
 
@@ -474,6 +449,76 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
       processedActions
     });
   }, [sessionStarted, hasActiveSession, activeSession, duration, selectedActions, processedActions]);
+
+  // Helper functions for completion screen
+  const calculateResourceGains = () => {
+    // Use processedActions which should be set when session starts
+    if (!processedActions || processedActions.length === 0) return null;
+
+    const gains = {
+      gold: 0,
+      industry: 0,
+      army: 0,
+      population: 0
+    };
+
+    processedActions.forEach(action => {
+      switch (action) {
+        case 'invest':
+          // Ensure playerNationResourceTotals is available
+          gains.gold += Math.floor((playerNationResourceTotals?.playerGold || 0) * 0.15);
+          break;
+        case 'develop':
+          gains.industry += Math.floor((playerNationResourceTotals?.playerIndustry || 0) * 0.1);
+          gains.gold += Math.floor((playerNationResourceTotals?.playerGold || 0) * 0.03);
+          break;
+        case 'improve_army':
+          gains.army += Math.floor((playerNationResourceTotals?.playerPopulation || 0) * 0.0006);
+          break;
+        case 'population_growth':
+          gains.population += Math.floor((playerNationResourceTotals?.playerPopulation || 0) * 0.0010);
+          break;
+      }
+    });
+
+    // Return null if no gains were actually calculated
+    if (Object.values(gains).every(v => v === 0)) {
+      return null;
+    }
+
+    return gains;
+  };
+
+  const formatTimeElapsed = (minutes: number | null): string => {
+    if (minutes === null) return 'N/A';
+    if (minutes < 60) {
+      return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`;
+    } else {
+      const hours = Math.floor(minutes / 60);
+      const remainingMinutes = minutes % 60;
+      
+      if (remainingMinutes === 0) {
+        return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+      } else {
+        return `${hours} ${hours === 1 ? 'hour' : 'hours'} and ${remainingMinutes} ${remainingMinutes === 1 ? 'minute' : 'minutes'}`;
+      }
+    }
+  };
+
+  const formatTimeStamp = (timeString: string | null): string => {
+    if (!timeString) return 'N/A';
+    try {
+      const date = new Date(timeString);
+      // Check if the date is valid before formatting
+      if (isNaN(date.getTime())) {
+        return 'Invalid Date';
+      }
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (error) {
+      console.error("Error formatting timestamp:", timeString, error);
+      return 'Error';
+    }
+  };
 
   if (!userId) {
     console.log('❌ No userId provided');
@@ -496,7 +541,7 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-start justify-center pt-30 sm:pt-28 md:pt-24 lg:pt-22 xl:pt-22 2xl:pt-22 transition-opacity duration-300 ease-in-out opacity-100"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 transition-opacity duration-300 ease-in-out opacity-100"
     >
       {/* Transparent Backdrop for closing */}
       <div 
@@ -504,129 +549,201 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
         onClick={handleModalClose}
       ></div>
       
-      {/* Modal Content Container - Add scale transition */}
+      {/* Modal Content Container - Match other modals' width/margins */}
       <div 
-        className={`relative z-10 w-full max-w-md sm:max-w-3xl transition-transform duration-300 ease-in-out transform scale-100 px-4 sm:px-0`}
+        className={`relative z-10 w-full max-w-md sm:max-w-4xl transition-transform duration-300 ease-in-out transform scale-100 mx-auto sm:mx-auto bg-white rounded-lg border border-gray-200 shadow-lg`}
+        style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)' }}
       >
-          {!sessionStarted && !activeSession && !showCompletionScreen ? (
-            <div className="relative bg-white rounded-lg border border-gray-200 text-black p-4 sm:p-6 [font-family:var(--font-mplus-rounded)]" style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}>
-              {/* Add Close Button */}
-              <button 
-                onClick={handleModalClose} 
-                className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 transition-colors z-20 p-2" 
-              >
-                <span className="text-xl font-bold">✕</span>
-              </button>
+        {/* Close Button - Now always visible */} 
+        <button 
+          onClick={handleModalClose} 
+          className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 transition-colors z-20 p-2" 
+        >
+          <span className="text-xl font-bold">✕</span>
+        </button>
 
-              {/* Top section - Duration centered */}
-              <div className="mb-8 max-w-md mx-auto">
-                <h3 className="text-2xl font-semibold mb-4 text-center flex items-center justify-center gap-2">
-                  <span className="text-3xl">⏱️</span>
-                  Focus Session Duration
-                </h3>
-                <CustomDropdown
-                  options={[
-                    { value: "30", label: "30 minutes", icon: "⏱️" },
-                    { value: "45", label: "45 minutes", icon: "⏱️" },
-                    { value: "60", label: "1 hour", icon: "⏱️" },
-                    { value: "90", label: "1.5 hours", icon: "⏱️" },
-                    { value: "120", label: "2 hours", icon: "⏱️" },
-                    { value: "180", label: "3 hours", icon: "⏱️" },
-                    { value: "240", label: "4 hours", icon: "⏱️" }
-                  ]}
-                  value={duration.toString()}
-                  onChange={(value) => setDuration(parseInt(value))}
-                  className="w-full"
-                />
-              </div>
-
-              {/* Main Content Area */} 
-              <div className="">
-                {/* Actions/Intention/Start Column - Changed to w-full */}
-                <div className="w-full flex flex-col gap-4">
-                  {/* Actions Box (Increased min-height) */}
-                  <div className="bg-white rounded-lg border border-gray-200 p-4 flex-grow min-h-[300px]" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
-                    <h3 className="text-xl font-semibold mb-3 text-center flex items-center justify-center gap-2 flex-shrink-0">
-                      <span className="text-2xl">🎯</span>
-                      Choose your {actionCount} action{actionCount !== 1 ? 's' : ''}
-                    </h3>
-                    {/* Always 2 columns, adjust gap */}
-                    <div className="grid grid-cols-2 gap-2 pr-1 -mr-1">
-                      {Array.from({ length: actionCount }, (_, i) => (
-                        <div key={i} className="flex bg-white rounded-lg border border-gray-200 flex-shrink-0" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
-                           {/* Adjusted label padding/width */}
-                           <div className="py-2 px-2 sm:px-3 border-r border-gray-200 min-w-[60px] sm:min-w-[60px] flex items-center">
-                             <span className="text-sm sm:text-base text-gray-700">Action {i + 1}</span>
-                           </div>
-                           <CustomDropdown
-                            options={[
-                              { value: "auto", label: "Auto", icon: "🎲" }, 
-                              ...FOCUS_ACTIONS.filter(action => action.id !== 'auto').map(action => ({
-                                value: action.id,
-                                // Use resource type as label based on ID
-                                label: action.id === 'invest' ? 'Economy' : 
-                                       action.id === 'develop' ? 'Industry' : 
-                                       action.id === 'improve_army' ? 'Army' : 
-                                       action.id === 'population_growth' ? 'Population' : 
-                                       action.name, // Fallback if ID doesn't match known types
-                                icon: (() => {
-                                  switch (action.id) {
-                                    case 'invest': return '💰';
-                                    case 'develop': return '🏭';
-                                    case 'improve_army': return '⚔️';
-                                    case 'population_growth': return '👥';
-                                    default: return '🎯';
-                                  }
-                                })()
-                              }))
-                            ]}
-                            value={selectedActions[i] || 'auto'}
-                            onChange={(value) => handleActionChange(i, value as ActionType)}
-                            className="flex-1 text-sm sm:text-base [&>button]:justify-center sm:[&>button]:justify-between"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Intention Box (Increased height and font size) */}
-                  <textarea
-                    value={intention}
-                    onChange={(e) => setIntention(e.target.value)}
-                    placeholder="Write your intention..."
-                    className="bg-white text-gray-800 border border-gray-200 rounded-lg px-3 py-2 w-full outline-none text-base resize-none h-[100px] flex-shrink-0"
-                    style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
-                  />
-
-                  {/* Start Button (Reduced text/padding) */}
-                  <button 
-                    onClick={startFocusSession}
-                    className="mt-auto px-8 py-2 bg-[#6ec53e] text-white rounded-lg font-bold text-xl hover:opacity-90 transition-all duration-200 w-full flex items-center justify-center gap-2 flex-shrink-0"
-                    style={{ boxShadow: '0 4px 0 rgba(89,167,0,255)', transform: 'translateY(-2px)' }}
-                  >
-                    <span className="text-2xl">▶️</span>
-                    Start Focus
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="relative z-10">
-              <FocusTimer 
-                userId={userId}
-                initialDuration={duration * 60}
-                onSessionComplete={handleSessionComplete}
-                selectedActions={processedActions}
-                existingSessionId={activeSession?.id}
-                handleModalClose={handleModalClose}
-                executeActionUpdate={executeActionUpdate}
-                playerNationResourceTotals={playerNationResourceTotals}
-                intention={intention}
-                setFocusTimeRemaining={setFocusTimeRemaining}
-                showFocusModal={handleReturnToMap}
+        {!sessionStarted && !activeSession && !showCompletionScreen ? (
+          <div className="relative text-black p-4 sm:p-6 [font-family:var(--font-mplus-rounded)]" style={{ transform: 'translateY(-2px)' }}>
+            {/* Top section - Duration centered */}
+            <div className="mb-8 max-w-md mx-auto">
+              <h3 className="text-2xl font-semibold mb-4 text-center flex items-center justify-center gap-2">
+                <span className="text-3xl">⏱️</span>
+                Focus Session Duration
+              </h3>
+              <CustomDropdown
+                options={[
+                  { value: "30", label: "30 minutes", icon: "⏱️" },
+                  { value: "45", label: "45 minutes", icon: "⏱️" },
+                  { value: "60", label: "1 hour", icon: "⏱️" },
+                  { value: "90", label: "1.5 hours", icon: "⏱️" },
+                  { value: "120", label: "2 hours", icon: "⏱️" },
+                  { value: "180", label: "3 hours", icon: "⏱️" },
+                  { value: "240", label: "4 hours", icon: "⏱️" }
+                ]}
+                value={duration.toString()}
+                onChange={(value) => setDuration(parseInt(value))}
+                className="w-full"
+                forceLabelVisible={true}
               />
             </div>
-          )}
+
+            {/* Main Content Area */} 
+            <div className="">
+              {/* Actions/Intention/Start Column - Changed to w-full */}
+              <div className="w-full flex flex-col gap-4">
+                {/* Actions Box (Increased min-height) */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4 flex-grow min-h-[300px]" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
+                  <h3 className="text-xl font-semibold mb-3 text-center flex items-center justify-center gap-2 flex-shrink-0">
+                    <span className="text-2xl">🎯</span>
+                    Choose your {actionCount} action{actionCount !== 1 ? 's' : ''}
+                  </h3>
+                  {/* Always 2 columns, adjust gap */}
+                  <div className="grid grid-cols-2 gap-2 pr-1 -mr-1">
+                    {Array.from({ length: actionCount }, (_, i) => (
+                      <div key={i} className="flex bg-white rounded-lg border border-gray-200 flex-shrink-0" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
+                         {/* Adjusted label padding/width */}
+                         <div className="py-2 px-2 sm:px-3 border-r border-gray-200 min-w-[60px] sm:min-w-[60px] flex items-center">
+                           <span className="text-sm sm:text-base text-gray-700">Action {i + 1}</span>
+                         </div>
+                         <CustomDropdown
+                          options={[
+                            { value: "auto", label: "Auto", icon: "🎲" }, 
+                            ...FOCUS_ACTIONS.filter(action => action.id !== 'auto').map(action => ({
+                              value: action.id,
+                              // Use resource type as label based on ID
+                              label: action.id === 'invest' ? 'Economy' : 
+                                     action.id === 'develop' ? 'Industry' : 
+                                     action.id === 'improve_army' ? 'Army' : 
+                                     action.id === 'population_growth' ? 'Population' : 
+                                     action.name, // Fallback if ID doesn't match known types
+                              icon: (() => {
+                                switch (action.id) {
+                                  case 'invest': return '💰';
+                                  case 'develop': return '🏭';
+                                  case 'improve_army': return '⚔️';
+                                  case 'population_growth': return '👥';
+                                  default: return '🎯';
+                                }
+                              })()
+                            }))
+                          ]}
+                          value={selectedActions[i] || 'auto'}
+                          onChange={(value) => handleActionChange(i, value as ActionType)}
+                          className="flex-1 text-sm sm:text-base [&>button]:justify-center sm:[&>button]:justify-between"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Intention Box (Increased height and font size) */}
+                <textarea
+                  value={intention}
+                  onChange={(e) => setIntention(e.target.value)}
+                  placeholder="Write your intention..."
+                  className="bg-white text-gray-800 border border-gray-200 rounded-lg px-3 py-2 w-full outline-none text-base resize-none h-[100px] flex-shrink-0"
+                  style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
+                />
+
+                {/* Start Button (Reduced text/padding) */}
+                <button 
+                  onClick={startFocusSession}
+                  className="mt-auto px-8 py-2 bg-[#6ec53e] text-white rounded-lg font-bold text-xl hover:opacity-90 transition-all duration-200 w-full flex items-center justify-center gap-2 flex-shrink-0"
+                  style={{ boxShadow: '0 4px 0 rgba(89,167,0,255)', transform: 'translateY(-2px)' }}
+                >
+                  <span className="text-2xl">▶️</span>
+                  Start Focus
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="relative z-10">
+            <FocusTimer 
+              userId={userId}
+              initialDuration={duration * 60}
+              onSessionComplete={handleSessionComplete}
+              selectedActions={processedActions}
+              existingSessionId={activeSession?.id}
+              handleModalClose={handleModalClose}
+              executeActionUpdate={executeActionUpdate}
+              playerNationResourceTotals={playerNationResourceTotals}
+              intention={intention}
+              setFocusTimeRemaining={setFocusTimeRemaining}
+              showFocusModal={handleReturnToMap}
+            />
+          </div>
+        )}
+
+        {showCompletionScreen && (
+          <div className="[font-family:var(--font-mplus-rounded)]">
+            <div className="bg-[#6ec53e] py-4 sm:py-6 px-4 sm:px-6 text-center rounded-t-lg -m-4 sm:-m-6 mb-4 sm:mb-6">
+              <h1 className="text-2xl sm:text-[2.5rem] text-white m-0 font-bold flex items-center justify-center gap-2 sm:gap-3">
+                <span className="text-3xl sm:text-4xl">🎉</span>
+                Session Complete!
+              </h1>
+            </div>
+            
+            <div className="p-4 sm:p-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 mb-6 sm:mb-8">
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="text-3xl sm:text-[2.5rem]">⏱️</div>
+                  <div>
+                    <h3 className="text-base sm:text-[1.2rem] text-gray-600 mb-1 sm:mb-2">Focused for</h3>
+                    <p className="text-lg sm:text-[1.5rem] text-gray-800 font-semibold">{formatTimeElapsed(completionMinutes)}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="text-3xl sm:text-[2.5rem]">🕒</div>
+                  <div>
+                    <h3 className="text-base sm:text-[1.2rem] text-gray-600 mb-1 sm:mb-2">Session Details</h3>
+                    <p className="text-sm sm:text-base text-gray-600 my-0.5 sm:my-1">Start: {formatTimeStamp(completionStartTime)}</p>
+                    <p className="text-sm sm:text-base text-gray-600 my-0.5 sm:my-1">End: {formatTimeStamp(completionEndTime)}</p>
+                  </div>
+                </div>
+              </div>
+
+              {calculateResourceGains() && (
+                <div className="bg-gray-50 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8 border border-gray-200">
+                  <h3 className="text-base sm:text-[1.2rem] text-gray-800 mb-3 sm:mb-4 flex items-center gap-2">
+                    <span className="text-xl sm:text-2xl">🎁</span>
+                    Resources Gained
+                  </h3>
+                  <div className="space-y-2 sm:space-y-3">
+                    {calculateResourceGains()!.gold > 0 && (
+                      <p className="text-base sm:text-lg text-gray-700">+{calculateResourceGains()!.gold.toLocaleString()} 💰</p>
+                    )}
+                    {calculateResourceGains()!.industry > 0 && (
+                      <p className="text-base sm:text-lg text-gray-700">+{calculateResourceGains()!.industry.toLocaleString()} 🏭</p>
+                    )}
+                    {calculateResourceGains()!.army > 0 && (
+                      <p className="text-base sm:text-lg text-gray-700">+{calculateResourceGains()!.army.toLocaleString()} ⚔️</p>
+                    )}
+                    {calculateResourceGains()!.population > 0 && (
+                      <p className="text-base sm:text-lg text-gray-700">+{calculateResourceGains()!.population.toLocaleString()} 👥</p>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              <div className="text-center my-6 sm:my-8">
+                <p className="text-base sm:text-[1.2rem] text-gray-700">Well done! You've completed a focus session!</p>
+              </div>
+              
+              <div className="flex justify-center mt-4 sm:mt-6">
+                <button 
+                  className="bg-[#6ec53e] text-white py-2 px-6 sm:py-3 sm:px-8 rounded-lg text-base sm:text-[1.2rem] font-semibold cursor-pointer transition-all duration-200 hover:opacity-90 flex items-center justify-center gap-2"
+                  style={{ boxShadow: '0 4px 0 rgba(89,167,0,255)', transform: 'translateY(-2px)' }}
+                  onClick={handleReturnToMap}
+                >
+                  <span className="text-xl sm:text-2xl">🗺️</span>
+                  Return to Map
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

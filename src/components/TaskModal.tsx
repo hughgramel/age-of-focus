@@ -110,7 +110,7 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-start justify-center pt-40 sm:pt-28 md:pt-21 lg:pt-21 xl:pt-21 2xl:pt-21  transition-opacity duration-300 ease-in-out opacity-100"
+      className="fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ease-in-out opacity-100"
     >
       {/* Transparent Backdrop for closing */}
       <div 
@@ -118,12 +118,13 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
         onClick={onClose}
       ></div>
 
-      {/* Modal Content Container - Add scale transition */}
+      {/* Modal Content Container - Match HabitsModal dimensions */}
       <div 
-        className={`relative z-10 bg-white rounded-lg p-4 sm:p-6 w-full max-w-lg sm:max-w-2xl [font-family:var(--font-mplus-rounded)] transition-transform duration-300 ease-in-out transform scale-100 mx-4 sm:mx-auto`}
+        className="relative z-10 bg-white rounded-lg p-4 sm:p-6 w-full max-w-md sm:max-w-4xl [font-family:var(--font-mplus-rounded)] transition-transform duration-300 ease-in-out transform scale-100 mx-6 sm:mx-auto"
         style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)' }}
       >
-        <div className="flex justify-between items-center mb-4 sm:mb-6">
+        {/* Match HabitsModal top bar styling */}
+        <div className="flex justify-between items-center mb-2 sm:mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
             <span className="text-2xl sm:text-3xl">📋</span>
             Tasks
@@ -133,18 +134,26 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
           </button>
         </div>
 
-        <form onSubmit={handleCreateTask} className="mb-4 sm:mb-6">
-          <div className="flex flex-col gap-3 sm:gap-4">
-            {/* Stack input and dropdown on small screens */}
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+        {/* Match HabitsModal form layout */}
+        <form onSubmit={handleCreateTask} className=" pb-2 sm:pb-3">
+          <div className="flex flex-row gap-3 sm:gap-4 items-end w-full">
+            {/* Title Input */} 
+            <div className="flex-1">
+              <label htmlFor="taskTitle" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">New Task</label>
               <input
+                id="taskTitle"
                 type="text"
                 placeholder="Enter task..."
                 value={newTask.title}
                 onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
-                className="flex-1 px-3 py-2 sm:px-4 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-800 text-base sm:text-lg"
+                className="w-full px-3 py-2 sm:px-4 sm:py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-800 text-sm sm:text-base"
                 required
               />
+            </div>
+
+            {/* Action Dropdown */} 
+            <div className="w-[150px] sm:w-[200px] flex-shrink-0">
+              <label htmlFor="taskActionDropdown" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Action Reward</label>
               <CustomDropdown
                 options={FOCUS_ACTIONS.map(action => ({
                   value: action.id,
@@ -165,25 +174,29 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
                 }))}
                 value={newTask.actionType}
                 onChange={(value) => setNewTask({ ...newTask, actionType: value as any })}
-                className="w-full sm:w-[240px] text-sm sm:text-base"
+                className="w-full text-sm"
               />
             </div>
-            <button
-              type="submit"
-              className="bg-[#67b9e7] text-white py-2 sm:py-3 px-4 rounded-lg font-semibold hover:opacity-90 transition-all duration-200 text-base sm:text-lg w-full flex items-center justify-center gap-2 cursor-pointer hover:transform hover:-translate-y-0.5 active:translate-y-0"
-              style={{ boxShadow: '0 4px 0 #4792ba' }}
-            >
-              <span className="text-xl sm:text-2xl text-white">➕</span>
-              Add Task
-            </button>
+
+            {/* Add Button */} 
+            <div className="flex-shrink-0 relative" style={{ top: '-2px'}}> {/* Match alignment nudge */} 
+              <button
+                type="submit"
+                className="bg-[#67b9e7] text-white py-2 px-3 sm:py-3 sm:px-4 rounded-lg font-semibold hover:opacity-90 transition-all duration-200 text-sm sm:text-base w-auto flex items-center justify-center gap-1 sm:gap-2 cursor-pointer hover:transform hover:-translate-y-0.5 active:translate-y-0 whitespace-nowrap"
+                style={{ boxShadow: '0 4px 0 #4792ba' }}
+              >
+                <span className="text-lg sm:text-xl text-white">➕</span>
+                <span className="hidden sm:inline">Add Task</span>
+              </button>
+            </div>
           </div>
         </form>
 
-        <div className="border-t border-gray-200">
+        <div className="">
           <div className="flex gap-2 sm:gap-4 -mb-px">
             <button
               onClick={() => setActiveTab('active')}
-              className={`px-3 py-2 sm:px-4 font-semibold text-base sm:text-lg border-b-2 transition-colors ${
+              className={`px-3 py-2 sm:px-4 font-semibold text-sm sm:text-base border-b-2 transition-colors ${
                 activeTab === 'active'
                   ? 'border-[#67b9e7] text-[#67b9e7]'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -193,7 +206,7 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
             </button>
             <button
               onClick={() => setActiveTab('completed')}
-              className={`px-3 py-2 sm:px-4 font-semibold text-base sm:text-lg border-b-2 transition-colors ${
+              className={`px-3 py-2 sm:px-4 font-semibold text-sm sm:text-base border-b-2 transition-colors ${
                 activeTab === 'completed'
                   ? 'border-[#67b9e7] text-[#67b9e7]'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -203,7 +216,9 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
             </button>
           </div>
           
-          <div className="space-y-3 sm:space-y-4 max-h-[300px] sm:max-h-[400px] overflow-y-auto pr-2 pt-4 sm:pt-6">
+          {/* Reduce list height slightly to compensate for tabs */}
+          {/* Increase spacing between items on small screens */}
+          <div className="space-y-4 max-h-[38vh] overflow-y-auto pr-2 pt-2 sm:pt-3">
             {isLoading ? (
               <div className="text-center py-4 text-gray-800 text-sm sm:text-base">Loading tasks...</div>
             ) : filteredTasks.length === 0 ? (
@@ -216,17 +231,17 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
                 return (
                   <div
                     key={task.id}
-                    className={`p-2 sm:p-4 rounded-lg border ${
+                    className={`p-2 sm:p-3 rounded-lg border ${
                       task.completed ? 'bg-gray-50 border-gray-200' : 'bg-white border-gray-200'
                     }`}
                     style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
                   >
                     <div className="flex flex-row justify-between items-center">
                       <div className="flex-1 mr-2">
-                        <h3 className={`text-base sm:text-lg font-semibold ${task.completed ? 'text-gray-500 line-through' : 'text-gray-800'} leading-tight`}>
+                        <h3 className={`text-sm sm:text-base font-semibold ${task.completed ? 'text-gray-500 line-through' : 'text-gray-800'} leading-tight`}>
                           {task.title}
                         </h3>
-                        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0 text-xs sm:text-sm text-gray-800">
+                        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0 text-xs text-gray-800">
                           {(() => {
                             const getActionEffect = () => {
                               switch (task.actionType) {
@@ -252,7 +267,7 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
                             };
 
                             return (
-                              <span className="text-sm sm:text-base font-medium">
+                              <span className="text-xs sm:text-sm font-medium">
                                 {getActionEffect()}
                               </span>
                             );
@@ -265,24 +280,21 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
                         {!task.completed && (
                           <button
                             onClick={() => handleCompleteTask(task)}
-                            className="px-2 py-1 sm:px-3 sm:py-2 rounded-lg text-white hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-1 text-sm sm:text-base [font-family:var(--font-mplus-rounded)] cursor-pointer hover:transform hover:-translate-y-0.5 active:translate-y-0"
+                            className="px-2 py-1 sm:px-2 sm:py-1.5 rounded-lg text-white hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-1 text-xs sm:text-sm [font-family:var(--font-mplus-rounded)] cursor-pointer hover:transform hover:-translate-y-0.5 active:translate-y-0"
                             style={{ 
                               backgroundColor: '#6ec53e',
                               boxShadow: '0 3px 0 rgba(89,167,0,255)',
                               transform: 'translateY(-1px)'
                             }}
                           >
-                            <span className="text-base sm:text-lg">✓</span>
+                            <span className="text-sm sm:text-base">✓</span>
                             <span className="hidden sm:inline">Complete</span>
                           </button>
                         )}
                         <button
                           onClick={() => handleDeleteTask(task.id)}
-                          className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg text-white hover:opacity-90 transition-all duration-200 flex items-center justify-center text-lg sm:text-xl ml-1 sm:ml-2 [font-family:var(--font-mplus-rounded)] font-bold cursor-pointer hover:transform hover:-translate-y-0.5 active:translate-y-0"
+                          className="w-6 h-6 sm:w-7 sm:h-7 rounded-full text-red-500 hover:bg-red-100 flex items-center justify-center mx-auto transition-colors font-bold text-base sm:text-lg ml-1 sm:ml-2"
                           style={{ 
-                            backgroundColor: '#dc2626',
-                            boxShadow: '0 3px 0 #991b1b',
-                            transform: 'translateY(-1px)'
                           }}
                         >
                           ✕
