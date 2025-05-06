@@ -588,20 +588,19 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
             </div>
 
             {/* Main Content Area */} 
-            <div className="">
-              {/* Actions/Intention/Start Column - Changed to w-full */}
-              <div className="w-full flex flex-col gap-4">
-                {/* Actions Box (Increased min-height) */}
-                <div className="bg-white rounded-lg border border-gray-200 p-4 flex-grow min-h-[300px]" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
+            <div className="flex flex-col">
+              {/* Wrap Actions and Intention in a scrollable container */}
+              <div className="max-h-[40vh] overflow-y-auto pr-2 mb-4"> {/* Added max-h, overflow, padding, margin */} 
+                {/* Actions Box (Removed min-height) */} 
+                <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
                   <h3 className="text-xl font-semibold mb-3 text-center flex items-center justify-center gap-2 flex-shrink-0">
                     <span className="text-2xl">🎯</span>
                     Choose your {actionCount} action{actionCount !== 1 ? 's' : ''}
                   </h3>
-                  {/* Always 2 columns, adjust gap */}
+                  {/* Grid remains the same */}
                   <div className="grid grid-cols-2 gap-2 pr-1 -mr-1">
                     {Array.from({ length: actionCount }, (_, i) => (
                       <div key={i} className="flex bg-white rounded-lg border border-gray-200 flex-shrink-0" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
-                         {/* Adjusted label padding/width */}
                          <div className="py-2 px-2 sm:px-3 border-r border-gray-200 min-w-[60px] sm:min-w-[60px] flex items-center">
                            <span className="text-sm sm:text-base text-gray-700">Action {i + 1}</span>
                          </div>
@@ -636,7 +635,7 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
                   </div>
                 </div>
 
-                {/* Intention Box (Increased height and font size) */}
+                {/* Intention Box */}
                 <textarea
                   value={intention}
                   onChange={(e) => setIntention(e.target.value)}
@@ -644,17 +643,17 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
                   className="bg-white text-gray-800 border border-gray-200 rounded-lg px-3 py-2 w-full outline-none text-base resize-none h-[100px] flex-shrink-0"
                   style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
                 />
-
-                {/* Start Button (Reduced text/padding) */}
-                <button 
-                  onClick={startFocusSession}
-                  className="mt-auto px-8 py-2 bg-[#6ec53e] text-white rounded-lg font-bold text-xl hover:opacity-90 transition-all duration-200 w-full flex items-center justify-center gap-2 flex-shrink-0"
-                  style={{ boxShadow: '0 4px 0 rgba(89,167,0,255)', transform: 'translateY(-2px)' }}
-                >
-                  <span className="text-2xl">▶️</span>
-                  Start Focus
-                </button>
               </div>
+
+              {/* Start Button (Now outside the scrollable div) */} 
+              <button 
+                onClick={startFocusSession}
+                className="mt-auto px-8 py-2 bg-[#6ec53e] text-white rounded-lg font-bold text-xl hover:opacity-90 transition-all duration-200 w-full flex items-center justify-center gap-2 flex-shrink-0"
+                style={{ boxShadow: '0 4px 0 rgba(89,167,0,255)', transform: 'translateY(-2px)' }}
+              >
+                <span className="text-2xl">▶️</span>
+                Start Focus
+              </button>
             </div>
           </div>
         ) : (

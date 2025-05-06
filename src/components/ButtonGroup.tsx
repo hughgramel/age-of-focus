@@ -31,18 +31,18 @@ export default function ButtonGroup({
   return (
     <div className="fixed bottom-4 sm:bottom-8 left-0 right-0 flex justify-center items-center gap-2 sm:gap-4 px-2 sm:px-0">
       <div className="flex-shrink-0">
+        <TaskListButton fadeIn={fadeIn} onClick={onTaskListClick} />
+      </div>
+      <div className="flex-shrink-0">
+        <HabitsButton fadeIn={fadeIn} onClick={onHabitsClick} />
+      </div>
+      <div className="flex-shrink-0">
         <FocusNowButton 
           fadeIn={fadeIn} 
           hasActiveSession={hasActiveSession} 
           onClick={onFocusClick} 
           focusTimeRemaining={focusTimeRemaining}
         />
-      </div>
-      <div className="flex-shrink-0">
-        <TaskListButton fadeIn={fadeIn} onClick={onTaskListClick} />
-      </div>
-      <div className="flex-shrink-0">
-        <HabitsButton fadeIn={fadeIn} onClick={onHabitsClick} />
       </div>
       <div className="flex-shrink-0">
         <MissionsButton fadeIn={fadeIn} onClick={onMissionsClick} />

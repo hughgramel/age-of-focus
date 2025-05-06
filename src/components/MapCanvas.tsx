@@ -105,17 +105,26 @@ export default function MapCanvas({ mapName, children, onStateClick, onMapReady,
 
   // Initialize panzoom with proper bounds and zoom constraints
   const initializeZoom = useCallback((svg: SVGElement) => {
+    console.log('[MapCanvas Debug] Starting initializeZoom...');
     const calculateInitialZoom = () => {
       const svgRect = svg.getBoundingClientRect();
       const containerRect = svgContainerRef.current?.getBoundingClientRect();
-      if (!containerRect) return 1;
+      console.log('[MapCanvas Debug] SVG Rect:', svgRect);
+      console.log('[MapCanvas Debug] Container Rect:', containerRect);
+      if (!containerRect || svgRect.width === 0 || svgRect.height === 0) {
+        console.log('[MapCanvas Debug] Invalid rects, defaulting zoom to 1');
+        return 1;
+      }
       const widthRatio = containerRect.width / svgRect.width;
       const heightRatio = containerRect.height / svgRect.height;
-      return Math.min(widthRatio, heightRatio) * 12;
+      const initialZoom = Math.min(widthRatio, heightRatio) * 10;
+      console.log('[MapCanvas Debug] Width Ratio:', widthRatio, 'Height Ratio:', heightRatio, 'Initial Zoom Calc:', initialZoom);
+      return initialZoom;
     };
 
     const initialZoomLevel = calculateInitialZoom();
     initialZoomRef.current = initialZoomLevel;
+    console.log(`[MapCanvas Debug] Calculated Initial Zoom Level: ${initialZoomLevel}`);
 
     // Initialize panzoom with only the basic fit-zoom options
     const panzoomInstance = panzoom(svg, {
@@ -128,32 +137,57 @@ export default function MapCanvas({ mapName, children, onStateClick, onMapReady,
     });
 
     panzoomInstanceRef.current = panzoomInstance;
-    console.log(`Initializing panzoom with fit zoom level: ${initialZoomLevel}`);
+    console.log(`[MapCanvas Debug] Panzoom initialized. MinZoom: ${initialZoomLevel * 0.8}, MaxZoom: 40, InitialZoom: ${initialZoomLevel}`);
     return { panzoomInstance, initialZoomLevel };
   }, []);
 
   // Handle direct zooming based on trackpad/wheel input
   const handleZoom = useCallback((zoomIn: boolean, delta: number) => {
-    if (!panzoomInstanceRef.current) return;
+    console.log(`[MapCanvas Debug] handleZoom called. ZoomIn: ${zoomIn}, Delta: ${delta}`);
+    if (!panzoomInstanceRef.current) {
+      console.log('[MapCanvas Debug] handleZoom skipped: No panzoom instance.');
+      return;
+    }
 
     // Use a small base scale factor
     const baseScale = 0.0008;
     const scaleFactor = 1 + (Math.abs(delta) * baseScale);
+    console.log(`[MapCanvas Debug] Calculated Scale Factor: ${scaleFactor}`);
     
-    const currentScale = panzoomInstanceRef.current.getTransform().scale;
+    const currentTransform = panzoomInstanceRef.current.getTransform();
+    const currentScale = currentTransform.scale;
     const nextScale = zoomIn ? currentScale * scaleFactor : currentScale / scaleFactor;
+    console.log(`[MapCanvas Debug] Current Scale: ${currentScale}, Proposed Next Scale: ${nextScale}`);
 
     // Check zoom bounds
-    if ((zoomIn && nextScale < 20) || (!zoomIn && nextScale > initialZoomRef.current * 0.8)) {
+    const minZoom = initialZoomRef.current * 0.8;
+    const maxZoom = 40;
+    if ((zoomIn && nextScale < maxZoom) || (!zoomIn && nextScale > minZoom)) {
+      console.log(`[MapCanvas Debug] Zoom within bounds (Min: ${minZoom}, Max: ${maxZoom}). Applying zoom.`);
       // Get viewport center for centered zooming
       const containerRect = svgContainerRef.current?.getBoundingClientRect();
-      if (!containerRect) return;
+      if (!containerRect) {
+        console.log('[MapCanvas Debug] handleZoom skipped: No container rect.');
+        return;
+      }
       
       const centerX = containerRect.width / 2;
       const centerY = containerRect.height / 2;
+      console.log(`[MapCanvas Debug] Zooming towards center: X=${centerX}, Y=${centerY}`);
+
+      // Add log before calling zoomTo
 
       // Apply zoom directly
+      console.log(`[MapCanvas Debug] Calling panzoom.zoomTo with scaleFactor: ${scaleFactor}. Expecting scale near ${nextScale.toFixed(4)}.`);
+      console.log("centerX", centerX);
+      console.log("centerY", centerY);
+      console.log("scaleFactor", scaleFactor);
       panzoomInstanceRef.current.zoomTo(centerX, centerY, scaleFactor);
+
+      const newTransform = panzoomInstanceRef.current.getTransform();
+      console.log(`[MapCanvas Debug] Zoom applied. New Scale: ${newTransform.scale}`);
+    } else {
+      console.log(`[MapCanvas Debug] Zoom outside bounds. Min: ${minZoom}, Max: ${maxZoom}. Scale not applied.`);
     }
   }, []);
 
@@ -245,9 +279,9 @@ export default function MapCanvas({ mapName, children, onStateClick, onMapReady,
 
   // Function to zoom to a specific province
   const zoomToProvince = useCallback((provinceId: string, targetScale?: number) => {
-    console.log('Attempting zoom to province:', provinceId);
+    console.log(`[MapCanvas Debug] Starting zoomToProvince. Target ID: ${provinceId}, Target Scale: ${targetScale}`);
     if (!panzoomInstanceRef.current || !stateDataRef.current.has(provinceId) || !svgContainerRef.current) {
-        console.error('Zoom prerequisites not met:', {
+        console.error('[MapCanvas Debug] Zoom prerequisites not met:', {
             hasInstance: !!panzoomInstanceRef.current,
             hasState: stateDataRef.current.has(provinceId),
             hasContainer: !!svgContainerRef.current
@@ -257,9 +291,11 @@ export default function MapCanvas({ mapName, children, onStateClick, onMapReady,
 
     const state = stateDataRef.current.get(provinceId)!;
     const bbox = state.path.getBBox();
+    console.log(`[MapCanvas Debug] Target Province BBox: x=${bbox.x.toFixed(2)}, y=${bbox.y.toFixed(2)}, w=${bbox.width.toFixed(2)}, h=${bbox.height.toFixed(2)}`);
     // Restore original cx, cy calculation
-    const cx = (bbox.x + bbox.width / 2) * 1;
-    const cy = (bbox.y + bbox.height / 2) * 1;
+    const cx = (bbox.x + bbox.width / 2);
+    const cy = (bbox.y + bbox.height / 2);
+    console.log(`[MapCanvas Debug] Calculated Center (SVG coords): cx=${cx.toFixed(2)}, cy=${cy.toFixed(2)}`);
 
     // Use known/calculated min/max zoom values directly
     const minZoom = initialZoomRef.current * 0.8;
@@ -268,29 +304,29 @@ export default function MapCanvas({ mapName, children, onStateClick, onMapReady,
     const desiredScale = targetScale || initialZoomRef.current * 3; // Default zoom-in if no targetScale
     const finalScale = Math.max(minZoom, Math.min(maxZoom, desiredScale));
 
-    console.log(`Target Province BBox: x=${bbox.x}, y=${bbox.y}, w=${bbox.width}, h=${bbox.height}`);
-    console.log(`Calculated Center (SVG coords): cx=${cx}, cy=${cy}`);
-    console.log(`Calculated Final Scale: ${finalScale}`);
+    console.log(`[MapCanvas Debug] MinZoom: ${minZoom.toFixed(2)}, MaxZoom: ${maxZoom}, Desired Scale: ${desiredScale.toFixed(2)}, Final Scale: ${finalScale.toFixed(2)}`);
 
     // 1. Apply the zoom centered on the SVG point (this might not center it visually)
+    console.log(`[MapCanvas Debug] Applying zoomAbs: cx=${cx.toFixed(2)}, cy=${cy.toFixed(2)}, scale=${finalScale.toFixed(2)}`);
     panzoomInstanceRef.current.zoomAbs(cx, cy, finalScale);
+    const postZoomTransform = panzoomInstanceRef.current.getTransform();
+    console.log(`[MapCanvas Debug] Transform after zoomAbs: X=${postZoomTransform.x.toFixed(2)}, Y=${postZoomTransform.y.toFixed(2)}, Scale=${postZoomTransform.scale.toFixed(2)}`);
 
     // 2. Immediately calculate the required pan to center the point visually
     const containerRect = svgContainerRef.current.getBoundingClientRect();
     const containerCenterX = containerRect.width / 2;
     const containerCenterY = containerRect.height / 2;
+    console.log(`[MapCanvas Debug] Container Center: X=${containerCenterX.toFixed(2)}, Y=${containerCenterY.toFixed(2)}`);
 
     // Calculate the desired top-left corner position for the panzoom transform
     const targetX = containerCenterX - (cx * finalScale);
     const targetY = containerCenterY - (cy * finalScale);
-
-    console.log(`Container Center: x=${containerCenterX}, y=${containerCenterY}`);
-    console.log(`Calculated target pan: targetX=${targetX}, targetY=${targetY}`);
+    console.log(`[MapCanvas Debug] Calculated target pan: targetX=${targetX.toFixed(2)}, targetY=${targetY.toFixed(2)}`);
 
     // 3. Move to the calculated position
     panzoomInstanceRef.current.moveTo(targetX, targetY);
-
-    console.log(`Moved to target pan.`);
+    const finalTransform = panzoomInstanceRef.current.getTransform();
+    console.log(`[MapCanvas Debug] Moved to target pan. Final Transform: X=${finalTransform.x.toFixed(2)}, Y=${finalTransform.y.toFixed(2)}, Scale=${finalTransform.scale.toFixed(2)}`);
 
   }, []); // Dependencies: Add any state/refs used inside if needed, e.g., initialZoomRef
 
@@ -354,12 +390,12 @@ export default function MapCanvas({ mapName, children, onStateClick, onMapReady,
         // Initialize zoom functionality (gets instance and initial level)
         const { initialZoomLevel } = initializeZoom(svg);
 
-        // Add wheel event listener
+        // Add wheel event listener with explicit non-passive option
         svg.addEventListener('wheel', (e: WheelEvent) => {
           e.preventDefault();
           const zoomIn = e.deltaY < 0;
           handleZoom(zoomIn, e.deltaY);
-        });
+        }, { passive: false }); // Explicitly set passive to false
 
         // Add mouse event listeners
         const handleMouseDown = (e: MouseEvent) => {
