@@ -3,282 +3,307 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { TaskService } from '@/services/taskService';
+import { Task } from '@/types/task';
+import { FaEdit } from 'react-icons/fa'; // Using react-icons for the edit icon
+import { GameService, SaveGame } from '@/services/gameService'; // Import GameService and SaveGame
+import { getNationFlag } from '@/utils/nationFlags'; // Import nation flag utility
+import { getNationName } from '@/data/nationTags'; // Import nation name utility
 
-interface UpdateEmailForm {
-  newEmail: string;
-  password: string;
-}
+// Helper to format the date
+const formatJoinDate = (date: Date | undefined): string => {
+  if (!date) return 'Unknown';
+  return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+};
 
-interface UpdatePasswordForm {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-}
+// Helper to format large numbers (from statistics page)
+const formatNumber = (num: number): string => {
+  if (num >= 1000000) {
+    return (Math.floor(num / 10000) / 100).toFixed(2) + 'M';
+  } else if (num >= 1000) {
+    return (Math.floor(num / 10) / 100).toFixed(2) + 'K';
+  } else {
+    return num.toString();
+  }
+};
 
-interface DeleteAccountForm {
-  password: string;
-  confirmation: string;
+// Helper function to format game date (similar to ResourceBar)
+const formatGameDate = (dateString: string): string => {
+  if (!dateString || !dateString.includes('-')) return 'Invalid Date';
+  try {
+    const [year, month, day] = dateString.split('-').map(part => parseInt(part, 10));
+    const date = new Date(year, month - 1, day);
+    
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    
+    return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+  } catch (e) {
+    console.error("Error formatting date:", dateString, e);
+    return 'Invalid Date';
+  }
+};
+
+interface ProfileStats {
+  totalSessions: number;
+  totalFocusMinutes: number;
+  tasksCompleted: number;
 }
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, updateProfile, updateEmail, updatePassword, deleteAccount, logout } = useAuth();
-  
-  const [displayName, setDisplayName] = useState(user?.displayName || '');
-  const [emailForm, setEmailForm] = useState<UpdateEmailForm>({ newEmail: '', password: '' });
-  const [passwordForm, setPasswordForm] = useState<UpdatePasswordForm>({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  });
-  const [deleteForm, setDeleteForm] = useState<DeleteAccountForm>({ password: '', confirmation: '' });
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { user, logout } = useAuth();
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [error, setError] = useState<string | null>(null); // Keep error state for logout
+  const [activeTab, setActiveTab] = useState('following'); // For right column tabs
+  const [saveGames, setSaveGames] = useState<SaveGame[]>([]); // State for save games
+  const [loadingGames, setLoadingGames] = useState(true); // Loading state for games
 
-  // Update display name state when user data loads
   useEffect(() => {
-    if (user?.displayName) {
-      setDisplayName(user.displayName);
-    }
+    const loadData = async () => {
+      if (user) {
+        setLoadingStats(true);
+        setLoadingGames(true);
+        try {
+          // Fetch tasks and games concurrently
+          const [userTasks, userGamesData] = await Promise.all([
+            TaskService.getUserTasks(user.uid),
+            GameService.getSaveGames(user.uid)
+          ]);
+          
+          setTasks(userTasks);
+
+          // Process and sort games
+          const gamesArray = Object.values(userGamesData)
+            .filter((game): game is SaveGame => game !== null) // Type guard
+            .sort((a, b) => 
+              new Date(b.metadata.savedAt).getTime() - new Date(a.metadata.savedAt).getTime()
+            );
+          setSaveGames(gamesArray);
+
+        } catch (error) {
+          console.error('Error loading profile data:', error);
+          setError('Failed to load profile data.');
+        } finally {
+          setLoadingStats(false);
+          setLoadingGames(false);
+        }
+      }
+    };
+
+    loadData();
   }, [user]);
 
-  const handleUpdateProfile = async () => {
-    try {
-      setError(null);
-      await updateProfile(displayName, user?.photoURL || null);
-      setSuccess('Profile updated successfully');
-    } catch (err) {
-      setError('Failed to update profile');
-      console.error('Profile update error:', err);
-    }
+  // Calculate Stats
+  const completedTasks = tasks.filter(task => task.completed);
+  const profileStats: ProfileStats = {
+    totalSessions: completedTasks.length,
+    totalFocusMinutes: completedTasks.length * 25, // Assuming 25 min per session
+    tasksCompleted: completedTasks.length,
   };
 
-  const handleUpdateEmail = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!emailForm.newEmail || !emailForm.password) {
-      setError('Please fill in all fields');
-      return;
-    }
-
+  const handleLogout = async () => {
     try {
-      setError(null);
-      await updateEmail(emailForm.newEmail, emailForm.password);
-      setSuccess('Email updated successfully. Please verify your new email.');
-      setEmailForm({ newEmail: '', password: '' });
-    } catch (err) {
-      setError('Failed to update email. Please check your password and try again.');
-      console.error('Email update error:', err);
-    }
-  };
-
-  const handleUpdatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-      setError('Please fill in all password fields');
-      return;
-    }
-    
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setError('New passwords do not match');
-      return;
-    }
-
-    if (passwordForm.newPassword.length < 6) {
-      setError('New password must be at least 6 characters long');
-      return;
-    }
-
-    try {
-      setError(null);
-      await updatePassword(passwordForm.currentPassword, passwordForm.newPassword);
-      setSuccess('Password updated successfully');
-      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    } catch (err) {
-      setError('Failed to update password. Please check your current password and try again.');
-      console.error('Password update error:', err);
-    }
-  };
-
-  const handleDeleteAccount = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (deleteForm.confirmation !== 'DELETE') {
-      setError('Please type DELETE to confirm account deletion');
-      return;
-    }
-
-    try {
-      setError(null);
-      await deleteAccount(deleteForm.password);
       await logout();
       router.push('/signin');
     } catch (err) {
-      setError('Failed to delete account. Please check your password and try again.');
-      console.error('Account deletion error:', err);
+      console.error("Logout failed:", err);
+      setError("Failed to sign out. Please try again.");
     }
   };
 
   if (!user) {
-    return <div className="min-h-screen flex items-center justify-center bg-white">
-      <div className="text-[#0B1423] text-xl [font-family:var(--font-mplus-rounded)]">Loading...</div>
-    </div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-[#0B1423] text-xl [font-family:var(--font-mplus-rounded)]">
+          Loading...
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-3xl w-full mx-auto p-6 bg-white min-h-screen">
-      <div className="bg-white rounded-xl p-8 border-2 border-[#67b9e7]/30 shadow-[4px_4px_0px_0px_rgba(103,185,231,0.3)] mb-8">
-        <h1 className="text-3xl font-bold text-[#0B1423] text-center mb-6 [font-family:var(--font-mplus-rounded)]">Account Settings</h1>
+    <div className="w-full max-w-6xl mx-auto px-4 py-8 bg-white min-h-screen [font-family:var(--font-mplus-rounded)]">
+      {/* Optional: Background Banner Placeholder */} 
+      <div className="h-32 sm:h-48 bg-gradient-to-r from-[#a2d2ff]/50 to-[#bde0fe]/50 rounded-t-xl relative mb-[-64px] sm:mb-[-80px]">
+        {/* Banner Content can go here if needed */}
+      </div>
 
-        {error && (
-          <div className="bg-red-50 border-2 border-red-300 text-red-700 px-6 py-3 rounded-lg mb-6 [font-family:var(--font-mplus-rounded)]">
-            {error}
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* --- Left Column --- */}
+        <div className="w-full lg:w-2/3">
+          {/* Profile Picture and Basic Info */}
+          <div className="flex items-end mb-6">
+            {/* Profile Picture Placeholder */} 
+            <div className="relative mr-4 flex-shrink-0">
+              <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-gray-300 border-4 border-white shadow-md flex items-center justify-center">
+                <span className="text-6xl text-gray-500">👤</span> {/* Placeholder Icon */}
+              </div>
+              <button className="absolute bottom-2 right-2 bg-[#67b9e7] text-white rounded-full p-2 hover:bg-[#4792ba] transition duration-200 shadow-md">
+                <FaEdit size={16} />
+              </button>
+            </div>
+            {/* Name and Joined Date */} 
+            <div>
+              <h1 className="text-3xl sm:text-4xl font-bold text-[#0B1423]">
+                {user.displayName || 'User'}
+              </h1>
+              <p className="text-sm text-[#0B1423]/70 mt-1">
+                Joined {formatJoinDate(user.createdAt)}
+              </p>
+            </div>
           </div>
-        )}
+          
+          {/* Statistics Section */} 
+          <section className="mb-8">
+            <h2 className="text-2xl font-bold text-[#0B1423] mb-4">Statistics</h2>
+            {loadingStats ? (
+              <div className="text-center py-8 text-[#0B1423]/50">Loading stats...</div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <StatCard label="Total Sessions" value={formatNumber(profileStats.totalSessions)} icon="🎯" />
+                <StatCard label="Focus Minutes" value={formatNumber(profileStats.totalFocusMinutes)} icon="⏱️" />
+                <StatCard label="Tasks Done" value={formatNumber(profileStats.tasksCompleted)} icon="✅" />
+                {/* Add more stat cards if needed */}
+              </div>
+            )}
+          </section>
 
-        {success && (
-          <div className="bg-green-50 border-2 border-green-300 text-green-700 px-6 py-3 rounded-lg mb-6 [font-family:var(--font-mplus-rounded)]">
-            {success}
-          </div>
-        )}
+          {/* Recent Nations Section */}
+          <section className="mb-8">
+            <h2 className="text-2xl font-bold text-[#0B1423] mb-4">Recent Nations</h2>
+            {loadingGames ? (
+              <div className="text-center py-8 text-[#0B1423]/50">Loading nations...</div>
+            ) : saveGames.length > 0 ? (
+              <div className="space-y-3">
+                {saveGames.slice(0, 3).map((gameData) => (
+                  <RecentNationCard key={gameData.game.id} gameData={gameData} />
+                ))}
+                {/* Optional: Link to see all saved games if needed */}
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl p-6 border-2 border-[#67b9e7]/30 shadow-[4px_4px_0px_0px_rgba(103,185,231,0.3)]">
+                <p className="text-center text-[#0B1423]/50 py-4">
+                  No saved nations found.
+                </p>
+              </div>
+            )}
+          </section>
 
-        {/* Profile Section */}
-        <section className="bg-white p-6 rounded-lg border-2 border-[#67b9e7]/30 shadow-[4px_4px_0px_0px_rgba(103,185,231,0.3)] mb-6">
-          <h2 className="text-xl font-semibold mb-4 text-[#0B1423] [font-family:var(--font-mplus-rounded)]">Profile Information</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-[#0B1423]/70 mb-1 [font-family:var(--font-mplus-rounded)]">Display Name</label>
-              <input
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                className="block w-full rounded-md bg-white border-2 border-[#67b9e7]/30 text-[#0B1423] px-4 py-2.5 focus:border-[#67b9e7] focus:outline-none focus:ring-1 focus:ring-[#67b9e7]/50 transition-all [font-family:var(--font-mplus-rounded)]"
-              />
+          {/* Achievements Section Placeholder */} 
+          <section className="mb-8">
+            <h2 className="text-2xl font-bold text-[#0B1423] mb-4">Achievements</h2>
+            <div className="bg-white rounded-xl p-6 border-2 border-[#67b9e7]/30 shadow-[4px_4px_0px_0px_rgba(103,185,231,0.3)]">
+              <p className="text-center text-[#0B1423]/50 py-8">
+                Achievements coming soon!
+              </p>
+              {/* Achievement items will go here */}
             </div>
-            <div className="text-[#0B1423]/70 text-sm mt-4 border-t border-[#67b9e7]/20 pt-4 [font-family:var(--font-mplus-rounded)]">
-              <p><span className="text-[#0B1423]/50">Email:</span> {user.email}</p>
-              <p><span className="text-[#0B1423]/50">Account created:</span> {user.createdAt.toLocaleDateString()}</p>
-              <p><span className="text-[#0B1423]/50">Last login:</span> {user.lastLogin.toLocaleDateString()}</p>
+          </section>
+
+          {/* Error Message Display */} 
+          {error && (
+            <div className="bg-red-50 border-2 border-red-300 text-red-700 px-6 py-3 rounded-lg mb-6 text-center">
+              {error}
             </div>
+          )}
+
+          {/* Sign Out Button */} 
+          <div className="mt-8 text-center">
             <button
-              onClick={handleUpdateProfile}
-              className="px-6 py-2.5 bg-white text-[#0B1423] rounded-lg border-2 border-[#67b9e7]/40 hover:border-[#67b9e7] hover:bg-gray-50 transition-all duration-200 [font-family:var(--font-mplus-rounded)] tracking-wide shadow-[4px_4px_0px_0px_rgba(103,185,231,0.3)]"
+              onClick={handleLogout}
+              className="px-8 py-3 bg-white text-[#0B1423] rounded-lg border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 tracking-wide shadow-[2px_2px_0px_0px_rgba(156,163,175,0.2)]"
             >
-              Update Profile
+              Sign Out
             </button>
           </div>
-        </section>
+        </div>
 
-        {/* Email Section */}
-        <section className="bg-white p-6 rounded-lg border-2 border-[#67b9e7]/30 shadow-[4px_4px_0px_0px_rgba(103,185,231,0.3)] mb-6">
-          <h2 className="text-xl font-semibold mb-4 text-[#0B1423] [font-family:var(--font-mplus-rounded)]">Change Email</h2>
-          <form onSubmit={handleUpdateEmail} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-[#0B1423]/70 mb-1 [font-family:var(--font-mplus-rounded)]">New Email</label>
-              <input
-                type="email"
-                value={emailForm.newEmail}
-                onChange={(e) => setEmailForm({ ...emailForm, newEmail: e.target.value })}
-                className="block w-full rounded-md bg-white border-2 border-[#67b9e7]/30 text-[#0B1423] px-4 py-2.5 focus:border-[#67b9e7] focus:outline-none focus:ring-1 focus:ring-[#67b9e7]/50 transition-all [font-family:var(--font-mplus-rounded)]"
-                placeholder="Enter your new email"
-              />
+        {/* --- Right Column --- */}
+        <div className="w-full lg:w-1/3 lg:mt-[120px]"> {/* Increased top margin */}
+          <div className="bg-white rounded-xl p-6 border-2 border-[#67b9e7]/30 shadow-[4px_4px_0px_0px_rgba(103,185,231,0.3)]">
+            {/* Tabs */} 
+            <div className="flex border-b border-[#67b9e7]/30 mb-4">
+              <button 
+                onClick={() => setActiveTab('following')}
+                className={`flex-1 py-2 text-center font-semibold transition-colors duration-200 ${activeTab === 'following' ? 'text-[#67b9e7] border-b-2 border-[#67b9e7]' : 'text-[#0B1423]/60 hover:text-[#0B1423]'}`}
+              >
+                Following
+              </button>
+              <button 
+                onClick={() => setActiveTab('followers')}
+                className={`flex-1 py-2 text-center font-semibold transition-colors duration-200 ${activeTab === 'followers' ? 'text-[#67b9e7] border-b-2 border-[#67b9e7]' : 'text-[#0B1423]/60 hover:text-[#0B1423]'}`}
+              >
+                Followers
+              </button>
             </div>
+            
+            {/* Tab Content */} 
             <div>
-              <label className="block text-sm font-medium text-[#0B1423]/70 mb-1 [font-family:var(--font-mplus-rounded)]">Password</label>
-              <input
-                type="password"
-                value={emailForm.password}
-                onChange={(e) => setEmailForm({ ...emailForm, password: e.target.value })}
-                className="block w-full rounded-md bg-white border-2 border-[#67b9e7]/30 text-[#0B1423] px-4 py-2.5 focus:border-[#67b9e7] focus:outline-none focus:ring-1 focus:ring-[#67b9e7]/50 transition-all [font-family:var(--font-mplus-rounded)]"
-                placeholder="Enter your password"
-              />
+              {activeTab === 'following' && (
+                <div className="text-center text-[#0B1423]/50 py-8">
+                  Following list coming soon...
+                  {/* Following user list will go here */}
+                </div>
+              )}
+              {activeTab === 'followers' && (
+                <div className="text-center text-[#0B1423]/50 py-8">
+                  Followers list coming soon...
+                  {/* Followers user list will go here */}
+                </div>
+              )}
             </div>
-            <button
-              type="submit"
-              className="px-6 py-2.5 bg-white text-[#0B1423] rounded-lg border-2 border-[#67b9e7]/40 hover:border-[#67b9e7] hover:bg-gray-50 transition-all duration-200 [font-family:var(--font-mplus-rounded)] tracking-wide shadow-[4px_4px_0px_0px_rgba(103,185,231,0.3)]"
-            >
-              Update Email
-            </button>
-          </form>
-        </section>
-
-        {/* Password Section */}
-        <section className="bg-white p-6 rounded-lg border-2 border-[#67b9e7]/30 shadow-[4px_4px_0px_0px_rgba(103,185,231,0.3)] mb-6">
-          <h2 className="text-xl font-semibold mb-4 text-[#0B1423] [font-family:var(--font-mplus-rounded)]">Change Password</h2>
-          <form onSubmit={handleUpdatePassword} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-[#0B1423]/70 mb-1 [font-family:var(--font-mplus-rounded)]">Current Password</label>
-              <input
-                type="password"
-                value={passwordForm.currentPassword}
-                onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
-                className="block w-full rounded-md bg-white border-2 border-[#67b9e7]/30 text-[#0B1423] px-4 py-2.5 focus:border-[#67b9e7] focus:outline-none focus:ring-1 focus:ring-[#67b9e7]/50 transition-all [font-family:var(--font-mplus-rounded)]"
-                placeholder="Enter your current password"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[#0B1423]/70 mb-1 [font-family:var(--font-mplus-rounded)]">New Password</label>
-              <input
-                type="password"
-                value={passwordForm.newPassword}
-                onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                className="block w-full rounded-md bg-white border-2 border-[#67b9e7]/30 text-[#0B1423] px-4 py-2.5 focus:border-[#67b9e7] focus:outline-none focus:ring-1 focus:ring-[#67b9e7]/50 transition-all [font-family:var(--font-mplus-rounded)]"
-                placeholder="Enter your new password"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[#0B1423]/70 mb-1 [font-family:var(--font-mplus-rounded)]">Confirm New Password</label>
-              <input
-                type="password"
-                value={passwordForm.confirmPassword}
-                onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                className="block w-full rounded-md bg-white border-2 border-[#67b9e7]/30 text-[#0B1423] px-4 py-2.5 focus:border-[#67b9e7] focus:outline-none focus:ring-1 focus:ring-[#67b9e7]/50 transition-all [font-family:var(--font-mplus-rounded)]"
-                placeholder="Confirm your new password"
-              />
-            </div>
-            <button
-              type="submit"
-              className="px-6 py-2.5 bg-white text-[#0B1423] rounded-lg border-2 border-[#67b9e7]/40 hover:border-[#67b9e7] hover:bg-gray-50 transition-all duration-200 [font-family:var(--font-mplus-rounded)] tracking-wide shadow-[4px_4px_0px_0px_rgba(103,185,231,0.3)]"
-            >
-              Update Password
-            </button>
-          </form>
-        </section>
-
-        {/* Delete Account Section */}
-        <section className="bg-white p-6 rounded-lg border-2 border-red-300 shadow-[4px_4px_0px_0px_rgba(220,38,38,0.2)]">
-          <h2 className="text-xl font-semibold mb-4 text-red-600 [font-family:var(--font-mplus-rounded)]">Delete Account</h2>
-          <p className="text-[#0B1423]/70 mb-4 [font-family:var(--font-mplus-rounded)]">
-            This action cannot be undone. Please type "DELETE" to confirm.
-          </p>
-          <form onSubmit={handleDeleteAccount} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-[#0B1423]/70 mb-1 [font-family:var(--font-mplus-rounded)]">Your Password</label>
-              <input
-                type="password"
-                value={deleteForm.password}
-                onChange={(e) => setDeleteForm({ ...deleteForm, password: e.target.value })}
-                className="block w-full rounded-md bg-white border-2 border-red-300/30 text-[#0B1423] px-4 py-2.5 focus:border-red-300 focus:outline-none focus:ring-1 focus:ring-red-300/50 transition-all [font-family:var(--font-mplus-rounded)]"
-                placeholder="Enter your password"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-[#0B1423]/70 mb-1 [font-family:var(--font-mplus-rounded)]">Type "DELETE" to confirm</label>
-              <input
-                type="text"
-                value={deleteForm.confirmation}
-                onChange={(e) => setDeleteForm({ ...deleteForm, confirmation: e.target.value })}
-                className="block w-full rounded-md bg-white border-2 border-red-300/30 text-[#0B1423] px-4 py-2.5 focus:border-red-300 focus:outline-none focus:ring-1 focus:ring-red-300/50 transition-all [font-family:var(--font-mplus-rounded)]"
-                placeholder="Type DELETE"
-              />
-            </div>
-            <button
-              type="submit"
-              className="px-6 py-2.5 bg-white text-red-600 rounded-lg border-2 border-red-300 hover:border-red-400 hover:bg-red-50 transition-all duration-200 [font-family:var(--font-mplus-rounded)] tracking-wide shadow-[4px_4px_0px_0px_rgba(220,38,38,0.2)]"
-            >
-              Delete Account
-            </button>
-          </form>
-        </section>
+          </div>
+        </div>
       </div>
     </div>
   );
-} 
+}
+
+// Helper component for Statistic Cards
+interface StatCardProps {
+  label: string;
+  value: string | number;
+  icon: string; // Emoji icon
+}
+const StatCard: React.FC<StatCardProps> = ({ label, value, icon }) => (
+  <div className="bg-white rounded-lg p-4 border-2 border-[#67b9e7]/30 shadow-[4px_4px_0px_0px_rgba(103,185,231,0.3)] flex items-center">
+    <span className="text-3xl mr-3">{icon}</span>
+    <div>
+      <div className="text-[#0B1423] font-bold text-xl">{value}</div>
+      <div className="text-[#0B1423]/70 text-sm">{label}</div>
+    </div>
+  </div>
+);
+
+// Helper component for Recent Nation Cards (Compact Version)
+interface RecentNationCardProps {
+  gameData: SaveGame;
+}
+const RecentNationCard: React.FC<RecentNationCardProps> = ({ gameData }) => {
+  const playerNationTag = gameData.game.playerNationTag;
+  const nationName = getNationName(playerNationTag);
+  const nationFlag = getNationFlag(playerNationTag);
+  const gameDate = formatGameDate(gameData.game.date);
+
+  return (
+    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200 shadow-sm flex items-center justify-between hover:bg-gray-100 transition duration-150">
+      <div className="flex items-center gap-3">
+        <span className="text-3xl">{nationFlag}</span>
+        <div>
+          <h3 className="text-md font-bold text-[#0B1423]">
+            {nationName}
+          </h3>
+          <p className="text-xs text-[#0B1423]/70">
+            {gameDate}
+          </p>
+        </div>
+      </div>
+      {/* Optional: Add a small indicator or button if needed */}
+      {/* <span className="text-xs text-[#67b9e7]">Load</span> */}
+    </div>
+  );
+}; 

@@ -7,20 +7,12 @@ import { FirebaseError } from 'firebase/app';
 import Link from 'next/link';
 import { FcGoogle } from "react-icons/fc"; // Google Icon
 
-type AuthMode = 'signin' | 'signup';
-
-interface AuthForm {
-  email: string;
-  password: string;
-  displayName?: string;
-}
-
-// Firebase error code to user-friendly message mapping with action guidance
-const getErrorMessage = (error: FirebaseError, mode: AuthMode) => {
+// --- (Keep existing error handling: getErrorMessage) ---
+const getErrorMessage = (error: FirebaseError) => {
   const commonMessages: Record<string, { message: string; action?: string }> = {
     'auth/invalid-credential': {
       message: 'Invalid email or password.',
-      action: mode === 'signin' ? 'Please try again or create a new account.' : undefined
+      action: 'Please try again or create a new account.'
     },
     'auth/user-not-found': {
       message: 'No account found with this email.',
@@ -50,29 +42,22 @@ const getErrorMessage = (error: FirebaseError, mode: AuthMode) => {
       action: 'Please try again later or reset your password.'
     },
   };
-
   const errorInfo = commonMessages[error.code] || {
     message: 'An error occurred.',
     action: 'Please try again.'
   };
-
   return errorInfo;
 };
+// --------------------------------------------------------
 
-export default function SignInPage() {
+export default function SignUpPage() {
   const router = useRouter();
-  const { signIn, signUp, signInWithGoogle, user } = useAuth();
-  const [mode, setMode] = useState<AuthMode>('signin');
+  const { signUp, signInWithGoogle, user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [loadingGoogle, setLoadingGoogle] = useState(false);
   const [error, setError] = useState<{ message: string; action?: string } | null>(null);
-  const [form, setForm] = useState<AuthForm>({
-    email: '',
-    password: '',
-    displayName: '',
-  });
+  const [form, setForm] = useState({ email: '', password: '', displayName: '' });
 
-  // Redirect to dashboard if already authenticated
   useEffect(() => {
     if (user) {
       router.push('/dashboard');
@@ -82,36 +67,28 @@ export default function SignInPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    if (!form.displayName) {
+      setError({ message: 'Please enter a display name.' });
+      return;
+    }
+    if (form.password.length < 6) {
+      setError({
+        message: 'Password is too short.',
+        action: 'Password must be at least 6 characters long.'
+      });
+      return;
+    }
     setLoading(true);
-
     try {
-      if (mode === 'signin') {
-        await signIn(form.email, form.password);
-      } else {
-        if (!form.displayName) {
-          throw new Error('Please enter a display name');
-        }
-        if (form.password.length < 6) {
-          setError({
-            message: 'Password is too short.',
-            action: 'Password must be at least 6 characters long.'
-          });
-          return;
-        }
-        await signUp(form.email, form.password, form.displayName);
-      }
-      router.push('/dashboard');
+      await signUp(form.email, form.password, form.displayName);
+      router.push('/dashboard'); // Redirect after successful signup
     } catch (err) {
-      console.error('Authentication error:', err);
       if (err instanceof FirebaseError) {
-        setError(getErrorMessage(err, mode));
+        setError(getErrorMessage(err));
       } else if (err instanceof Error) {
         setError({ message: err.message });
       } else {
-        setError({ 
-          message: 'An unexpected error occurred',
-          action: 'Please try again or contact support.'
-        });
+        setError({ message: 'An unexpected error occurred during sign up.' });
       }
     } finally {
       setLoading(false);
@@ -121,45 +98,52 @@ export default function SignInPage() {
   const handleGoogleSignIn = async () => {
     setError(null);
     setLoadingGoogle(true);
-
     try {
       await signInWithGoogle();
       router.push('/dashboard');
     } catch (err) {
-      console.error('Google sign-in error:', err);
       if (err instanceof FirebaseError) {
-        setError(getErrorMessage(err, mode));
+        setError(getErrorMessage(err));
       } else {
-        setError({ 
-          message: 'An error occurred during Google sign-in',
-          action: 'Please try again or use email sign-in.'
-        });
+        setError({ message: 'An error occurred during Google sign-in.' });
       }
     } finally {
       setLoadingGoogle(false);
     }
   };
 
-  // If user is already authenticated, show loading state
   if (user) {
-    return <div className="min-h-screen bg-white flex items-center justify-center">
-      <div className="text-gray-700 text-xl">Redirecting...</div>
-    </div>;
+    return <div className="min-h-screen bg-white flex items-center justify-center"><div className="text-gray-700 text-xl">Redirecting...</div></div>;
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center px-4 [font-family:var(--font-mplus-rounded)]">
-      {/* Corner Link to Sign Up */}
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center py-12 px-4 [font-family:var(--font-mplus-rounded)]">
+      {/* Corner Link to Sign In */}
       <div className="absolute top-5 right-5">
-        <Link href="/signup" className="text-sm font-semibold text-gray-600 hover:text-[#67b9e7] transition-colors">
-          Sign Up
+        <Link href="/signin" className="text-sm font-semibold text-gray-600 hover:text-[#67b9e7] transition-colors">
+          Log In
         </Link>
       </div>
 
       <div className="max-w-sm w-full space-y-6">
-        <h2 className="text-center text-3xl font-bold text-[#0B1423]">Log in</h2>
+        <h2 className="text-center text-3xl font-bold text-[#0B1423]">Create your profile</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Display Name Input */}
+          <div>
+            <input
+              id="displayName"
+              name="displayName"
+              type="text"
+              required
+              value={form.displayName}
+              onChange={(e) => setForm({ ...form, displayName: e.target.value })}
+              className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300 bg-white text-[#0B1423] placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#67b9e7] focus:border-[#67b9e7] sm:text-sm"
+              placeholder="Name" // Updated placeholder
+            />
+          </div>
+
+          {/* Email Input */}
           <div>
             <input
               id="email"
@@ -174,21 +158,19 @@ export default function SignInPage() {
             />
           </div>
 
-          <div className="relative">
+          {/* Password Input */}
+          <div>
             <input
               id="password"
               name="password"
               type="password"
-              autoComplete="current-password"
+              autoComplete="new-password"
               required
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300 bg-white text-[#0B1423] placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#67b9e7] focus:border-[#67b9e7] sm:text-sm pr-16" // Added padding for forgot link
-              placeholder="Password"
+              className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-gray-300 bg-white text-[#0B1423] placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#67b9e7] focus:border-[#67b9e7] sm:text-sm"
+              placeholder="Password (min. 6 characters)"
             />
-            <button type="button" className="absolute inset-y-0 right-0 pr-3 flex items-center text-xs font-semibold text-[#67b9e7] hover:text-[#4792ba]">
-              FORGOT?
-            </button>
           </div>
 
           {error && (
@@ -198,6 +180,7 @@ export default function SignInPage() {
             </div>
           )}
 
+          {/* Create Account Button */}
           <div>
             <button
               type="submit"
@@ -206,7 +189,7 @@ export default function SignInPage() {
                 loading ? 'opacity-50 cursor-not-allowed' : ''
               }`}
             >
-              {loading ? 'Logging in...' : 'Log In'}
+              {loading ? 'Creating account...' : 'Create Account'}
             </button>
           </div>
         </form>
@@ -232,13 +215,13 @@ export default function SignInPage() {
             }`}
           >
             <FcGoogle className="h-5 w-5 mr-2" />
-            {loadingGoogle ? 'Redirecting...' : 'Log In with Google'}
+            {loadingGoogle ? 'Redirecting...' : 'Continue with Google'}
           </button>
         </div>
 
         {/* Terms Text */}
         <div className="text-center text-xs text-gray-500 mt-6">
-          By signing in to Age of Focus, you agree to our <Link href="/terms" className="font-medium hover:underline">Terms</Link> and <Link href="/privacy" className="font-medium hover:underline">Privacy Policy</Link>.
+          By signing up for Age of Focus, you agree to our <Link href="/terms" className="font-medium hover:underline">Terms</Link> and <Link href="/privacy" className="font-medium hover:underline">Privacy Policy</Link>.
         </div>
       </div>
     </div>

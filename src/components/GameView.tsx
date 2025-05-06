@@ -1038,8 +1038,8 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
 
       {/* Conquest Mode Text Prompt */}
       {isInConqueringMode && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 px-8 py-4 bg-white/90 rounded-lg shadow-md border border-gray-200 [font-family:var(--font-mplus-rounded)]">
-          <p className="text-xl font-semibold text-gray-800">⚔️ Select a province to conquer ⚔️</p>
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 md:px-8 md:py-4 bg-white/90 rounded-lg shadow-md border border-gray-200 [font-family:var(--font-mplus-rounded)]">
+          <p className="text-lg md:text-xl font-semibold text-gray-800 whitespace-nowrap">⚔️ Select a province to conquer ⚔️</p>
         </div>
       )}
 
