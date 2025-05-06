@@ -18,6 +18,8 @@ import NationalPathModal from './NationalPathModal';
 import { countries_1836 } from '@/data/countries_1836';
 import HabitsModal from './HabitsModal';
 import { getNationFlag } from '@/utils/nationFlags';
+import MissionsModal from './MissionsModal';
+import { getNationName } from '@/data/nationTags';
 
 interface GameViewProps {
   game?: Game;
@@ -67,6 +69,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isHabitsModalOpen, setIsHabitsModalOpen] = useState(false);
   const [isNationalPathModalOpen, setIsNationalPathModalOpen] = useState(false);
+  const [isMissionsModalOpen, setIsMissionsModalOpen] = useState(false);
   const [isInConqueringMode, setIsInConqueringMode] = useState(false);
   const isInConqueringModeRef = useRef(isInConqueringMode);
   const [localGame, setLocalGame] = useState<Game | null>(game || null);
@@ -257,76 +260,84 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           // --- End Battle Calculations ---
 
           const popup = document.createElement('div');
-          // Keep existing popup styles
-          popup.className = '[font-family:var(--font-mplus-rounded)] fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] bg-white rounded-lg p-6 w-full max-w-3xl border border-gray-200';
-          popup.style.boxShadow = '0 4px 0 rgba(229,229,229,255)';
+          // Apply theme styling: similar to profile cards
+          popup.className = '[font-family:var(--font-mplus-rounded)] fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] bg-white rounded-xl p-6 w-full max-w-2xl border-2 border-[#67b9e7]/30 shadow-[4px_4px_0px_0px_rgba(103,185,231,0.3)]';
           
-          // Emoji style from ResourceBar
-          const emojiStyle = `text-shadow: -1px -1px 0 rgba(0,0,0,0.1), 1px -1px 0 rgba(0,0,0,0.1), -1px 1px 0 rgba(0,0,0,0.1), 1px 1px 0 rgba(0,0,0,0.1); display: inline-block;`;
-          const flagStyle = `display: inline-block; width: 1.8em; height: 1.8em; vertical-align: middle; margin-right: 0.5em; line-height: 1; font-size: 1.8em;`;
+          // Reusable styles
+          const emojiStyle = `text-shadow: -0.5px -0.5px 0 rgba(0,0,0,0.1), 0.5px -0.5px 0 rgba(0,0,0,0.1), -0.5px 0.5px 0 rgba(0,0,0,0.1), 0.5px 0.5px 0 rgba(0,0,0,0.1); display: inline-block; font-size: 1.4em;`; // Slightly smaller
+          const flagStyle = `display: inline-block; width: 1.5em; height: 1.5em; vertical-align: middle; margin-right: 0.3em; line-height: 1; font-size: 1.5em;`; // Slightly smaller
+          const statLabelStyle = `text-[#0B1423]/70 text-sm`;
+          const statValueStyle = `font-semibold text-lg text-[#0B1423]`;
+          const columnHeaderStyle = `text-lg font-bold text-[#0B1423] mb-3 flex items-center justify-center gap-2`;
+          const buttonBaseStyle = `px-6 py-3 text-base font-semibold rounded-lg border-2 transition-all duration-200 flex items-center justify-center gap-2 shadow-[0_4px_0px] hover:translate-y-[-2px] active:translate-y-[1px] active:shadow-[0_2px_0px] w-full max-w-xs`;
+          const enabledButtonStyle = `bg-[#67b9e7] text-white border-[#4792ba] shadow-[#4792ba] hover:bg-[#5aa8d6] active:bg-[#4792ba]`;
+          const disabledButtonStyle = `bg-gray-200 text-gray-400 border-gray-300 shadow-gray-300 cursor-not-allowed`;
+          const closeButtonStyle = `absolute top-2 right-2 p-1 text-xl font-bold text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors leading-none w-7 h-7 flex items-center justify-center`;
 
           popup.innerHTML = `
-            <div class="relative bg-white flex justify-center items-center mb-4 pb-4">
-              <h2 class="text-xl font-bold text-gray-900 flex items-center gap-2">
-                <span style="${emojiStyle} font-size: 1.5em;">⚔️</span>
+            <div class="relative mb-4 pb-3">
+              <h2 class="text-xl font-bold text-[#0B1423] text-center">
+                <span style="${emojiStyle}" class="mr-1">⚔️</span>
                 Conquest of ${selectedProvince.name}
               </h2>
-              <button id="closeConquestPopupButton" class="absolute top-0 right-0 rounded-full p-1 transition-colors hover:bg-gray-100 text-gray-500 hover:text-gray-700">
-                <span class="text-xl font-bold w-5 h-5 flex items-center justify-center">✕</span>
+              <button id="closeConquestPopupButton" class="${closeButtonStyle}">
+                ✕
               </button>
             </div>
 
-            <div class="grid grid-cols-2 gap-6 min-h-[150px]">
+            <div class="grid grid-cols-2 gap-6 mb-5"> 
               
-              <!-- Attacker Column (Player) -->
-              <div class="border-r border-gray-200 pr-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center justify-center">
+              <div class="bg-gray-50 rounded-lg p-4 border border-gray-200/80">
+                <h3 class="${columnHeaderStyle}">
                   <span style="${flagStyle}">${getNationFlag(playerNation.nationTag)}</span>
                   Attacker: ${playerNation.name}
                 </h3>
-                <div class="space-y-3 text-base">
-                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">⚔️</span> Power: <span class="ml-auto font-bold text-gray-900">${formatNumber(attackerPower)}</span></div>
-                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">👥</span> Est. Casualties: <span class="ml-auto font-bold text-red-600">${formatNumber(attackerLosses)}</span></div>
+                <div class="space-y-2">
+                  <div class="flex justify-between items-baseline">
+                    <span class="${statLabelStyle}">⚔️ Power:</span> 
+                    <span class="${statValueStyle}">${formatNumber(attackerPower)}</span>
+                  </div>
+                  <div class="flex justify-between items-baseline">
+                    <span class="${statLabelStyle}">Est. Casualties:</span> 
+                    <span class="${statValueStyle} text-red-600">-${formatNumber(attackerLosses)}</span> 
+                  </div>
                 </div>
               </div>
 
-              <!-- Defender Column (Owner) -->
-              <div class="pl-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center justify-center">
+              <div class="bg-gray-50 rounded-lg p-4 border border-gray-200/80">
+                <h3 class="${columnHeaderStyle}">
                   <span style="${flagStyle}">${getNationFlag(owningNation.nationTag)}</span>
                   Defender: ${owningNation.name}
                 </h3>
-                 <div class="space-y-3 text-base">
-                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">⚔️</span> Power: <span class="ml-auto font-bold text-gray-900">${formatNumber(defenderPower)}</span></div>
-                  <div class="flex items-center gap-2 text-gray-900"><span style="${emojiStyle} font-size: 1.5em;">👥</span> Est. Casualties: <span class="ml-auto font-bold text-red-600">${formatNumber(defenderLosses)}</span></div>
+                 <div class="space-y-2">
+                  <div class="flex justify-between items-baseline">
+                    <span class="${statLabelStyle}">⚔️ Power:</span> 
+                    <span class="${statValueStyle}">${formatNumber(defenderPower)}</span>
+                  </div>
+                  <div class="flex justify-between items-baseline">
+                    <span class="${statLabelStyle}">Est. Casualties:</span> 
+                    <span class="${statValueStyle} text-red-600">-${formatNumber(defenderLosses)}</span> 
+                  </div>
                 </div>
               </div>
-
             </div>
-
-            <!-- Battle Projection Section -->
-            <div class="mt-4 pt-2 ">
-                <!-- Outcome & Warnings -->
-                <div class="text-center text-gray-900">
-                    <div class="text-2xl font-semibold ${isProjectedVictory ? 'text-green-600' : 'text-red-600'}">
+ 
+            <div class="mt-1 pt-1 flex flex-col items-center gap-2"> 
+                <div class="text-center mb-1">
+                    <div class="text-xl font-bold ${isProjectedVictory ? 'text-green-600' : 'text-red-600'}">
                         ${isProjectedVictory ? '📈 Projected Victory' : '📉 Projected Defeat'}
                     </div>
-                    ${!meetsMinimumPower && hasSufficientArmy ? '<div class="text-xs text-red-500 mt-1">Warning: Forces significantly outmatched!</div>' : ''}
-                    ${!hasSufficientArmy ? '<div class="text-xs text-red-500 mt-1">Warning: No army to attack with!</div>' : ''}
-                    ${!canAfford ? '<div class="text-xs text-red-500 mt-1"></div>' : ''}
                 </div>
-            </div>
             
-            <div class=" pt-6 flex flex-col items-center gap-2">
-                 <button 
+                <button 
                     id="launchAttackButton" 
-                    class="px-5 py-2 bg-red-600 text-white rounded-md font-semibold hover:bg-red-700 transition-colors text-base w-full max-w-xs ${!canLaunchAttack ? 'opacity-50 cursor-not-allowed' : ''}" 
+                    class="${buttonBaseStyle} ${canLaunchAttack ? enabledButtonStyle : disabledButtonStyle} mb-4"
                     ${!canLaunchAttack ? 'disabled' : ''}
                     title="${disabledReason}"
-                  >
-                    Launch Attack (${CONQUEST_GOLD_COST}💰)
-                  </button>
-                  ${disabledReason ? `<span class="text-xs text-red-600">${disabledReason}</span>` : ''}
+                >
+                  <span class="mr-1">⚔️</span> Launch Attack (${CONQUEST_GOLD_COST}💰)
+                </button>
+                ${disabledReason ? `<span class="text-xs text-red-600 text-center font-semibold">${disabledReason}</span>` : ''}
             </div>
           `;
   
@@ -978,6 +989,8 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           setIsHabitsModalOpen(false);
         } else if (isNationalPathModalOpen) {
           setIsNationalPathModalOpen(false);
+        } else if (isMissionsModalOpen) {
+          setIsMissionsModalOpen(false);
         }
         // Also clear province selection popup if escape is pressed
         handleProvinceSelect(null);
@@ -991,7 +1004,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
       window.removeEventListener('keydown', handleKeyDown);
     };
     // Depend on the modal states so the listener always knows the current state
-  }, [isModalOpen, isTaskModalOpen, isHabitsModalOpen, isNationalPathModalOpen, handleProvinceSelect]);
+  }, [isModalOpen, isTaskModalOpen, isHabitsModalOpen, isNationalPathModalOpen, isMissionsModalOpen, handleProvinceSelect]);
 
   if (!localGame && !isDemo) {
     return <div>Loading game data...</div>;
@@ -1009,6 +1022,9 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
   console.log('[GameView] Initial Capital ID being passed:', initialCapitalId);
 
   const { playerGold: currentGold, playerPopulation: totalPopulation, playerIndustry: totalIndustry, playerArmy: totalArmy } = playerNationResourceTotals;
+
+  // Get player nation name
+  const playerNationName = localGame ? getNationName(localGame.playerNationTag) : 'Unknown Nation';
 
   return (
     <div className={`fixed inset-0 overflow-hidden bg-[#0B1423] transition-opacity ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
@@ -1080,9 +1096,11 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             setIsTaskModalOpen(false);
             setIsHabitsModalOpen(false);
             setIsNationalPathModalOpen(false);
+            setIsMissionsModalOpen(false);
             // Set mode AFTER clearing selection and closing modals
             setIsInConqueringMode(true);
           }}
+          onMissionsClick={() => { handleProvinceSelect(null); setIsMissionsModalOpen(true); }}
         focusTimeRemaining={focusTimeRemaining}
       />
       )}
@@ -1090,6 +1108,15 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
       {isNationalPathModalOpen && (
         <NationalPathModal onClose={() => setIsNationalPathModalOpen(false)} />
       )}
+
+      {/* Missions Modal - always render but control visibility with style */}
+      <div id="missions-modal" style={{ display: isMissionsModalOpen ? 'block' : 'none' }}>
+        <MissionsModal 
+          onClose={() => setIsMissionsModalOpen(false)} 
+          playerNationName={playerNationName} 
+          playerNationTag={localGame?.playerNationTag || ''}
+        />
+      </div>
 
       {/* Focus Now Modal - always render but control visibility with style */}
       <div id="focus-now-modal" style={{ display: isModalOpen ? 'block' : 'none' }}>
@@ -1152,12 +1179,13 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
               setIsTaskModalOpen(false);
               setIsHabitsModalOpen(false);
               setIsNationalPathModalOpen(false);
+              setIsMissionsModalOpen(false);
               // Clear selection AFTER exiting mode
               handleProvinceSelect(null);
             }}
-            className="px-6 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition-colors duration-200 shadow-md [font-family:var(--font-mplus-rounded)] text-lg"
+            className="px-6 py-3 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-colors duration-200 shadow-md [font-family:var(--font-mplus-rounded)] text-lg"
             style={{ 
-              boxShadow: '0 4px 0 #b91c1c', // Darker red shadow
+              boxShadow: '0 4px 0 #dc2626', // Adjusted shadow color
               transform: 'translateY(-2px)'
             }}
           >

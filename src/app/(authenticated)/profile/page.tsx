@@ -117,7 +117,7 @@ export default function ProfilePage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="flex items-center justify-center pt-16">
         <div className="text-[#0B1423] text-xl [font-family:var(--font-mplus-rounded)]">
           Loading...
         </div>
@@ -126,8 +126,8 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 py-8 bg-white min-h-screen [font-family:var(--font-mplus-rounded)]">
-      {/* Optional: Background Banner Placeholder */} 
+    <div className="w-full max-w-6xl [font-family:var(--font-mplus-rounded)]">
+      {/* Optional: Background Banner Placeholder */}
       <div className="h-32 sm:h-48 bg-gradient-to-r from-[#a2d2ff]/50 to-[#bde0fe]/50 rounded-t-xl relative mb-[-64px] sm:mb-[-80px]">
         {/* Banner Content can go here if needed */}
       </div>
@@ -289,10 +289,32 @@ const RecentNationCard: React.FC<RecentNationCardProps> = ({ gameData }) => {
   const nationFlag = getNationFlag(playerNationTag);
   const gameDate = formatGameDate(gameData.game.date);
 
+  // Calculate resource totals for this specific save game
+  const playerNation = gameData.game.nations.find(n => n.nationTag === playerNationTag);
+  const playerProvinces = gameData.game.provinces.filter(p => p.ownerTag === playerNationTag);
+
+  const playerResources = {
+    gold: playerNation?.gold ?? 0,
+    population: playerProvinces.reduce((sum, p) => sum + p.population, 0),
+    industry: playerProvinces.reduce((sum, p) => sum + p.industry, 0),
+    army: playerProvinces.reduce((sum, p) => sum + p.army, 0),
+  };
+
+  // Small emoji style
+  const emojiStyle = {
+    textShadow: `
+      -0.5px -0.5px 0 rgba(0,0,0,0.1),
+      0.5px -0.5px 0 rgba(0,0,0,0.1),
+      -0.5px 0.5px 0 rgba(0,0,0,0.1),
+      0.5px 0.5px 0 rgba(0,0,0,0.1)
+    `
+  };
+
   return (
-    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200 shadow-sm flex items-center justify-between hover:bg-gray-100 transition duration-150">
-      <div className="flex items-center gap-3">
-        <span className="text-3xl">{nationFlag}</span>
+    <div className="bg-gray-50 rounded-lg p-3 border border-gray-200 shadow-sm flex items-center justify-between gap-4 hover:bg-gray-100 transition duration-150">
+      {/* Left Side: Flag, Name, Date */}
+      <div className="flex items-center gap-3 flex-shrink-0">
+        <span className="text-3xl" style={emojiStyle}>{nationFlag}</span>
         <div>
           <h3 className="text-md font-bold text-[#0B1423]">
             {nationName}
@@ -302,8 +324,38 @@ const RecentNationCard: React.FC<RecentNationCardProps> = ({ gameData }) => {
           </p>
         </div>
       </div>
-      {/* Optional: Add a small indicator or button if needed */}
-      {/* <span className="text-xs text-[#67b9e7]">Load</span> */}
+      
+      {/* Right Side: Compact Resources */}
+      <div className="flex items-center justify-end gap-2 sm:gap-3 flex-wrap flex-shrink-0 ml-auto pl-2">
+        {/* Gold */} 
+        <div className="flex items-center gap-0.5">
+          <span className="text-sm sm:text-base" style={emojiStyle}>💰</span>
+          <span className="text-[#0B1423] text-xs sm:text-sm font-medium whitespace-nowrap">
+            {formatNumber(playerResources.gold)}
+          </span>
+        </div>
+        {/* Population */} 
+        <div className="flex items-center gap-0.5">
+          <span className="text-sm sm:text-base" style={emojiStyle}>👥</span>
+          <span className="text-[#0B1423] text-xs sm:text-sm font-medium whitespace-nowrap">
+            {formatNumber(playerResources.population)}
+          </span>
+        </div>
+        {/* Industry */} 
+        <div className="flex items-center gap-0.5">
+          <span className="text-sm sm:text-base" style={emojiStyle}>🏭</span>
+          <span className="text-[#0B1423] text-xs sm:text-sm font-medium whitespace-nowrap">
+            {formatNumber(playerResources.industry)}
+          </span>
+        </div>
+        {/* Army */} 
+        <div className="flex items-center gap-0.5">
+          <span className="text-sm sm:text-base" style={emojiStyle}>⚔️</span>
+          <span className="text-[#0B1423] text-xs sm:text-sm font-medium whitespace-nowrap">
+            {formatNumber(playerResources.army)}
+          </span>
+        </div>
+      </div>
     </div>
   );
 }; 
