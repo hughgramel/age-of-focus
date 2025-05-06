@@ -258,28 +258,28 @@ export default function LandingPage() {
             <h2 className="text-3xl font-bold tracking-tighter text-center sm:text-4xl text-[#0B1423] mb-8 md:mb-12">
               Frequently Asked Questions
             </h2>
-            <div className="space-y-3">
+            <div className="">
               {fakeFAQs.map((faq, index) => (
-                <div key={faq.id} className="border border-gray-300/80 rounded-lg overflow-hidden bg-white shadow-sm">
+                <div key={faq.id} className="border-b border-gray-200">
                   <button
-                    className="flex items-center justify-between w-full px-6 py-4 text-left font-medium text-[#0B1423] hover:bg-gray-50 transition-colors duration-200"
+                    className="flex items-center justify-between w-full py-5 text-left"
                     onClick={() => toggleFAQ(index)}
                     aria-expanded={openFAQIndex === index}
                     aria-controls={`faq-answer-${faq.id}`}
                   >
-                    <span>{faq.question}</span>
+                    <span className="text-lg font-semibold text-[#0B1423]">{faq.question}</span>
                     <ChevronDown
-                      className={`h-5 w-5 text-gray-500 transition-transform duration-300 ease-in-out ${openFAQIndex === index ? 'rotate-180' : ''}`}
+                      className={`h-5 w-5 text-gray-500 transition-transform duration-200 transform ${openFAQIndex === index ? 'rotate-180' : ''}`}
                     />
                   </button>
-                  <div
-                    id={`faq-answer-${faq.id}`}
-                    className={`transition-all duration-300 ease-in-out overflow-hidden ${openFAQIndex === index ? 'max-h-96 opacity-100 pt-1 pb-4' : 'max-h-0 opacity-0'}`}
-                  >
-                    <div className="px-6 text-[#0B1423]/90 text-sm md:text-base leading-relaxed">
+                  {openFAQIndex === index && (
+                    <div
+                      id={`faq-answer-${faq.id}`}
+                      className="pr-8 pb-5 text-base text-gray-700 leading-relaxed"
+                    >
                       {faq.answer}
                     </div>
-                  </div>
+                  )}
                 </div>
               ))}
             </div>

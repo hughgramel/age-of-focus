@@ -3,27 +3,45 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { GameService } from '@/services/gameService';
+import { GameService, SaveGame as GameData } from '@/services/gameService';
 import { getNationName } from '@/data/nationTags';
+import { getNationFlag } from '@/utils/nationFlags';
+import { FaTrashAlt } from 'react-icons/fa';
 
-interface GameData {
-  game: {
-    mapName: string;
-    gameName: string;
-    playerNationTag: string;
-    id?: string;
-    date: string;
-  };
-  metadata: {
-    scenarioId: string;
-    savedAt: string;
-    playerNation: string;
-  };
-}
+// Helper to format numbers (from profile/statistics page)
+const formatNumber = (num: number): string => {
+  if (num >= 1000000) {
+    return (Math.floor(num / 10000) / 100).toFixed(2) + 'M';
+  } else if (num >= 1000) {
+    return (Math.floor(num / 10) / 100).toFixed(2) + 'K';
+  } else {
+    return num.toString();
+  }
+};
 
-interface SaveGames {
-  [key: string]: GameData | null;
-}
+// Helper function to format game date (from profile page)
+const formatGameDate = (dateString: string): string => {
+  if (!dateString || !dateString.includes('-')) return 'Invalid Date';
+  try {
+    const [year, month, day] = dateString.split('-').map(part => parseInt(part, 10));
+    const date = new Date(year, month - 1, day);
+    const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+  } catch (e) {
+    console.error("Error formatting date:", dateString, e);
+    return 'Invalid Date';
+  }
+};
+
+// Helper to format last saved timestamp
+const formatLastSaved = (isoString: string): string => {
+  try {
+    const date = new Date(isoString);
+    return `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  } catch (e) {
+    return 'Invalid Date';
+  }
+};
 
 interface DeleteConfirmationProps {
   isOpen: boolean;
@@ -36,22 +54,22 @@ function DeleteConfirmation({ isOpen, onClose, onConfirm, gameName }: DeleteConf
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-[#0B1423] border-2 border-[#FFD700]/30 rounded-lg p-6 max-w-md w-full mx-4">
-        <h2 className="text-2xl text-[#FFD700] historical-game-title mb-4">Delete Save Game?</h2>
-        <p className="text-[#FFD700]/90 mb-6">
-          Are you sure you want to delete your {gameName} save game? This action cannot be undone.
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4 [font-family:var(--font-mplus-rounded)]">
+      <div className="bg-white rounded-xl p-6 max-w-md w-full border-2 border-[#67b9e7]/30 shadow-[4px_4px_0px_0px_rgba(103,185,231,0.3)]">
+        <h2 className="text-2xl text-[#0B1423] font-bold mb-4">Delete Save Game?</h2>
+        <p className="text-[#0B1423]/80 mb-6">
+          Are you sure you want to delete your <span className="font-semibold">{getNationName(gameName)}</span> save game? This action cannot be undone.
         </p>
-        <div className="flex justify-end gap-4">
+        <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-[#FFD700] historical-game-title hover:text-[#FFD700]/80 transition-colors duration-200"
+            className="px-5 py-2.5 text-[#0B1423] bg-white rounded-lg border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 shadow-[2px_2px_0px_0px_rgba(156,163,175,0.2)]"
           >
             Cancel
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 bg-red-900/50 text-red-200 historical-game-title border border-red-500/50 rounded hover:bg-red-900/70 transition-colors duration-200"
+            className="px-5 py-2.5 bg-red-500 text-white rounded-lg border-2 border-red-600 hover:bg-red-600 transition-all duration-200 shadow-[2px_2px_0px_0px_rgba(220,38,38,0.3)]"
           >
             Delete
           </button>
@@ -70,63 +88,55 @@ export default function LoadGame() {
   const [deleteConfirmation, setDeleteConfirmation] = useState<{
     isOpen: boolean;
     gameId?: string;
-    gameName?: string;
+    nationTag?: string;
     slot?: string;
   }>({ isOpen: false });
 
-  const loadGames = async () => {
+  const loadGamesList = async () => {
     if (user) {
+      setLoading(true);
       try {
-        const savedGames = await GameService.getSaveGames(user.uid);
-        // Convert the object into an array of non-null games
-        const gamesArray = Object.entries(savedGames)
-          .filter(([_, game]) => game !== null)
-          .map(([_, game]) => game as GameData);
-
-        // Sort by savedAt date
-        gamesArray.sort((a, b) => 
-          new Date(b.metadata.savedAt).getTime() - new Date(a.metadata.savedAt).getTime()
-        );
+        const savedGamesData = await GameService.getSaveGames(user.uid);
+        const gamesArray = Object.values(savedGamesData)
+          .filter((game): game is GameData => game !== null)
+          .sort((a, b) => new Date(b.metadata.savedAt).getTime() - new Date(a.metadata.savedAt).getTime());
         
         setGames(gamesArray);
-        // Store mapping of game IDs to save slots
-        setSaveSlots(savedGames);
+        setSaveSlots(savedGamesData);
       } catch (error) {
         console.error('Error loading games:', error);
+      } finally {
+        setLoading(false);
       }
+    } else {
+      setLoading(false);
+      setGames([]);
+      setSaveSlots({});
     }
-    setLoading(false);
   };
 
   useEffect(() => {
-    loadGames();
+    loadGamesList();
   }, [user]);
 
   const handleLoadGame = (game: GameData) => {
-    // Find which save slot contains this game
     for (const [slot, savedGame] of Object.entries(saveSlots)) {
       if (savedGame && savedGame.game.id === game.game.id) {
         router.push(`/game?save=${slot}`);
         return;
       }
     }
-    // Fallback - this shouldn't happen but just in case
     router.push('/dashboard');
   };
 
   const handleDeleteClick = (e: React.MouseEvent, game: GameData) => {
-    e.stopPropagation(); // Prevent triggering the game load
-    
-    // Find the slot for this game
-    const slot = Object.entries(saveSlots).find(([_, savedGame]) => 
-      savedGame && savedGame.game.id === game.game.id
-    )?.[0];
-
+    e.stopPropagation();
+    const slot = Object.entries(saveSlots).find(([_, sg]) => sg && sg.game.id === game.game.id)?.[0];
     if (slot) {
       setDeleteConfirmation({
         isOpen: true,
         gameId: game.game.id,
-        gameName: getNationName(game.game.playerNationTag),
+        nationTag: game.game.playerNationTag,
         slot
       });
     }
@@ -134,11 +144,9 @@ export default function LoadGame() {
 
   const handleDeleteConfirm = async () => {
     if (!user || !deleteConfirmation.slot) return;
-
     try {
       await GameService.deleteSaveGame(user.uid, parseInt(deleteConfirmation.slot));
-      // Refresh the games list
-      await loadGames();
+      await loadGamesList();
     } catch (error) {
       console.error('Error deleting game:', error);
     } finally {
@@ -146,99 +154,122 @@ export default function LoadGame() {
     }
   };
 
-  const handleBack = () => {
-    router.push('/dashboard');
+  // Small emoji style from profile page
+  const emojiStyle = {
+    textShadow: `
+      -0.5px -0.5px 0 rgba(0,0,0,0.1),
+      0.5px -0.5px 0 rgba(0,0,0,0.1),
+      -0.5px 0.5px 0 rgba(0,0,0,0.1),
+      0.5px 0.5px 0 rgba(0,0,0,0.1)
+    `
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#0B1423] flex flex-col items-center px-4 py-8">
-      <div className="w-full max-w-[1200px] flex flex-col items-center">
-        {/* Header */}
-        <div className="w-full flex items-center justify-between mb-8">
-          <button
-            onClick={handleBack}
-            className="text-[#FFD700] historical-game-title text-xl hover:text-[#FFD700]/80 transition-colors duration-200 flex items-center gap-2"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to Dashboard
-          </button>
-        </div>
-
-        <h1 className="text-4xl sm:text-5xl text-center text-[#FFD700] mb-12 historical-game-title">
-          Load Game
+    <div className="w-full max-w-3xl mx-auto px-4 py-8 [font-family:var(--font-mplus-rounded)]">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold text-[#0B1423]">
+          Load Saved Game
         </h1>
+        <button
+          onClick={() => router.push('/dashboard')}
+          className="px-5 py-2.5 bg-white text-[#0B1423] rounded-lg border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 shadow-[2px_2px_0px_0px_rgba(156,163,175,0.2)] flex items-center gap-2 text-sm"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to Dashboard
+        </button>
+      </div>
 
-        {loading ? (
-          <div className="text-[#FFD700] text-2xl historical-game-title">
-            Loading saved games...
-          </div>
-        ) : games.length === 0 ? (
-          <div className="text-[#FFD700] text-2xl historical-game-title text-center">
-            No saved games found
-          </div>
-        ) : (
-          <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {games.map((game, index) => (
-              <div
-                key={index}
-                onClick={() => handleLoadGame(game)}
-                className="group cursor-pointer"
+      {loading ? (
+        <div className="text-center py-16 text-[#0B1423]/70">Loading saved games...</div>
+      ) : games.length === 0 ? (
+        <div className="text-center py-16 text-[#0B1423]/70">
+          No saved games found. Start a new nation!
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {games.map((gameData) => {
+            const playerNationTag = gameData.game.playerNationTag;
+            const playerNation = gameData.game.nations.find(n => n.nationTag === playerNationTag);
+            const playerProvinces = gameData.game.provinces.filter(p => p.ownerTag === playerNationTag);
+            const playerResources = {
+              gold: playerNation?.gold ?? 0,
+              population: playerProvinces.reduce((sum, p) => sum + p.population, 0),
+              industry: playerProvinces.reduce((sum, p) => sum + p.industry, 0),
+              army: playerProvinces.reduce((sum, p) => sum + p.army, 0),
+            };
+
+            return (
+              <div 
+                key={gameData.game.id || gameData.metadata.savedAt}
+                onClick={() => handleLoadGame(gameData)}
+                className="bg-white rounded-xl p-5 border-2 border-[#67b9e7]/30 shadow-[4px_4px_0px_0px_rgba(103,185,231,0.3)] cursor-pointer hover:border-[#67b9e7]/60 hover:shadow-[6px_6px_0px_0px_rgba(103,185,231,0.35)] transition-all duration-150"
               >
-                <div className="relative h-64 rounded-2xl overflow-hidden border-2 border-[#FFD700]/30 hover:border-[#FFD700]/50 transition-all duration-200"
-                  style={{
-                    backgroundImage: "url('/backgrounds/civil_war_background.png')",
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center 70%',
-                  }}
-                >
-                  {/* Gradient Overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#0B1423]/50 to-[#0B1423]/90 group-hover:opacity-80 transition-opacity duration-200" />
-                  
-                  {/* Content */}
-                  <div className="absolute inset-0 p-6 flex flex-col justify-between">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="text-3xl text-[#FFD700] font-bold historical-game-title mb-2">
-                          {getNationName(game.game.playerNationTag)}
-                        </h3>
-                        <p className="text-xl text-[#FFD700]/90 historical-game-title">
-                          {game.game.date.substring(0, 4)}
-                        </p>
-                      </div>
-                      <button
-                        onClick={(e) => handleDeleteClick(e, game)}
-                        className="p-2 text-[#FFD700]/50 hover:text-red-500 transition-colors duration-200"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                  {/* Left Side: Flag, Name, Dates */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-4xl sm:text-5xl" style={emojiStyle}>{getNationFlag(playerNationTag)}</span>
+                    <div>
+                      <h3 className="text-xl font-bold text-[#0B1423]">
+                        {getNationName(playerNationTag)}
+                      </h3>
+                      <p className="text-sm text-[#0B1423]/70">
+                        {formatGameDate(gameData.game.date)}
+                      </p>
+                      <p className="text-xs text-[#0B1423]/60 mt-1">
+                        Last Saved: {formatLastSaved(gameData.metadata.savedAt)}
+                      </p>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div className="text-sm text-[#FFD700]/70">
-                        {new Date(game.metadata.savedAt).toLocaleDateString()} at {new Date(game.metadata.savedAt).toLocaleTimeString()}
+                  </div>
+
+                  {/* Right Side: Resources & Delete Button */} 
+                  <div className="flex flex-col items-end gap-2 sm:gap-3">
+                    <div className="flex items-center justify-end gap-2 sm:gap-3 flex-wrap">
+                      <div className="flex items-center gap-1">
+                        <span className="text-md sm:text-lg" style={emojiStyle}>💰</span>
+                        <span className="text-[#0B1423] text-sm font-medium whitespace-nowrap">
+                          {formatNumber(playerResources.gold)}
+                        </span>
                       </div>
-                      <div className="text-[#FFD700]/50 group-hover:text-[#FFD700] transition-colors duration-200">
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
+                      <div className="flex items-center gap-1">
+                        <span className="text-md sm:text-lg" style={emojiStyle}>👥</span>
+                        <span className="text-[#0B1423] text-sm font-medium whitespace-nowrap">
+                          {formatNumber(playerResources.population)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-md sm:text-lg" style={emojiStyle}>🏭</span>
+                        <span className="text-[#0B1423] text-sm font-medium whitespace-nowrap">
+                          {formatNumber(playerResources.industry)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <span className="text-md sm:text-lg" style={emojiStyle}>⚔️</span>
+                        <span className="text-[#0B1423] text-sm font-medium whitespace-nowrap">
+                          {formatNumber(playerResources.army)}
+                        </span>
                       </div>
                     </div>
+                    <button
+                      onClick={(e) => handleDeleteClick(e, gameData)}
+                      className="mt-2 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-300 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-colors duration-150 shadow-sm hover:shadow-md"
+                    >
+                      <FaTrashAlt /> Delete
+                    </button>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       <DeleteConfirmation
         isOpen={deleteConfirmation.isOpen}
         onClose={() => setDeleteConfirmation({ isOpen: false })}
         onConfirm={handleDeleteConfirm}
-        gameName={deleteConfirmation.gameName || ''}
+        gameName={deleteConfirmation.nationTag || ''}
       />
     </div>
   );

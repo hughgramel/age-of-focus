@@ -608,7 +608,7 @@ const allProvinces: Province[] = [
   {
     id: 'Elbe',
     name: 'Elbe',
-    ownerTag: 'SAX',
+    ownerTag: 'HAN',
     path: '',
     population: 1123456,
     goldIncome: 95,
@@ -620,7 +620,7 @@ const allProvinces: Province[] = [
   {
     id: 'North_Rhine',
     name: 'North Rhine',
-    ownerTag: 'SAX',
+    ownerTag: 'PRU',
     path: '',
     population: 1323456,
     goldIncome: 105,
@@ -658,7 +658,7 @@ const allProvinces: Province[] = [
   {
     id: 'Brunswick',
     name: 'Brunswick',
-    ownerTag: 'HAN',
+    ownerTag: 'PRU',
     path: '',
     population: 823456,
     goldIncome: 70,
@@ -682,7 +682,7 @@ const allProvinces: Province[] = [
   {
     id: 'Mecklenburg',
     name: 'Mecklenburg',
-    ownerTag: 'HAN',
+    ownerTag: 'MEC',
     path: '',
     population: 723456,
     goldIncome: 65,
@@ -694,7 +694,7 @@ const allProvinces: Province[] = [
   {
     id: 'Anhalt',
     name: 'Anhalt',
-    ownerTag: 'HAN',
+    ownerTag: 'PRU',
     path: '',
     population: 523456,
     goldIncome: 55,
@@ -2565,8 +2565,8 @@ const greatBritain: Omit<Nation, 'provinces'> = {
 const prussia: Omit<Nation, 'provinces'> = {
   nationTag: 'PRU',
   name: 'Prussia',
-  color: '#2a4163',
-  hexColor: '#2a4163',
+  color: '#7d6c55',
+  hexColor: '#7d6c55',
   borderProvinces: null,
   gold: 3000,
   researchPoints: 120,
@@ -2635,8 +2635,21 @@ const saxony: Omit<Nation, 'provinces'> = {
 const hannover: Omit<Nation, 'provinces'> = {
   nationTag: 'HAN',
   name: 'Hannover',
-  color: '#7d6c55',
-  hexColor: '#7d6c55',
+  color: '#eda7a7',
+  hexColor: '#eda7a7',
+  borderProvinces: null,
+  gold: 900,
+  researchPoints: 45,
+  currentResearchId: null,
+  currentResearchProgress: 0,
+  buildQueue: null,
+  isAI: true
+};
+const mecklenburg: Omit<Nation, 'provinces'> = {
+  nationTag: 'MEC',
+  name: 'Mecklenburg',
+  color: '#a6dba0',
+  hexColor: '#a6dba0',
   borderProvinces: null,
   gold: 900,
   researchPoints: 45,
@@ -2719,8 +2732,8 @@ const netherlands: Omit<Nation, 'provinces'> = {
 const austriaHungary: Omit<Nation, 'provinces'> = {
   nationTag: 'AUT',
   name: 'Austria-Hungary',
-  color: '#e5d8bd',
-  hexColor: '#e5d8bd',
+  color: '#d3c7ac',
+  hexColor: '#d3c7ac',
   borderProvinces: null,
   gold: 3500,
   researchPoints: 110,
@@ -2747,6 +2760,7 @@ export const world_1836: Game = {
     baden as Nation,
     saxony as Nation,
     hannover as Nation,
+    mecklenburg as Nation,
     spain as Nation,
     russia as Nation,
     sweden as Nation,

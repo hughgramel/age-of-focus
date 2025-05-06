@@ -152,12 +152,30 @@ export default function Dashboard() {
                 [font-family:var(--font-mplus-rounded)] w-60 whitespace-nowrap
                 ${loading 
                   ? 'bg-gray-200 text-gray-400 border-gray-300 shadow-gray-300 cursor-not-allowed'
-                  : 'bg-white text-[#0B1423] border-gray-300 shadow-gray-300 hover:border-gray-400 hover:bg-gray-50 active:bg-gray-100 active:shadow-gray-200'
+                  : 'bg-[#6ec53e] text-white border-[#59a700] shadow-[#59a700] hover:bg-[#60b33a] active:bg-[#539e30]'
                 }
               `}
             >
               <span role="img" aria-label="swords" className="text-xl">⚔️</span>
               New Nation
+            </button>
+
+            {/* Manage Saves Button - Updated Styles */}
+            <button
+              onClick={() => router.push('/load_game')}
+              disabled={loading || isNavigating}
+              className={`
+                px-8 py-4 text-xl font-semibold rounded-xl border-2 transition-all duration-200 
+                flex items-center justify-center gap-3 shadow-[0_4px_0px] hover:translate-y-[-2px] active:translate-y-[1px] active:shadow-[0_2px_0px]
+                [font-family:var(--font-mplus-rounded)] w-60 whitespace-nowrap
+                ${loading 
+                  ? 'bg-gray-100 text-gray-400 border-gray-200 shadow-gray-200 cursor-not-allowed'
+                  : 'bg-[#e28d24] text-white border-[#b36d15] shadow-[#b36d15] hover:bg-[#d07f1f] active:bg-[#b36d15]'
+                }
+              `}
+            >
+              <span role="img" aria-label="floppy disk" className="text-xl">💾</span>
+              Saves
             </button>
           </div>
         </div>
