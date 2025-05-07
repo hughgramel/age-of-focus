@@ -1138,7 +1138,7 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
                   {/* Extend break button - Updated Style */}
                   <button 
                     className="bg-white text-gray-800 border-2 border-gray-300 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-150 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#d1d5db] disabled:transform-none disabled:shadow-[0_2px_0px_#d1d5db]"
-                    style={{ boxShadow: '0 2px 0px #d1d5db' }} // Using 2px shadow for smaller button
+                    style={{ boxShadow: '0 2px 0px #d1d5db' }}
                     onClick={setBreak} 
                     disabled={breakTimeRemaining.current === 0}
                   >
@@ -1159,10 +1159,10 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
                 </button>
               )}
               
-              {/* Discard button - Updated Style */}
+              {/* Discard button - Updated Red Style */}
               <button 
-                className="bg-white text-red-600 border-2 border-red-300 py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-150 hover:bg-red-50 w-[32%] flex items-center justify-center gap-2 hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#fca5a5]"
-                style={{ boxShadow: '0 3px 0px #fca5a5' }} // Using lighter red for shadow
+                className="bg-[#dc2626] text-white border-2 border-[#991b1b] py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-150 hover:bg-[#c02020] w-[32%] flex items-center justify-center gap-2 hover:translate-y-[-1px] active:translate-y-[0.5px] active:bg-[#991b1b] active:shadow-[0_1px_0px_#991b1b]"
+                style={{ boxShadow: '0 3px 0px #991b1b' }}
                 onClick={deleteSession}
               >
                 <span className="text-2xl">🗑️</span>
