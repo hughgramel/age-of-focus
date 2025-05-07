@@ -309,8 +309,8 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
 
       {/* Make modal content relative and higher z-index - Add scale transition */}
       <div 
-        className="relative z-10 bg-white rounded-lg p-4 sm:p-6 w-full max-w-md sm:max-w-4xl [font-family:var(--font-mplus-rounded)] transition-transform duration-300 ease-in-out transform scale-100 mx-6 sm:mx-auto"
-        style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)' }}
+        className="relative z-10 bg-white rounded-lg p-4 sm:p-6 w-full max-w-md sm:max-w-4xl [font-family:var(--font-mplus-rounded)] transition-transform duration-300 ease-in-out transform scale-100 mx-6 sm:mx-auto border-2 border-gray-300"
+        style={{ boxShadow: '0 3px 0px #d1d5db' }}
       >
         <div className="flex justify-between items-center mb-4 sm:mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800 flex items-center gap-2">
@@ -324,9 +324,8 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
 
         {/* Habit Creation Form */}
         <form onSubmit={handleCreateHabit} className="mb-1 sm:mb-2 pb-2 sm:pb-3">
-          {/* Single row layout for form */}
-          <div className="flex flex-row gap-3 sm:gap-4 items-end w-full"> 
-            {/* Title Input (takes most space) */} 
+          <div className="flex flex-row gap-3 sm:gap-4 items-end w-full">
+            {/* Title Input (takes most space) */}
             <div className="flex-1">
               <label htmlFor="habitTitle" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">New Habit Title</label>
               <input
@@ -340,7 +339,7 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
               />
             </div>
 
-            {/* Action Dropdown (width matches table column) */} 
+            {/* Action Dropdown (width matches table column) */}
             <div className="w-[150px] sm:w-[200px] flex-shrink-0">
               <label htmlFor="habitActionDropdown" className="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Associated Action</label>
               <CustomDropdown
@@ -359,12 +358,12 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
               />
             </div>
 
-            {/* Add Button (nudged up for better alignment) */}
-            <div className="flex-shrink-0 relative" style={{ top: '-2px'}}>
+            {/* Add Button - Updated Styles */}
+            <div className="flex-shrink-0 relative" style={{ top: '0px'}}>
               <button
                 type="submit"
-                className="bg-[#67b9e7] text-white py-2 px-3 sm:py-3 sm:px-4 rounded-lg font-semibold hover:opacity-90 transition-all duration-200 text-sm sm:text-base w-auto flex items-center justify-center gap-1 sm:gap-2 cursor-pointer hover:transform hover:-translate-y-0.5 active:translate-y-0 whitespace-nowrap" 
-                style={{ boxShadow: '0 4px 0 #4792ba' }}
+                className="bg-[#67b9e7] text-white py-2 px-3 sm:py-3 sm:px-4 rounded-lg font-semibold hover:opacity-90 transition-all duration-150 text-sm sm:text-base w-auto flex items-center justify-center gap-1 sm:gap-2 cursor-pointer border-2 border-[#4792ba] hover:bg-[#5aa8d6] active:bg-[#4792ba] hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#4792ba] whitespace-nowrap"
+                style={{ boxShadow: '0 3px 0px #4792ba' }}
               >
                 <span className="text-lg sm:text-xl text-white">➕</span>
                 <span className="hidden sm:inline">Add Habit</span>
@@ -426,7 +425,7 @@ export default function HabitsModal({ userId, onClose, executeActionUpdate, play
                           className="w-full text-xs sm:text-sm"
                         />
                       </td>
-                      {/* Weekly Completion Cells - Updated for toggling ONLY today */}
+                      {/* Weekly Completion Cells - Added hover/active transforms */}
                       {weekDates.map(date => {
                         const dateKey = formatISO(date, { representation: 'date' });
                         const isCompleted = habitCompletions.has(dateKey);

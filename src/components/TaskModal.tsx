@@ -120,8 +120,8 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
 
       {/* Modal Content Container - Match HabitsModal dimensions */}
       <div 
-        className="relative z-10 bg-white rounded-lg p-4 sm:p-6 w-full max-w-md sm:max-w-4xl [font-family:var(--font-mplus-rounded)] transition-transform duration-300 ease-in-out transform scale-100 mx-6 sm:mx-auto"
-        style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)' }}
+        className="relative z-10 bg-white rounded-lg p-4 sm:p-6 w-full max-w-md sm:max-w-4xl [font-family:var(--font-mplus-rounded)] transition-transform duration-300 ease-in-out transform scale-100 mx-6 sm:mx-auto border-2 border-gray-300"
+        style={{ boxShadow: '0 3px 0px #d1d5db' }}
       >
         {/* Match HabitsModal top bar styling */}
         <div className="flex justify-between items-center mb-2 sm:mb-6">
@@ -178,12 +178,12 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
               />
             </div>
 
-            {/* Add Button */} 
-            <div className="flex-shrink-0 relative" style={{ top: '-2px'}}> {/* Match alignment nudge */} 
+            {/* Add Button - Updated Styles */}
+            <div className="flex-shrink-0 relative" style={{ top: '0px'}}> {/* Removed alignment nudge */} 
               <button
                 type="submit"
-                className="bg-[#67b9e7] text-white py-2 px-3 sm:py-3 sm:px-4 rounded-lg font-semibold hover:opacity-90 transition-all duration-200 text-sm sm:text-base w-auto flex items-center justify-center gap-1 sm:gap-2 cursor-pointer hover:transform hover:-translate-y-0.5 active:translate-y-0 whitespace-nowrap"
-                style={{ boxShadow: '0 4px 0 #4792ba' }}
+                className="bg-[#67b9e7] text-white py-2 px-3 sm:py-3 sm:px-4 rounded-lg font-semibold hover:opacity-90 transition-all duration-150 text-sm sm:text-base w-auto flex items-center justify-center gap-1 sm:gap-2 cursor-pointer border-2 border-[#4792ba] hover:bg-[#5aa8d6] active:bg-[#4792ba] hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#4792ba] whitespace-nowrap"
+                style={{ boxShadow: '0 3px 0px #4792ba' }}
               >
                 <span className="text-lg sm:text-xl text-white">➕</span>
                 <span className="hidden sm:inline">Add Task</span>
@@ -278,14 +278,11 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         {!task.completed && (
+                          /* Complete Button - Updated Styles */
                           <button
                             onClick={() => handleCompleteTask(task)}
-                            className="px-2 py-1 sm:px-2 sm:py-1.5 rounded-lg text-white hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-1 text-xs sm:text-sm [font-family:var(--font-mplus-rounded)] cursor-pointer hover:transform hover:-translate-y-0.5 active:translate-y-0"
-                            style={{ 
-                              backgroundColor: '#6ec53e',
-                              boxShadow: '0 3px 0 rgba(89,167,0,255)',
-                              transform: 'translateY(-1px)'
-                            }}
+                            className="px-2 py-1 sm:px-2 sm:py-1.5 rounded-lg text-white hover:opacity-90 transition-all duration-150 flex items-center justify-center gap-1 text-xs sm:text-sm font-semibold cursor-pointer border-2 border-[#59a700] bg-[#6ec53e] hover:bg-[#60b33a] active:bg-[#539e30] hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#59a700]"
+                            style={{ boxShadow: '0 3px 0px #59a700' }}
                           >
                             <span className="text-sm sm:text-base">✓</span>
                             <span className="hidden sm:inline">Complete</span>
@@ -294,8 +291,6 @@ export default function TaskModal({ userId, onClose, onTaskComplete, executeActi
                         <button
                           onClick={() => handleDeleteTask(task.id)}
                           className="w-6 h-6 sm:w-7 sm:h-7 rounded-full text-red-500 hover:bg-red-100 flex items-center justify-center mx-auto transition-colors font-bold text-base sm:text-lg ml-1 sm:ml-2"
-                          style={{ 
-                          }}
                         >
                           ✕
                         </button>

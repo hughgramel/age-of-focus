@@ -33,7 +33,7 @@ const fakeReviews: Review[] = [
     id: 3,
     name: "Mike T.",
     quote: "The blend of productivity and light strategy is perfect. It breaks up my workday nicely.",
-    rating: 4,
+    rating: 5,
   },
 ];
 
@@ -120,8 +120,19 @@ export default function LandingPage() {
               href="#" // Replace with your Discord/Community Link
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#5865F2] px-5 py-2 text-sm font-medium text-white shadow-[0_3px_0_#454FBF] transition-all hover:bg-[#454FBF] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:-translate-y-px active:translate-y-0 active:shadow-[0_1px_0_#454FBF]"
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#5865F2] px-5 py-2 text-sm font-medium text-white shadow-[0_3px_0_#454FBF] transition-all hover:bg-[#454FBF] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:-translate-y-px active:translate-y-0 active:shadow-[0_1px_0_#454FBF] border-2 border-[#454FBF]"
               style={{ transform: 'translateY(-1px)' }}
+              onMouseDown={(e) => {
+                e.currentTarget.style.boxShadow = '0 1px 0px #454FBF';
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.style.boxShadow = '0 3px 0px #454FBF';
+              }}
+              onMouseLeave={(e) => { 
+                if (e.buttons === 1) {
+                    e.currentTarget.style.boxShadow = '0 3px 0px #454FBF';
+                }
+              }}
             >
               <SiDiscord className="h-5 w-5" /> {/* Added Discord Icon */}
               Community
@@ -148,16 +159,39 @@ export default function LandingPage() {
                 <div className="flex flex-col gap-3 w-full max-w-xs mx-auto md:mx-0">
                   <Link
                     href="/signup"
-                    className="inline-flex h-12 items-center justify-center rounded-lg bg-[#67b9e7] px-8 text-lg font-semibold text-white shadow-[0_4px_0_#4792ba] transition-all hover:bg-[#4792ba] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:-translate-y-0.5 active:translate-y-0 active:shadow-[0_2px_0_#4792ba] whitespace-nowrap"
+                    className="inline-flex h-12 items-center justify-center rounded-lg bg-[#67b9e7] px-8 text-lg font-semibold text-white shadow-[0_4px_0_#4792ba] transition-all hover:bg-[#4792ba] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:-translate-y-0.5 active:translate-y-0 active:shadow-[0_2px_0_#4792ba] whitespace-nowrap border-2 border-[#4792ba]"
                     style={{ transform: 'translateY(-2px)' }}
                     prefetch={false}
+                    onMouseDown={(e) => {
+                      e.currentTarget.style.boxShadow = '0 2px 0px #4792ba';
+                    }}
+                    onMouseUp={(e) => {
+                      e.currentTarget.style.boxShadow = '0 4px 0px #4792ba';
+                    }}
+                    onMouseLeave={(e) => { 
+                      if (e.buttons === 1) {
+                          e.currentTarget.style.boxShadow = '0 4px 0px #4792ba';
+                      }
+                    }}
                   >
                     Sign Up Now
                   </Link>
                   <Link
                     href="/signin"
-                    className="inline-flex h-12 items-center justify-center rounded-lg border border-[#67b9e7]/40 bg-white px-8 text-lg font-medium text-[#0B1423] shadow-sm transition-colors hover:bg-gray-100 hover:text-[#0B1423] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 whitespace-nowrap"
+                    className="inline-flex h-12 items-center justify-center rounded-lg border-2 border-[#cccccc] bg-white px-8 text-lg font-medium text-[#0B1423] shadow-[0_4px_0_#cccccc] transition-all hover:bg-gray-100 hover:text-[#0B1423] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 whitespace-nowrap hover:-translate-y-0.5 active:translate-y-0 active:shadow-[0_2px_0_#cccccc]"
                     prefetch={false}
+                    style={{ transform: 'translateY(-2px)' }}
+                    onMouseDown={(e) => {
+                      e.currentTarget.style.boxShadow = '0 2px 0px #cccccc';
+                    }}
+                    onMouseUp={(e) => {
+                      e.currentTarget.style.boxShadow = '0 4px 0px #cccccc';
+                    }}
+                    onMouseLeave={(e) => { 
+                      if (e.buttons === 1) {
+                          e.currentTarget.style.boxShadow = '0 4px 0px #cccccc';
+                      }
+                    }}
                   >
                     I Already Have an Account
                   </Link>
@@ -314,9 +348,20 @@ export default function LandingPage() {
             </h2>
             <Link
               href="/signup"
-              className="inline-flex h-14 items-center justify-center rounded-lg bg-[#67b9e7] px-10 text-xl font-semibold text-white shadow-[0_5px_0_#4792ba] transition-all hover:bg-[#4792ba] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:-translate-y-1 active:translate-y-0 active:shadow-[0_2px_0_#4792ba] whitespace-nowrap"
+              className="inline-flex h-14 items-center justify-center rounded-lg bg-[#67b9e7] px-10 text-xl font-semibold text-white shadow-[0_5px_0_#4792ba] transition-all hover:bg-[#4792ba] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 hover:-translate-y-1 active:translate-y-0 active:shadow-[0_2px_0_#4792ba] whitespace-nowrap border-2 border-[#4792ba]"
               style={{ transform: 'translateY(-3px)' }}
               prefetch={false}
+              onMouseDown={(e) => {
+                e.currentTarget.style.boxShadow = '0 2px 0px #4792ba';
+              }}
+              onMouseUp={(e) => {
+                e.currentTarget.style.boxShadow = '0 5px 0px #4792ba';
+              }}
+              onMouseLeave={(e) => { 
+                if (e.buttons === 1) {
+                    e.currentTarget.style.boxShadow = '0 5px 0px #4792ba';
+                }
+              }}
             >
               Sign Up Free
             </Link>

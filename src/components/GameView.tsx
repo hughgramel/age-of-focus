@@ -13,6 +13,7 @@ import { ActionService } from '@/services/actionService';
 import type { ActionUpdate } from '@/services/actionService';
 import ResourceBar from './ResourceBar';
 import ButtonGroup from './ButtonGroup';
+import FocusNowButton from './FocusNowButton';
 import TaskModal from './TaskModal';
 import NationalPathModal from './NationalPathModal';
 import { countries_1836 } from '@/data/countries_1836';
@@ -60,11 +61,9 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
   const conquestPopupRef = useRef<HTMLDivElement | null>(null);
   const selfConquestErrorPopupRef = useRef<HTMLDivElement | null>(null);
   const [fadeIn, setFadeIn] = useState(false);
-  const [playerGold, setPlayerGold] = useState<number | undefined>(undefined);
   const mapCanvasContainerRef = useRef<HTMLDivElement>(null);
   const [hasActiveSession, setHasActiveSession] = useState(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isHabitsModalOpen, setIsHabitsModalOpen] = useState(false);
@@ -80,6 +79,19 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
     playerArmy: 0
   });
   const [focusTimeRemaining, setFocusTimeRemaining] = useState(0);
+
+  // Effect to determine screen size for layout changes
+  // This is a basic way; consider a more robust hook for production (e.g., from a UI library or use-hooks)
+  const [isSmallScreen, setIsSmallScreen] = useState(false);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsSmallScreen(window.innerWidth < 640); // Tailwind's sm breakpoint is 640px
+    };
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
 
   useEffect(() => {
     setLocalGame(game || null);
@@ -105,8 +117,6 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         const totalIndustry = playerProvinces.reduce((sum, province) => sum + province.industry, 0);
         const totalArmy = playerProvinces.reduce((sum, province) => sum + province.army, 0);
 
-        setPlayerGold(playerNation.gold);
-
         setPlayerNationResourceTotals({
           playerGold: playerNation.gold,
           playerIndustry: totalIndustry,
@@ -115,22 +125,11 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         });
       } else {
         setPlayerNationResourceTotals({ playerGold: 0, playerIndustry: 0, playerPopulation: 0, playerArmy: 0 });
-        setPlayerGold(undefined);
       }
     } else {
       setPlayerNationResourceTotals({ playerGold: 0, playerIndustry: 0, playerPopulation: 0, playerArmy: 0 });
-      setPlayerGold(undefined);
     }
   }, [localGame]);
-
-  useEffect(() => {
-    if (playerGold !== undefined) {
-      setPlayerNationResourceTotals(prevTotals => ({
-        ...prevTotals,
-        playerGold: playerGold
-      }));
-    }
-  }, [playerGold]);
 
   useEffect(() => {
     const preventScroll = (e: WheelEvent) => {
@@ -269,8 +268,8 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           const statLabelStyle = `text-[#0B1423]/70 text-sm`;
           const statValueStyle = `font-semibold text-lg text-[#0B1423]`;
           const columnHeaderStyle = `text-lg font-bold text-[#0B1423] mb-3 flex items-center justify-center gap-2`;
-          const buttonBaseStyle = `px-6 py-3 text-base font-semibold rounded-lg border-2 transition-all duration-200 flex items-center justify-center gap-2 shadow-[0_4px_0px] hover:translate-y-[-2px] active:translate-y-[1px] active:shadow-[0_2px_0px] w-full max-w-xs`;
-          const enabledButtonStyle = `bg-[#67b9e7] text-white border-[#4792ba] shadow-[#4792ba] hover:bg-[#5aa8d6] active:bg-[#4792ba]`;
+          const buttonBaseStyle = `px-6 py-3 text-base font-semibold rounded-lg border-2 transition-all duration-200 flex items-center justify-center gap-2 shadow-[0_3px_0px] hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px] w-full max-w-xs`; // Adjusted shadow and active state for consistency
+          const enabledButtonStyle = `bg-[#dc2626] text-white border-[#991b1b] shadow-[#991b1b] hover:bg-[#c02020] active:bg-[#991b1b]`; // ConquestButton red theme
           const disabledButtonStyle = `bg-gray-200 text-gray-400 border-gray-300 shadow-gray-300 cursor-not-allowed`;
           const closeButtonStyle = `absolute top-2 right-2 p-1 text-xl font-bold text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors leading-none w-7 h-7 flex items-center justify-center`;
 
@@ -410,12 +409,12 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             <div class="text-black">⚔️ Army:</div> <p class="text-right font-bold text-black">${selectedProvince.army.toLocaleString()}</p>
           </div>
           ${owningNation ? `<button 
-            class="w-full px-4 py-2 bg-[#67b9e7] text-white rounded-lg font-bold text-xl hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-2 mt-2" { /* Add margin-top */}
+            class="w-full px-4 py-2 bg-[#67b9e7] text-white rounded-lg font-bold text-xl hover:opacity-90 transition-all duration-200 flex items-center justify-center gap-2 mt-2"
             style="box-shadow: 0 4px 0 #4792ba; transform: translateY(-2px);"
             id="showNationButton"
           >
             <span class="text-2xl">🎯</span>
-            View Nation Details
+            View Nation
           </button>` : ''}
         `;
 
@@ -448,21 +447,18 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             const totalArmy = nationProvinces.reduce((sum, p) => sum + p.army, 0);
 
             nationPopup.innerHTML = `
-              <div class="flex justify-between items-start mb-4">
+              <div class="relative mb-4">
                 <h3 class="text-2xl font-bold text-black">${owningNation.name}</h3>
-                <button id="closeNationButton" class="text-black/70 hover:text-black transition-colors duration-200 w-8 h-8 flex items-center justify-center rounded-full border border-black/30 hover:border-black/60">✕</button>
+                <button id="closeNationButton" class="absolute top-[-6px] right-0 p-2 text-gray-700 hover:text-gray-900 transition-colors">
+                  <span class="text-xl font-bold">✕</span>
+                </button>
               </div>
               <div class="space-y-3 text-base">
-                <div>🏷️ Nation Tag: <span class="font-bold float-right">${owningNation.nationTag}</span></div>
-                <div>👥 Total Population: <span class="font-bold float-right">${totalPopulation.toLocaleString()}</span></div>
-                <div>💰 Total Gold Income: <span class="font-bold float-right">${totalGoldIncome}</span></div>
-                <div>🏭 Total Industry: <span class="font-bold float-right">${totalIndustry}</span></div>
-                <div>⚔️ Total Army: <span class="font-bold float-right">${totalArmy.toLocaleString()}</span></div>
-                <div>💎 Gold Reserves: <span class="font-bold float-right">${owningNation.gold}</span></div>
-                <div>🔬 Research Points: <span class="font-bold float-right">${owningNation.researchPoints}</span></div>
-                <div>📚 Current Research: <span class="font-bold float-right">${owningNation.currentResearchId || 'None'}</span></div>
-                <div>📊 Research Progress: <span class="font-bold float-right">${owningNation.currentResearchProgress}%</span></div>
-                <div>🗺️ Number of Provinces: <span class="font-bold float-right">${nationProvinces.length}</span></div>
+                <div><span class="text-black">👥 Total Population:</span> <span class="font-bold float-right text-black">${totalPopulation.toLocaleString()}</span></div>
+                <div><span class="text-black">🏭 Total Industry:</span> <span class="font-bold float-right text-black">${totalIndustry}</span></div>
+                <div><span class="text-black">⚔️ Total Army:</span> <span class="font-bold float-right text-black">${totalArmy.toLocaleString()}</span></div>
+                <div><span class="text-black">💰 Gold:</span> <span class="font-bold float-right text-black">${owningNation.gold.toLocaleString()}</span></div>
+                <div><span class="text-black">🗺️ Number of Provinces:</span> <span class="font-bold float-right text-black">${nationProvinces.length}</span></div>
               </div>
             `;
 
@@ -589,7 +585,6 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
 
       // 5. Update Local React State
       setLocalGame(updatedGame); // Trigger map color change etc.
-      setPlayerGold(updatedGame.nations[playerNationIndex].gold); // Update specific gold state
 
       // Recalculate totals for the ResourceBar
       const updatedPlayerProvinces = updatedGame.provinces.filter(
@@ -671,7 +666,12 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         updatedGame.nations[playerNationIndex].gold += 100;
 
         setLocalGame(updatedGame);
-        setPlayerGold(updatedGame.nations[playerNationIndex].gold);
+
+        // Update playerNationResourceTotals directly as well
+        setPlayerNationResourceTotals(prevTotals => ({
+          ...prevTotals,
+          playerGold: updatedGame.nations[playerNationIndex].gold
+        }));
 
         await GameService.saveGame(user.uid, slotNumber, updatedGame, 'debug-update');
 
@@ -689,7 +689,6 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
 
   useEffect(() => {
     if (!user) return;
-    setIsLoadingSession(true);
     SessionService.getActiveUserSessions(user.uid)
       .then(activeSessions => {
         if (activeSessions && activeSessions.length > 0) {
@@ -700,8 +699,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           setActiveSessionId(null);
         }
       })
-      .catch(error => console.error("Error checking active session:", error))
-      .finally(() => setIsLoadingSession(false));
+      .catch(error => console.error("Error checking active session:", error));
   }, [user]);
 
   const getRandomPlayerProvinceId = (currentGame: Game): string | null => {
@@ -847,9 +845,8 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         }
       // If nation gold specifically changed, update the playerGold state for the resource bar
       if (nationGoldChanged) {
-          setPlayerGold(tempNationGold);
-          console.log('Optimistically updated playerGold state:', tempNationGold);
-        }
+          console.log('Optimistically updated playerNationResourceTotals for gold specifically to:', tempNationGold);
+      }
       // --- End Optimistic UI Update ---
 
       // Process action and save using the *original* localGame state. 
@@ -1007,10 +1004,10 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
   }, [isModalOpen, isTaskModalOpen, isHabitsModalOpen, isNationalPathModalOpen, isMissionsModalOpen, handleProvinceSelect]);
 
   if (!localGame && !isDemo) {
-    return <div>Loading game data...</div>;
+    return <div className="flex items-center justify-center h-screen text-white">Loading game data...</div>;
   }
   if (!isDemo && !localGame?.nations.find(nation => nation.nationTag === localGame?.playerNationTag)) {
-    return <div>Error: Player nation not found in game data</div>;
+    return <div className="flex items-center justify-center h-screen text-white">Error: Player nation not found.</div>;
   }
 
   const playerNation = localGame?.nations.find(nation => nation.nationTag === localGame?.playerNationTag);
@@ -1026,39 +1023,116 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
   // Get player nation name
   const playerNationName = localGame ? getNationName(localGame.playerNationTag) : 'Unknown Nation';
 
+  // Props for the main ButtonGroup (now 4 buttons)
+  const fourButtonHandlerProps = {
+    fadeIn: fadeIn,
+    onTaskListClick: () => { if (user) { handleProvinceSelect(null); setIsTaskModalOpen(true); } },
+    onHabitsClick: () => { handleProvinceSelect(null); setIsHabitsModalOpen(true); },
+    onConquestClick: () => { 
+      handleProvinceSelect(null);
+      setIsModalOpen(false);
+      setIsTaskModalOpen(false);
+      setIsHabitsModalOpen(false);
+      setIsNationalPathModalOpen(false);
+      setIsMissionsModalOpen(false);
+      setIsInConqueringMode(true);
+    },
+    onMissionsClick: () => { handleProvinceSelect(null); setIsMissionsModalOpen(true); },
+  };
+
+  // Click handler for the standalone FocusNowButton
+  const handleFocusNowClick = () => {
+    if (user && localGame) {
+      handleProvinceSelect(null);
+      setIsModalOpen(true);
+    }
+  };
+
   return (
     <div className={`fixed inset-0 overflow-hidden bg-[#0B1423] transition-opacity ${fadeIn ? 'opacity-100' : 'opacity-0'}`}>
+      
+      {/* --- UI Elements for NON-CONQUEST MODE --- */}
       {!isInConqueringMode && (
-        <div className="absolute top-0 left-0 right-0 z-40 flex flex-row items-center justify-between p-2 sm:p-4 w-full">
-          <div className="flex-shrink-0">
-          <BackButton onClick={onBack} />
-        </div>
-          <div className="flex justify-center flex-grow px-2">
-          {localGame && (
-            <ResourceBar
-              playerGold={currentGold}
-              totalPopulation={totalPopulation}
-              totalIndustry={totalIndustry}
-              totalArmy={totalArmy}
-              playerNationTag={localGame.playerNationTag}
-              gameDate={localGame.date}
-              fadeIn={fadeIn}
-            />
-          )}
-        </div>
-          <div className="flex-shrink-0 invisible" style={{width: '48px', height: '48px'}}>
-            <BackButton onClick={() => {}} />
-      </div>
-        </div>
-      )}
+        <>
+          {/* Layout for larger screens (sm and up) */}
+          {!isSmallScreen && (
+            <>
+              {/* Top-Left: BackButton and ResourceBar */}
+              <div className="absolute top-4 left-4 z-40 flex flex-row items-start gap-3">
+                <BackButton onClick={onBack} />
+                {localGame && (
+                  <ResourceBar
+                    playerGold={currentGold}
+                    totalPopulation={totalPopulation}
+                    totalIndustry={totalIndustry}
+                    totalArmy={totalArmy}
+                    playerNationTag={localGame.playerNationTag}
+                    gameDate={localGame.date}
+                    fadeIn={fadeIn}
+                  />
+                )}
+              </div>
 
-      {/* Conquest Mode Text Prompt */}
+              {/* Middle-Left: Vertical ButtonGroup (4 buttons) */}
+              <div className="absolute top-1/2 left-4 -translate-y-1/2 z-40">
+                <ButtonGroup {...fourButtonHandlerProps} orientation="vertical" />
+              </div>
+
+              {/* Bottom-Center: Standalone FocusNowButton with size="large" */}
+              <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40">
+                <FocusNowButton 
+                  fadeIn={fadeIn} 
+                  hasActiveSession={hasActiveSession} 
+                  onClick={handleFocusNowClick} 
+                  focusTimeRemaining={focusTimeRemaining}
+                  size="large"
+                />
+              </div>
+            </>
+          )}
+
+          {/* Layout for smaller screens (below sm) */}
+          {isSmallScreen && (
+             <div className="fixed bottom-4 left-0 right-0 flex justify-center items-center gap-3 sm:gap-6 px-2 sm:px-0 z-40">
+                <ButtonGroup {...fourButtonHandlerProps} orientation="horizontal" />
+                <div className="flex-shrink-0"> {/* Wrapper for FocusNowButton to be a flex item */} 
+                  <FocusNowButton 
+                    fadeIn={fadeIn} 
+                    hasActiveSession={hasActiveSession} 
+                    onClick={handleFocusNowClick} 
+                    focusTimeRemaining={focusTimeRemaining}
+                  />
+                </div>
+            </div>
+          )}
+           {/* ResourceBar at top for small screens (Moved inside !isSmallScreen check for its specific location) */}
+           {isSmallScreen && localGame && (
+            <div className="fixed top-2 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-2rem)] max-w-md">
+              <ResourceBar
+                playerGold={currentGold}
+                totalPopulation={totalPopulation}
+                totalIndustry={totalIndustry}
+                totalArmy={totalArmy}
+                playerNationTag={localGame.playerNationTag}
+                gameDate={localGame.date}
+                fadeIn={fadeIn}
+              />
+            </div>
+          )}
+        </>
+      )}
+      
+      {/* Conquest Mode Text Prompt (same as before) */}
       {isInConqueringMode && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 md:px-8 md:py-4 bg-white/90 rounded-lg shadow-md border border-gray-200 [font-family:var(--font-mplus-rounded)]">
+        <div 
+          className="absolute top-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 md:px-8 md:py-4 bg-white rounded-lg border-2 border-gray-300 [font-family:var(--font-mplus-rounded)]"
+          style={{ boxShadow: '0 3px 0px #cccccc' }}
+        >
           <p className="text-lg md:text-xl font-semibold text-gray-800 whitespace-nowrap">⚔️ Select a province to conquer ⚔️</p>
         </div>
       )}
 
+      {/* MapView and Modals (structure remains the same) */}
       <div
         className={`absolute inset-0 z-0 transition-all duration-1000 ease-in-out ${fadeIn ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}
         ref={mapCanvasContainerRef}
@@ -1069,47 +1143,14 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           selectedProvinceRef={selectedProvinceRef}
           onProvinceSelect={handleProvinceSelect}
           onMapReady={handleMapReady}
-          disableKeyboardControls={isModalOpen || isTaskModalOpen || isHabitsModalOpen || isNationalPathModalOpen}
+          disableKeyboardControls={isModalOpen || isTaskModalOpen || isHabitsModalOpen || isNationalPathModalOpen || isMissionsModalOpen}
           initialFocusProvinceId={initialCapitalId}
         />
       </div>
 
-      {!isInConqueringMode && (
-      <ButtonGroup
-        fadeIn={fadeIn}
-        hasActiveSession={hasActiveSession}
-        onTaskListClick={() => { if (user) { handleProvinceSelect(null); setIsTaskModalOpen(true); } }}
-        onFocusClick={() => {
-          if (user && localGame) {
-            handleProvinceSelect(null);
-            console.log('Opening Focus Modal. Current Game State:', localGame);
-            console.log('Current Resource Totals:', playerNationResourceTotals);
-            setIsModalOpen(true);
-          }
-        }}
-          onHabitsClick={() => { handleProvinceSelect(null); setIsHabitsModalOpen(true); }}
-          onConquestClick={() => { 
-            console.log('Entering Conquest Mode');
-            // Clear selection and close modals BEFORE setting mode
-            handleProvinceSelect(null);
-            setIsModalOpen(false);
-            setIsTaskModalOpen(false);
-            setIsHabitsModalOpen(false);
-            setIsNationalPathModalOpen(false);
-            setIsMissionsModalOpen(false);
-            // Set mode AFTER clearing selection and closing modals
-            setIsInConqueringMode(true);
-          }}
-          onMissionsClick={() => { handleProvinceSelect(null); setIsMissionsModalOpen(true); }}
-        focusTimeRemaining={focusTimeRemaining}
-      />
-      )}
-
       {isNationalPathModalOpen && (
         <NationalPathModal onClose={() => setIsNationalPathModalOpen(false)} />
       )}
-
-      {/* Missions Modal - always render but control visibility with style */}
       <div id="missions-modal" style={{ display: isMissionsModalOpen ? 'block' : 'none' }}>
         <MissionsModal 
           onClose={() => setIsMissionsModalOpen(false)} 
@@ -1117,8 +1158,6 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           playerNationTag={localGame?.playerNationTag || ''}
         />
       </div>
-
-      {/* Focus Now Modal - always render but control visibility with style */}
       <div id="focus-now-modal" style={{ display: isModalOpen ? 'block' : 'none' }}>
         {user && localGame && (
             <FocusNowModal
@@ -1141,8 +1180,6 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
             />
         )}
       </div>
-
-      {/* Task Modal - always render but control visibility with style */}
       <div id="task-modal" style={{ display: isTaskModalOpen ? 'block' : 'none' }}>
         {user && localGame && (
         <TaskModal
@@ -1154,7 +1191,6 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         />
       )}
       </div>
-      {/* Habits Modal - always render but control visibility with style */}
       <div id="habits-modal" style={{ display: isHabitsModalOpen ? 'block' : 'none' }}>
         {user && localGame && (
           <HabitsModal
@@ -1166,34 +1202,46 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
         )}
       </div>
 
-      {/* Conditionally render Cancel button for Conquest Mode */}
+      {/* Conditionally render Cancel button for Conquest Mode (structure remains the same) */}
       {isInConqueringMode && (
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
           <button
             onClick={() => {
-              console.log('Exiting Conquest Mode');
-              // Set mode first
               setIsInConqueringMode(false);
-              // Ensure modals are closed (redundant but safe)
               setIsModalOpen(false);
               setIsTaskModalOpen(false);
               setIsHabitsModalOpen(false);
               setIsNationalPathModalOpen(false);
               setIsMissionsModalOpen(false);
-              // Clear selection AFTER exiting mode
               handleProvinceSelect(null);
             }}
-            className="px-6 py-3 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition-colors duration-200 shadow-md [font-family:var(--font-mplus-rounded)] text-lg"
+            className={`
+              px-6 py-3 rounded-lg font-semibold border-2 text-white
+              transition-all duration-150 ease-in-out 
+              hover:translate-y-[-1px] active:translate-y-[0.5px]
+              [font-family:var(--font-mplus-rounded)] text-lg
+            `}
             style={{ 
-              boxShadow: '0 4px 0 #dc2626', // Adjusted shadow color
-              transform: 'translateY(-2px)'
+              backgroundColor: '#dc2626', 
+              borderColor: '#991b1b',     
+              boxShadow: '0 3px 0px #991b1b',
+            }}
+            onMouseDown={(e) => {
+              e.currentTarget.style.boxShadow = '0 1px 0px #991b1b'; 
+            }}
+            onMouseUp={(e) => {
+              e.currentTarget.style.boxShadow = '0 3px 0px #991b1b'; 
+            }}
+            onMouseLeave={(e) => { 
+              if (e.buttons === 1) {
+                  e.currentTarget.style.boxShadow = '0 3px 0px #991b1b';
+              }
             }}
           >
             Cancel Conquest
           </button>
         </div>
       )}
-
     </div>
   );
 } 

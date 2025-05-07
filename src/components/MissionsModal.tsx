@@ -24,8 +24,8 @@ export default function MissionsModal({ onClose, playerNationName, playerNationT
 
       {/* Modal Content Container - Match HabitsModal/TaskModal dimensions */} 
       <div 
-        className="relative z-10 bg-white rounded-lg p-4 sm:p-6 w-full max-w-md sm:max-w-4xl [font-family:var(--font-mplus-rounded)] transition-transform duration-300 ease-in-out transform scale-100 mx-6 sm:mx-auto"
-        style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)' }}
+        className="relative z-10 bg-white rounded-lg p-4 sm:p-6 w-full max-w-md sm:max-w-4xl [font-family:var(--font-mplus-rounded)] transition-transform duration-300 ease-in-out transform scale-100 mx-6 sm:mx-auto border-2 border-gray-300"
+        style={{ boxShadow: '0 3px 0px #d1d5db' }}
       >
         {/* Header */} 
         <div className="flex justify-between items-center mb-1 sm:mb-2"> {/* Reduced margin slightly */} 

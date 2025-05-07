@@ -42,7 +42,7 @@ export default function ResourceBar({
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
     
-    return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+    return `${months[date.getMonth()]}, ${date.getFullYear()}`;
   };
 
   const emojiStyle = {
@@ -56,12 +56,30 @@ export default function ResourceBar({
 
   return (
     <div 
-      className={`[font-family:var(--font-mplus-rounded)] flex flex-row items-center justify-center sm:justify-start gap-x-3 sm:gap-x-5 px-3 sm:px-10 py-2 rounded-lg transition-all duration-1000 ease-in-out min-h-[48px] ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}`}
+      className={`
+        [font-family:var(--font-mplus-rounded)] 
+        flex flex-row items-center justify-center sm:justify-start 
+        gap-x-3 sm:gap-x-5 px-3 sm:px-10 py-2 rounded-lg 
+        transition-all duration-150 ease-in-out 
+        min-h-[48px] 
+        bg-white border-2 border-gray-300 
+        active:translate-y-[0.5px]
+        ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'}
+      `}
       style={{ 
-        backgroundColor: '#ffffff',
-        border: '1px solid ',
-        boxShadow: '0 4px 0 rgba(229,229,229,255)',
-        transform: 'translateY(-2px)',
+        boxShadow: '0 3px 0px #d1d5db',
+        transform: 'translateY(-2px)', 
+      }}
+      onMouseDown={(e) => {
+        e.currentTarget.style.boxShadow = '0 1px 0px #e5e7eb'; 
+      }}
+      onMouseUp={(e) => {
+        e.currentTarget.style.boxShadow = '0 3px 0px #d1d5db'; 
+      }}
+      onMouseLeave={(e) => {
+        if (e.buttons === 1) {
+          e.currentTarget.style.boxShadow = '0 3px 0px #d1d5db';
+        }
       }}
     >
       {/* Flag Section */}

@@ -197,6 +197,13 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
   const totalMinutesElapsedRoundedToFifteen = useRef(0);
   const actualMinutesElapsed = useRef(0);
   
+  // State for inline intention editing
+  const [isEditingIntention, setIsEditingIntention] = useState(false);
+  const [editableIntention, setEditableIntention] = useState("");
+  const intentionInputRef = useRef<HTMLInputElement>(null);
+
+  const [currentIntention, setCurrentIntention] = useState<string | undefined>(intention);
+
   // Temporary storage for values while the confirmation dialog is shown
   const pendingValues = useRef({
     minutesElapsed: 0,
@@ -204,8 +211,6 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     startTime: "",
     endTime: ""
   });
-
-  const [currentIntention, setCurrentIntention] = useState<string | undefined>(intention);
 
   // Helper functions
   const convertSecondsToMinutes = (seconds: number): number => {
@@ -999,6 +1004,23 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     }
   };
 
+  // Function to handle saving the edited intention
+  const handleSaveIntention = async () => {
+    if (!sessionId.current || editableIntention === currentIntention) {
+      setIsEditingIntention(false);
+      return;
+    }
+
+    try {
+      await SessionService.updateSession(sessionId.current, { intention: editableIntention });
+      setCurrentIntention(editableIntention);
+      setIsEditingIntention(false);
+      console.log("✅ Intention updated successfully:", editableIntention);
+    } catch (error) {
+      console.error("❌ Error updating intention:", error);
+      // Optionally, revert editableIntention or show an error to the user
+    }
+  };
 
   if (isLoading) {
     return <div className="timer-page">Loading timer...</div>;
@@ -1042,9 +1064,41 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
             </div>
           </div>
 
-          {currentIntention && (
-            <div className="text-center mb-2">
+          {currentIntention && !isEditingIntention && (
+            <div className="text-center mb-2 flex items-center justify-center gap-2">
               <p className="text-lg text-gray-600 italic">{currentIntention}</p>
+              <button 
+                onClick={() => {
+                  setEditableIntention(currentIntention || "");
+                  setIsEditingIntention(true);
+                  setTimeout(() => intentionInputRef.current?.focus(), 0);
+                }} 
+                className="text-gray-500 hover:text-gray-700 transition-colors p-1"
+                aria-label="Edit intention"
+              >
+                ✏️
+              </button>
+            </div>
+          )}
+
+          {isEditingIntention && (
+            <div className="text-center mb-2">
+              <input
+                ref={intentionInputRef}
+                type="text"
+                value={editableIntention}
+                onChange={(e) => setEditableIntention(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSaveIntention();
+                  } else if (e.key === 'Escape') {
+                    setIsEditingIntention(false);
+                    setEditableIntention(currentIntention || ""); // Revert changes
+                  }
+                }}
+                onBlur={handleSaveIntention}
+                className="text-lg text-gray-700 italic border border-gray-300 rounded px-2 py-1 text-center focus:outline-none focus:ring-1 focus:ring-[#6ec53e]"
+              />
             </div>
           )}
 
@@ -1058,32 +1112,33 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
               ></div>
             </div>
 
-            {/* Main action buttons row */}
             <div className="flex justify-between items-center mt-10 mb-12">
-              {/* Save button */}
+              {/* Save button - Updated Style */}
               <button 
-                className="bg-white text-gray-800 border border-gray-200 py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-200 hover:bg-gray-50 w-[32%] flex items-center justify-center gap-2" 
-                style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}
+                className="bg-white text-gray-800 border-2 border-gray-300 py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-150 hover:bg-gray-50 w-[32%] flex items-center justify-center gap-2 hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#d1d5db]"
+                style={{ boxShadow: '0 3px 0px #d1d5db' }}
                 onClick={promptSessionEnd}
               >
                 <span className="text-2xl">💾</span>
                 Save
               </button>
               
-              {/* Break button - center and highlighted */}
+              {/* Break button logic */} 
               {isBreak.current ? (
                 <div className="flex flex-col items-center w-[32%] gap-2">
+                  {/* Resume Focus button - Updated Style */}
                   <button 
-                    className="bg-[#6ec53e] text-white py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-200 hover:opacity-90 w-full text-center flex items-center justify-center gap-2" 
-                    style={{ boxShadow: '0 4px 0 rgba(89,167,0,255)', transform: 'translateY(-2px)' }}
+                    className="bg-[#6ec53e] text-white py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-150 hover:opacity-90 w-full text-center flex items-center justify-center gap-2 border-2 border-[#59a700] hover:bg-[#60b33a] active:bg-[#539e30] hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#59a700]"
+                    style={{ boxShadow: '0 3px 0px #59a700' }}
                     onClick={returnToFocus}
                   >
                     <span className="text-2xl">▶️</span>
                     Resume Focus
                   </button>
+                  {/* Extend break button - Updated Style */}
                   <button 
-                    className="bg-white text-gray-800 border border-gray-200 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2" 
-                    style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
+                    className="bg-white text-gray-800 border-2 border-gray-300 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-150 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#d1d5db] disabled:transform-none disabled:shadow-[0_2px_0px_#d1d5db]"
+                    style={{ boxShadow: '0 2px 0px #d1d5db' }} // Using 2px shadow for smaller button
                     onClick={setBreak} 
                     disabled={breakTimeRemaining.current === 0}
                   >
@@ -1092,9 +1147,10 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
                   </button>
                 </div>
               ) : (
+                 /* Take break button - Updated Style */
                 <button 
-                  className="bg-[#6ec53e] text-white py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-200 hover:opacity-90 w-[32%] text-center flex items-center justify-center gap-2" 
-                  style={{ boxShadow: '0 4px 0 rgba(89,167,0,255)', transform: 'translateY(-2px)' }}
+                  className="bg-[#6ec53e] text-white py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-150 hover:opacity-90 w-[32%] text-center flex items-center justify-center gap-2 border-2 border-[#59a700] hover:bg-[#60b33a] active:bg-[#539e30] hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#59a700] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:bg-gray-400 disabled:border-gray-500 disabled:shadow-[0_3px_0px_gray-500]"
+                  style={{ boxShadow: '0 3px 0px #59a700' }}
                   onClick={setBreak} 
                   disabled={breakTimeRemaining.current === 0}
                 >
@@ -1103,10 +1159,10 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
                 </button>
               )}
               
-              {/* Discard button */}
+              {/* Discard button - Updated Style */}
               <button 
-                className="bg-white text-red-600 border border-red-200 py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-200 hover:bg-red-50 w-[32%] flex items-center justify-center gap-2" 
-                style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)', transform: 'translateY(-2px)' }}
+                className="bg-white text-red-600 border-2 border-red-300 py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-150 hover:bg-red-50 w-[32%] flex items-center justify-center gap-2 hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#fca5a5]"
+                style={{ boxShadow: '0 3px 0px #fca5a5' }} // Using lighter red for shadow
                 onClick={deleteSession}
               >
                 <span className="text-2xl">🗑️</span>
@@ -1115,22 +1171,21 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
             </div>
           </div>
 
-          {/* Debug Section */} 
-          <div className="mt-12 pt-6 border-t border-gray-200 opacity-70 hover:opacity-100 transition-opacity"> 
+          {/* Debug Section - Updated Styles */}
+          <div className="mt-12 pt-6 border-t border-gray-200 opacity-70 hover:opacity-100 transition-opacity">
             <button 
-              className="bg-white text-gray-600 border border-gray-200 py-1 px-3 rounded-lg text-xs cursor-pointer transition-all duration-200 hover:bg-gray-50 mx-auto block mb-3" 
-              style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }} 
+              className="bg-white text-gray-600 border-2 border-gray-300 py-1 px-3 rounded-lg text-xs cursor-pointer transition-all duration-150 hover:bg-gray-50 mx-auto block mb-3 hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#d1d5db]"
+              style={{ boxShadow: '0 2px 0px #d1d5db' }} // 2px shadow for small button
               onClick={() => setDebugToolsState((prev: DebugToolsState) => ({ ...prev, show: !prev.show }))}
             > 
               {debugToolsState.show ? 'Hide' : 'Show'} Debug Tools 
             </button> 
 
-            {/* Conditionally displayed debug buttons */} 
             {debugToolsState.show && ( 
               <div className="flex justify-center flex-wrap gap-3"> 
                 <button 
-                  className="bg-white text-gray-600 border border-gray-200 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-200 hover:bg-gray-50" 
-                  style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }} 
+                  className="bg-white text-gray-600 border-2 border-gray-300 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-150 hover:bg-gray-50 hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#d1d5db]"
+                  style={{ boxShadow: '0 2px 0px #d1d5db' }} // 2px shadow for small button
                   onClick={adjustSessionTimePlus60} 
                 > 
                   Adjust -60min 

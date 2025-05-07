@@ -94,7 +94,7 @@ export default function Dashboard() {
   const handleNewGame = () => {
     setIsNavigating(true);
     setTimeout(() => {
-      router.push(`/country_select`);
+      router.push(`/scenario_select`);
     }, 300);
   };
 

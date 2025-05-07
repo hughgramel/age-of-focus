@@ -42,9 +42,9 @@ const CustomDropdown: React.FC<CustomDropdownProps> = ({
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
       <div
-        className="bg-white text-black px-3 py-2 sm:px-4 sm:py-3 rounded-lg border border-gray-200 cursor-pointer flex items-center justify-between"
+        className="bg-white text-black px-3 py-2 sm:px-4 sm:py-3 rounded-lg border-2 border-gray-300 cursor-pointer flex items-center justify-between transition-all duration-150 hover:bg-gray-50 hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#d1d5db]"
         onClick={() => setIsOpen(!isOpen)}
-        style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
+        style={{ boxShadow: '0 2px 0px #d1d5db' }}
       >
         <div className="flex items-center gap-2 sm:flex-1">
           {selectedOption?.icon && <span className="text-xl ml-2">{selectedOption.icon}</span>}

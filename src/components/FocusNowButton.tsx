@@ -1,59 +1,76 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import FocusNowModal from './FocusNowModal';
-import { SessionService } from '@/services/sessionService';
+import React from 'react';
 
 interface FocusNowButtonProps {
   fadeIn: boolean;
   hasActiveSession: boolean;
   onClick: () => void;
   focusTimeRemaining: number;
+  size?: 'default' | 'large';
 }
-
 
 const convertSecondsToTimeFormat = (seconds: number): string => {
   const numHours = Math.floor((seconds / 60) / 60);
   const numMinutes = Math.floor((seconds / 60) % 60);
   const numSeconds = Math.floor(seconds % 60);
-
-  // Only include hours if > 0
   const hoursStr = numHours > 0 ? `${numHours}:` : '';
-  
-  // Add leading zero to minutes only if there are hours
   const minutesStr = numHours > 0 && numMinutes < 10 ? `0${numMinutes}` : numMinutes;
-  
-  // Always add leading zero to seconds if < 10
   const secondsStr = numSeconds < 10 ? `0${numSeconds}` : numSeconds;
-
   return `${hoursStr}${minutesStr}:${secondsStr}`;
 };
-
 
 export default function FocusNowButton({ 
   fadeIn, 
   hasActiveSession, 
   onClick,
-  focusTimeRemaining
+  focusTimeRemaining,
+  size = 'default'
 }: FocusNowButtonProps) {
+  const bgColor = '#6ec53e';
+  const darkColor = '#59a700';
+
+  const paddingClasses = size === 'large' ? 'py-4 px-8' : 'py-3 px-6';
+  const iconSizeClasses = size === 'large' ? 'text-3xl' : 'text-2xl';
+  const textSizeClasses = size === 'large' ? 'text-2xl' : 'text-xl';
+
   return (
     <button
       onClick={onClick}
-      className={`[font-family:var(--font-mplus-rounded)] p-2 sm:py-4 sm:px-6 rounded-xl text-white hover:opacity-90 transition-all duration-300 ease-in-out flex items-center justify-center ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'}`}
-      style={{ 
-        backgroundColor: '#6ec53e',
-        fontWeight: '600',
-        boxShadow: '0 4px 0 rgba(89,167,0,255)',
-        transform: 'translateY(-2px)',
-        minWidth: '56px'
+      className={`
+        w-full
+        [font-family:var(--font-mplus-rounded)] 
+        rounded-xl text-white font-semibold border-2
+        flex items-center justify-center 
+        transition-all duration-150 ease-in-out
+        ${paddingClasses}
+        hover:translate-y-[-1px] active:translate-y-[0.5px]
+        ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'} 
+      `}
+      style={{
+        backgroundColor: bgColor,
+        borderColor: darkColor,
+        boxShadow: `0 3px 0px ${darkColor}`,
+        minWidth: 'auto'
+      }}
+      onMouseDown={(e) => {
+        e.currentTarget.style.boxShadow = `0 1px 0px ${darkColor}`;
+      }}
+      onMouseUp={(e) => {
+        e.currentTarget.style.boxShadow = `0 3px 0px ${darkColor}`;
+      }}
+      onMouseLeave={(e) => { 
+        if (e.buttons === 1) {
+            e.currentTarget.style.boxShadow = `0 3px 0px ${darkColor}`;
+        }
       }}
     >
-      <div className="flex items-center justify-center gap-1">
-        <span className="text-2xl sm:text-3xl">⏱️</span>
-        <span className="text-xl sm:text-2xl whitespace-nowrap">
+      <div className="flex items-center justify-center gap-1 sm:gap-2">
+        <span className={`${iconSizeClasses}`}>⏱️</span>
+        <span className={`${textSizeClasses} whitespace-nowrap`}>
           {hasActiveSession ? `${convertSecondsToTimeFormat(Math.max(0, focusTimeRemaining))}` : 'Focus'}
         </span>
       </div>
     </button>
   );
-} 
+}

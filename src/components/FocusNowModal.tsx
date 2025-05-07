@@ -551,8 +551,8 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
       
       {/* Modal Content Container - Match other modals' width/margins */}
       <div 
-        className={`relative z-10 w-full max-w-md sm:max-w-4xl transition-transform duration-300 ease-in-out transform scale-100 mx-auto sm:mx-auto bg-white rounded-lg border border-gray-200 shadow-lg`}
-        style={{ boxShadow: '0 4px 0 rgba(229,229,229,255)' }}
+        className={`relative z-10 w-full max-w-md sm:max-w-4xl transition-transform duration-300 ease-in-out transform scale-100 mx-auto sm:mx-auto bg-white rounded-lg border-2 border-gray-300 shadow-lg`}
+        style={{ boxShadow: '0 3px 0px #d1d5db' }}
       >
         {/* Close Button - Now always visible */} 
         <button 
@@ -589,15 +589,14 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
 
             {/* Main Content Area */} 
             <div className="flex flex-col">
-              {/* Wrap Actions and Intention in a scrollable container */}
-              <div className="max-h-[40vh] overflow-y-auto pr-2 mb-4"> {/* Added max-h, overflow, padding, margin */} 
-                {/* Actions Box (Removed min-height) */} 
+              {/* Updated scrollable container: Increased max-h and added min-h */}
+              <div className="max-h-[65vh] min-h-[300px] overflow-y-auto pr-2 mb-4">
+                {/* Actions Box */}
                 <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
                   <h3 className="text-xl font-semibold mb-3 text-center flex items-center justify-center gap-2 flex-shrink-0">
                     <span className="text-2xl">🎯</span>
                     Choose your {actionCount} action{actionCount !== 1 ? 's' : ''}
                   </h3>
-                  {/* Grid remains the same */}
                   <div className="grid grid-cols-2 gap-2 pr-1 -mr-1">
                     {Array.from({ length: actionCount }, (_, i) => (
                       <div key={i} className="flex bg-white rounded-lg border border-gray-200 flex-shrink-0" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
@@ -609,12 +608,11 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
                             { value: "auto", label: "Auto", icon: "🎲" }, 
                             ...FOCUS_ACTIONS.filter(action => action.id !== 'auto').map(action => ({
                               value: action.id,
-                              // Use resource type as label based on ID
                               label: action.id === 'invest' ? 'Economy' : 
                                      action.id === 'develop' ? 'Industry' : 
                                      action.id === 'improve_army' ? 'Army' : 
                                      action.id === 'population_growth' ? 'Population' : 
-                                     action.name, // Fallback if ID doesn't match known types
+                                     action.name, 
                               icon: (() => {
                                 switch (action.id) {
                                   case 'invest': return '💰';
@@ -645,11 +643,11 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
                 />
               </div>
 
-              {/* Start Button (Now outside the scrollable div) */} 
+              {/* Start Focus Button - Updated Styles */}
               <button 
                 onClick={startFocusSession}
-                className="mt-auto px-8 py-2 bg-[#6ec53e] text-white rounded-lg font-bold text-xl hover:opacity-90 transition-all duration-200 w-full flex items-center justify-center gap-2 flex-shrink-0"
-                style={{ boxShadow: '0 4px 0 rgba(89,167,0,255)', transform: 'translateY(-2px)' }}
+                className="mt-auto px-8 py-3 bg-[#6ec53e] text-white rounded-lg font-semibold text-xl border-2 border-[#59a700] hover:bg-[#60b33a] active:bg-[#539e30] transition-all duration-150 w-full flex items-center justify-center gap-2 flex-shrink-0 hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#59a700]"
+                style={{ boxShadow: '0 3px 0px #59a700' }}
               >
                 <span className="text-2xl">▶️</span>
                 Start Focus
@@ -731,9 +729,10 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
               </div>
               
               <div className="flex justify-center mt-4 sm:mt-6">
+                {/* Return to Map Button - Updated Styles */}
                 <button 
-                  className="bg-[#6ec53e] text-white py-2 px-6 sm:py-3 sm:px-8 rounded-lg text-base sm:text-[1.2rem] font-semibold cursor-pointer transition-all duration-200 hover:opacity-90 flex items-center justify-center gap-2"
-                  style={{ boxShadow: '0 4px 0 rgba(89,167,0,255)', transform: 'translateY(-2px)' }}
+                  className="bg-[#6ec53e] text-white py-2 px-6 sm:py-3 sm:px-8 rounded-lg text-base sm:text-[1.2rem] font-semibold cursor-pointer transition-all duration-150 hover:opacity-90 flex items-center justify-center gap-2 border-2 border-[#59a700] hover:bg-[#60b33a] active:bg-[#539e30] hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#59a700]"
+                  style={{ boxShadow: '0 3px 0px #59a700' }}
                   onClick={handleReturnToMap}
                 >
                   <span className="text-xl sm:text-2xl">🗺️</span>
