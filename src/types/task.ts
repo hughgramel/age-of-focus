@@ -1,4 +1,4 @@
-import { ActionType } from './action';
+import { Timestamp } from 'firebase/firestore';
 
 export interface Task {
   id: string;
@@ -6,25 +6,24 @@ export interface Task {
   title: string;
   description?: string;
   completed: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  dueDate?: Date;
-  actionType: ActionType;
-  actionCompleted: boolean;
+  createdAt: Timestamp | Date;
+  actionType: string;
+  actionCompleted?: boolean;
+  tagId?: string | null;
 }
 
 export interface TaskCreate {
   title: string;
   description?: string;
-  dueDate?: Date;
-  actionType: ActionType;
+  actionType: string;
+  tagId?: string | null;
 }
 
 export interface TaskUpdate {
   title?: string;
   description?: string;
   completed?: boolean;
-  dueDate?: Date;
-  actionType?: ActionType;
+  actionType?: string;
   actionCompleted?: boolean;
+  tagId?: string | null;
 } 

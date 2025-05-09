@@ -644,14 +644,14 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
               </div>
 
               {/* Start Focus Button - Updated Styles */}
-              <button 
-                onClick={startFocusSession}
+                <button 
+                  onClick={startFocusSession}
                 className="mt-auto px-8 py-3 bg-[#6ec53e] text-white rounded-lg font-semibold text-xl border-2 border-[#59a700] hover:bg-[#60b33a] active:bg-[#539e30] transition-all duration-150 w-full flex items-center justify-center gap-2 flex-shrink-0 hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#59a700]"
                 style={{ boxShadow: '0 3px 0px #59a700' }}
-              >
-                <span className="text-2xl">▶️</span>
-                Start Focus
-              </button>
+                >
+                  <span className="text-2xl">▶️</span>
+                  Start Focus
+                </button>
             </div>
           </div>
         ) : (

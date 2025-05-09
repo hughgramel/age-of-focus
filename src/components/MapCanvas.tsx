@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import panzoom from 'panzoom';
 
 interface MapCanvasProps {
@@ -9,7 +9,8 @@ interface MapCanvasProps {
   onStateClick?: (stateId: string | null) => void;
   onMapReady?: (stateMap: Map<string, StateData>) => void;
   disableKeyboardControls?: boolean;
-  initialFocusProvinceId?: string;
+  initialFocusProvinceId?: string;  
+  panzoomInstanceRef: React.RefObject<ReturnType<typeof panzoom> | null>;
 }
 
 export interface StateData {
@@ -20,9 +21,8 @@ export interface StateData {
   nationId?: string;
 }
 
-export default function MapCanvas({ mapName, children, onStateClick, onMapReady, disableKeyboardControls = false, initialFocusProvinceId }: MapCanvasProps) {
+const MapCanvas = ({ mapName, children, onStateClick, onMapReady, disableKeyboardControls = false, initialFocusProvinceId, panzoomInstanceRef }: MapCanvasProps) => {
   const svgContainerRef = useRef<HTMLDivElement>(null);
-  const panzoomInstanceRef = useRef<ReturnType<typeof panzoom> | null>(null);
   const keysPressed = useRef<Set<string>>(new Set<string>());
   const animationFrameId = useRef<number | null>(null);
   const initialZoomRef = useRef<number>(1);
@@ -471,10 +471,10 @@ export default function MapCanvas({ mapName, children, onStateClick, onMapReady,
         // For now, we'll skip removal as it requires more refactoring
       }
       // Consider panzoom disposal if the component unmounts permanently
-      // if (panzoomInstanceRef.current) {
-      //    panzoomInstanceRef.current.dispose();
-      //    panzoomInstanceRef.current = null;
-      // }
+      if (panzoomInstanceRef.current) {
+         panzoomInstanceRef.current.dispose();
+         panzoomInstanceRef.current = null;
+      }
     };
   }, [mapName, onStateClick, onMapReady, initialFocusProvinceId, initializeZoom, handleZoom, zoomToProvince]);
 
@@ -496,4 +496,6 @@ export default function MapCanvas({ mapName, children, onStateClick, onMapReady,
       {children}
     </div>
   );
-} 
+};
+
+export default React.memo(MapCanvas); 

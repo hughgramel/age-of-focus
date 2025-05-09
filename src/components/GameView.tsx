@@ -21,11 +21,13 @@ import HabitsModal from './HabitsModal';
 import { getNationFlag } from '@/utils/nationFlags';
 import MissionsModal from './MissionsModal';
 import { getNationName } from '@/data/nationTags';
+import panzoom from 'panzoom';
 
 interface GameViewProps {
   game?: Game;
   isDemo?: boolean;
   onBack: () => void;
+  panzoomInstanceRef: React.RefObject<ReturnType<typeof panzoom> | null>;
 }
 
 export interface playerNationResourceTotals {
@@ -53,7 +55,7 @@ const VICTORY_POWER_RATIO = 1.2; // Attacker needs 1.2x defender power to guaran
 const MINIMUM_POWER_RATIO = 0.8; // Attacker needs at least 0.8x defender power to attempt
 // --- End Conquest Constants ---
 
-export default function GameView({ game, isDemo = false, onBack }: GameViewProps) {
+export default function GameView({ game, isDemo = false, onBack, panzoomInstanceRef }: GameViewProps) {
   const { user } = useAuth();
   const selectedProvinceRef = useRef<string | null>(null);
   const provincePopupRef = useRef<HTMLDivElement | null>(null);
@@ -521,7 +523,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
 
       // 3. Validation
       if (playerNation.gold < goldCost) {
-        console.error('Conquest failed: Insufficient gold.');
+        console.error(`Conquest failed: Insufficient gold. Have: ${playerNation.gold}, Need: ${goldCost}`);
         // Show feedback: Not enough gold
         const feedback = document.createElement('div');
         feedback.textContent = `Attack Failed: Insufficient Gold, Focus to earn more!`;
@@ -611,7 +613,9 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
       const feedback = document.createElement('div');
       const provinceName = updatedGame.provinces[targetProvinceIndex].name || provinceId;
       feedback.textContent = `✅ Conquest Successful! ${provinceName} is now yours.`;
-      feedback.className = 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded shadow-md [font-family:var(--font-mplus-rounded)]';
+      feedback.className = 'fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[70] bg-green-500 text-white px-6 py-4 rounded-xl border-2 [font-family:var(--font-mplus-rounded)] font-semibold';
+      feedback.style.borderColor = '#2f855a'; // Darker green border
+      feedback.style.boxShadow = '0 3px 0px #2f855a'; // Darker green shadow
       document.body.appendChild(feedback);
       setTimeout(() => feedback.remove(), 4000);
 
@@ -897,6 +901,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
       await GameService.saveGame(user.uid, slotNumber, updatedGame, 'habit-toggle-update');
       // --- End Apply changes and Save Directly ---
 
+      // Here we need 
 
       console.log('Action executed successfully');
     } catch (error) {
@@ -1135,7 +1140,6 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
       {/* MapView and Modals (structure remains the same) */}
       <div
         className={`absolute inset-0 z-0 transition-all duration-1000 ease-in-out ${fadeIn ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}
-        ref={mapCanvasContainerRef}
       >
         <MapView
           mapName={localGame?.mapName || 'world_states'}
@@ -1145,6 +1149,7 @@ export default function GameView({ game, isDemo = false, onBack }: GameViewProps
           onMapReady={handleMapReady}
           disableKeyboardControls={isModalOpen || isTaskModalOpen || isHabitsModalOpen || isNationalPathModalOpen || isMissionsModalOpen}
           initialFocusProvinceId={initialCapitalId}
+          panzoomInstanceRef={panzoomInstanceRef}
         />
       </div>
 

@@ -1,11 +1,12 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import GameView from '@/components/GameView';
 import { world_1836 } from '@/data/world_1836';
 import { useAuth } from '@/contexts/AuthContext';
 import { GameService } from '@/services/gameService';
+import panzoom from 'panzoom';
 
 // CSS to hide unwanted UI elements
 const hideFocusAndTutorial = `
@@ -29,6 +30,8 @@ export default function GamePage() {
   const [game, setGame] = useState<typeof world_1836 | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const panzoomInstanceRef = useRef<ReturnType<typeof panzoom> | null>(null);
+
 
   useEffect(() => {
     // Add stylesheet to hide unwanted UI elements
@@ -111,6 +114,9 @@ export default function GamePage() {
     loadGame();
   }, [searchParams, user]);
 
+
+  
+
   const handleBack = () => {
     router.push('/dashboard');
   };
@@ -147,5 +153,5 @@ export default function GamePage() {
     );
   }
 
-  return <GameView game={game} onBack={handleBack} />;
+  return <GameView game={game} onBack={handleBack} panzoomInstanceRef={panzoomInstanceRef} />;
 } 
