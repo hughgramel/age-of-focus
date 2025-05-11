@@ -8,6 +8,7 @@ interface TagSelectorProps {
   onTagSelect: (tagId: string | null) => void;
   onTagCreate: (name: string) => Promise<Tag | null>; // Returns the new tag or null on failure
   onColorChangeRequest: (tag: Tag) => void; // Callback to open color picker
+  onTagArchiveRequest?: (tagId: string) => void; // New prop for requesting tag archive
   className?: string;
   anchorEl?: HTMLElement | null; // For positioning as a dropdown
   onClose?: () => void; // To close the selector when used as a dropdown
@@ -21,6 +22,7 @@ const TagSelector: React.FC<TagSelectorProps> = ({
   onTagSelect,
   onTagCreate,
   onColorChangeRequest,
+  onTagArchiveRequest,
   className = '',
   anchorEl,
   onClose,
@@ -117,22 +119,17 @@ const TagSelector: React.FC<TagSelectorProps> = ({
     }
   }, [anchorEl, isOpen, availableTags]); // Rerun if anchor, open state, or list content changes
 
-
-  const handleSelectAndClose = (tagId: string | null) => {
-    onTagSelect(tagId);
-    setIsOpen(false);
-    setShowCreateInput(false);
-    if (onClose) onClose();
-  }
-
   const handleCreateAndSelect = async () => {
     if (!newTagName.trim() || isCreating) return;
     setIsCreating(true);
     const createdTag = await onTagCreate(newTagName.trim());
     setIsCreating(false);
     if (createdTag) {
-      handleSelectAndClose(createdTag.id);
+      if (onTagSelect) onTagSelect(createdTag.id);
+      setIsOpen(false);
+      setShowCreateInput(false);
       setNewTagName('');
+      if (onClose) onClose();
     } else {
       console.error("Failed to create tag");
     }
@@ -216,7 +213,12 @@ const TagSelector: React.FC<TagSelectorProps> = ({
            <div
               className={`px-3 py-2 sm:px-4 sm:py-3 cursor-pointer flex items-center gap-2 hover:bg-gray-50 transition-colors duration-150 text-gray-500 italic text-sm
                 ${selectedTagId === null ? 'bg-gray-50' : ''}`}
-              onClick={() => { handleSelectAndClose(null); }}
+              onClick={() => { 
+                if (onTagSelect) onTagSelect(null);
+                setIsOpen(false);
+                setShowCreateInput(false);
+                if (onClose) onClose();
+              }}
             >
              - None -
            </div>
@@ -225,12 +227,40 @@ const TagSelector: React.FC<TagSelectorProps> = ({
           {availableTags.map((tag) => (
             <div
               key={tag.id}
-              className={`px-3 py-2 sm:px-4 sm:py-3 cursor-pointer flex items-center gap-2 hover:bg-gray-50 transition-colors duration-150 text-black
-                ${selectedTagId === tag.id ? 'bg-gray-50' : ''}`}
-              onClick={() => { handleSelectAndClose(tag.id); }}
+              // No onClick on the main row div itself anymore
+              className={`px-3 py-1 sm:px-4 sm:py-1.5 flex items-center justify-between gap-2 transition-colors duration-150 text-black ${selectedTagId === tag.id ? 'bg-gray-100' : 'hover:bg-gray-50'}`}
             >
-              <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: tag.color }}></span>
-              <span className="flex-1 truncate text-sm">{tag.name}</span>
+              {/* Left Div for Selection */}
+              <div
+                className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer py-1"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (onTagSelect) onTagSelect(tag.id);
+                  setIsOpen(false);
+                  setShowCreateInput(false);
+                  if (onClose) onClose();
+                }}
+              >
+                <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: tag.color }}></span>
+                <span className="flex-1 truncate text-sm">{tag.name}</span>
+              </div>
+
+              {/* Right Div for Archiving */}
+              {onTagArchiveRequest && (
+                <div
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onTagArchiveRequest) onTagArchiveRequest(tag.id);
+                    setIsOpen(false);
+                    setShowCreateInput(false);
+                    if (onClose) onClose();
+                  }}
+                  className="p-1 text-gray-400 hover:text-red-500 transition-colors flex-shrink-0 rounded-full hover:bg-red-100 w-6 h-6 flex items-center justify-center cursor-pointer"
+                  title={`Archive ${tag.name}`}
+                >
+                  <span className="text-sm font-bold">✕</span>
+                </div>
+              )}
             </div>
           ))}
         </div>

@@ -8,6 +8,9 @@ import { SessionService } from '@/services/sessionService';
 import { Session, SessionUpdate, SessionInsert } from '@/types/session';
 import { ActionUpdate } from '@/services/actionService';
 import CustomDropdown from './CustomDropdown';
+import TagSelector from './TagSelector';
+import { Tag } from '@/types/tag';
+import { TagService } from '@/services/tagService';
 import { CircularProgressbarWithChildren } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
 import { playerNationResourceTotals } from './GameView';
@@ -213,6 +216,12 @@ interface FocusNowModalProps {
   setFocusTimeRemaining: (time: number) => void;
 }
 
+// Define COLOR_PALETTE if not already globally available or imported
+const COLOR_PALETTE = [
+  '#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#14b8a6', 
+  '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899', '#78716c', '#a1a1aa'
+];
+
 const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiveSession = false, executeActionUpdate, playerNationResourceTotals, setFocusTimeRemaining }) => {
   const router = useRouter();
   const [sessionStarted, setSessionStarted] = useState(false);
@@ -226,6 +235,10 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
   const [completionMinutes, setCompletionMinutes] = useState<number | null>(null);
   const [completionStartTime, setCompletionStartTime] = useState<string | null>(null);
   const [completionEndTime, setCompletionEndTime] = useState<string | null>(null);
+  
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [selectedSessionTagId, setSelectedSessionTagId] = useState<string | null>(null);
+  const [isLoadingTags, setIsLoadingTags] = useState(true); // For loading tags
   
   // --- Commented out state for milestone progress ---
   // const [milestones, setMilestones] = useState<PathMilestone[]>(NATIONAL_MILESTONES);
@@ -355,6 +368,39 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
     setDuration(parseInt(event.target.value));
   };
 
+  // Effect to load available tags
+  useEffect(() => {
+    if (!userId) return;
+    const loadTags = async () => {
+      setIsLoadingTags(true);
+      try {
+        const userTags = await TagService.getUserTags(userId, false); // Fetch non-deleted tags
+        setAvailableTags(userTags);
+      } catch (error) {
+        console.error("Error loading tags for session modal:", error);
+        setAvailableTags([]);
+      } finally {
+        setIsLoadingTags(false);
+      }
+    };
+    loadTags();
+  }, [userId]);
+
+  const handleSessionTagCreate = async (name: string): Promise<Tag | null> => {
+    if (!userId) return null;
+    try {
+      const newColorIndex = availableTags.length % COLOR_PALETTE.length;
+      const newTagColor = COLOR_PALETTE[newColorIndex];
+      const newTag = await TagService.createTag(userId, { name, color: newTagColor });
+      setAvailableTags(prev => [...prev, newTag]);
+      setSelectedSessionTagId(newTag.id); // Automatically select the new tag
+      return newTag;
+    } catch (error) {
+      console.error("Error creating session tag:", error);
+      return null;
+    }
+  };
+
   // Start focus session
   const startFocusSession = async () => {
     console.log('🎬 Starting new focus session...', { intention });
@@ -382,17 +428,20 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
       }
       
       // Create new session
-      const newSession = await SessionService.createSession({
+      const newSessionData: SessionInsert = {
         user_id: userId,
         planned_minutes: duration,
         session_state: 'focus',
         selected_actions: processedActionsList,
         focus_start_time: new Date().toISOString(),
         focus_end_time: new Date(Date.now() + duration * 60 * 1000).toISOString(),
-        break_minutes_remaining: Math.floor(duration / 2),
+        break_minutes_remaining: Math.floor(duration / 30) * 5,
         total_minutes_done: 0,
-        intention: intention // Add intention to session
-      });
+        intention: intention,
+        tagId: selectedSessionTagId // Include selected tagId
+      };
+
+      const newSession = await SessionService.createSession(newSessionData);
 
       if (newSession) {
         console.log('✅ New session created:', newSession);
@@ -554,106 +603,131 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
         className={`relative z-10 w-full max-w-md sm:max-w-4xl transition-transform duration-300 ease-in-out transform scale-100 mx-auto sm:mx-auto bg-white rounded-lg border-2 border-gray-300 shadow-lg`}
         style={{ boxShadow: '0 3px 0px #d1d5db' }}
       >
-        {/* Close Button - Now always visible */} 
-        <button 
-          onClick={handleModalClose} 
-          className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 transition-colors z-20 p-2" 
-        >
-          <span className="text-xl font-bold">✕</span>
-        </button>
+        {/* Close Button - Moved for sessionStarted and completionScreen scenarios below */}
 
         {!sessionStarted && !activeSession && !showCompletionScreen ? (
-          <div className="relative text-black p-4 sm:p-6 [font-family:var(--font-mplus-rounded)]" style={{ transform: 'translateY(-2px)' }}>
-            {/* Top section - Duration centered */}
-            <div className="mb-8 max-w-md mx-auto">
-              <h3 className="text-2xl font-semibold mb-4 text-center flex items-center justify-center gap-2">
-                <span className="text-3xl">⏱️</span>
-                Focus Session Duration
-              </h3>
-              <CustomDropdown
-                options={[
-                  { value: "30", label: "30 minutes", icon: "⏱️" },
-                  { value: "45", label: "45 minutes", icon: "⏱️" },
-                  { value: "60", label: "1 hour", icon: "⏱️" },
-                  { value: "90", label: "1.5 hours", icon: "⏱️" },
-                  { value: "120", label: "2 hours", icon: "⏱️" },
-                  { value: "180", label: "3 hours", icon: "⏱️" },
-                  { value: "240", label: "4 hours", icon: "⏱️" }
-                ]}
-                value={duration.toString()}
-                onChange={(value) => setDuration(parseInt(value))}
-                className="w-full"
-                forceLabelVisible={true}
-              />
-            </div>
-
-            {/* Main Content Area */} 
-            <div className="flex flex-col">
-              {/* Updated scrollable container: Increased max-h and added min-h */}
-              <div className="max-h-[65vh] min-h-[300px] overflow-y-auto pr-2 mb-4">
-                {/* Actions Box */}
-                <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
-                  <h3 className="text-xl font-semibold mb-3 text-center flex items-center justify-center gap-2 flex-shrink-0">
-                    <span className="text-2xl">🎯</span>
-                    Choose your {actionCount} action{actionCount !== 1 ? 's' : ''}
+          <>
+            {/* Close Button for initial screen */}
+            <button 
+              onClick={handleModalClose} 
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-800 transition-colors z-20 p-2" 
+            >
+              <span className="text-xl font-bold">✕</span>
+            </button>
+            <div className="relative text-black p-4 sm:p-6 [font-family:var(--font-mplus-rounded)]" style={{ transform: 'translateY(-2px)' }}>
+              {/* Top section - Duration and Tag Selector Side by Side */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 sm:mb-8">
+                <div>
+                  <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 text-left flex items-center gap-2">
+                    <span className="text-2xl">⏱️</span>
+                    Duration
                   </h3>
-                  <div className="grid grid-cols-2 gap-2 pr-1 -mr-1">
-                    {Array.from({ length: actionCount }, (_, i) => (
-                      <div key={i} className="flex bg-white rounded-lg border border-gray-200 flex-shrink-0" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
-                         <div className="py-2 px-2 sm:px-3 border-r border-gray-200 min-w-[60px] sm:min-w-[60px] flex items-center">
-                           <span className="text-sm sm:text-base text-gray-700">Action {i + 1}</span>
-                         </div>
-                         <CustomDropdown
-                          options={[
-                            { value: "auto", label: "Auto", icon: "🎲" }, 
-                            ...FOCUS_ACTIONS.filter(action => action.id !== 'auto').map(action => ({
-                              value: action.id,
-                              label: action.id === 'invest' ? 'Economy' : 
-                                     action.id === 'develop' ? 'Industry' : 
-                                     action.id === 'improve_army' ? 'Army' : 
-                                     action.id === 'population_growth' ? 'Population' : 
-                                     action.name, 
-                              icon: (() => {
-                                switch (action.id) {
-                                  case 'invest': return '💰';
-                                  case 'develop': return '🏭';
-                                  case 'improve_army': return '⚔️';
-                                  case 'population_growth': return '👥';
-                                  default: return '🎯';
-                                }
-                              })()
-                            }))
-                          ]}
-                          value={selectedActions[i] || 'auto'}
-                          onChange={(value) => handleActionChange(i, value as ActionType)}
-                          className="flex-1 text-sm sm:text-base [&>button]:justify-center sm:[&>button]:justify-between"
-                        />
-                      </div>
-                    ))}
-                  </div>
+                  <CustomDropdown
+                    options={[
+                      { value: "30", label: "30 minutes", icon: "⏱️" },
+                      { value: "45", label: "45 minutes", icon: "⏱️" },
+                      { value: "60", label: "1 hour", icon: "⏱️" },
+                      { value: "90", label: "1.5 hours", icon: "⏱️" },
+                      { value: "120", label: "2 hours", icon: "⏱️" },
+                      { value: "180", label: "3 hours", icon: "⏱️" },
+                      { value: "240", label: "4 hours", icon: "⏱️" }
+                    ]}
+                    value={duration.toString()}
+                    onChange={(value) => setDuration(parseInt(value))}
+                    className="w-full"
+                    forceLabelVisible={true}
+                  />
                 </div>
-
-                {/* Intention Box */}
-                <textarea
-                  value={intention}
-                  onChange={(e) => setIntention(e.target.value)}
-                  placeholder="Write your intention..."
-                  className="bg-white text-gray-800 border border-gray-200 rounded-lg px-3 py-2 w-full outline-none text-base resize-none h-[100px] flex-shrink-0"
-                  style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
-                />
+                <div>
+                  <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 text-left flex items-center gap-2">
+                    <span className="text-2xl">🏷️</span>
+                    Tag (Optional)
+                  </h3>
+                  {isLoadingTags ? (
+                    <div className="h-[50px] flex items-center justify-center text-gray-500">Loading tags...</div>
+                  ) : (
+                    <TagSelector
+                      userId={userId}
+                      availableTags={availableTags}
+                      selectedTagId={selectedSessionTagId}
+                      onTagSelect={setSelectedSessionTagId}
+                      onTagCreate={handleSessionTagCreate}
+                      onColorChangeRequest={(tag) => console.log('Color change requested for', tag)} // Placeholder
+                      // onTagArchiveRequest - omit for now or add a handler if needed
+                      className="w-full"
+                    />
+                  )}
+                </div>
               </div>
 
-              {/* Start Focus Button - Updated Styles */}
-                <button 
-                  onClick={startFocusSession}
-                className="mt-auto px-8 py-3 bg-[#6ec53e] text-white rounded-lg font-semibold text-xl border-2 border-[#59a700] hover:bg-[#60b33a] active:bg-[#539e30] transition-all duration-150 w-full flex items-center justify-center gap-2 flex-shrink-0 hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#59a700]"
-                style={{ boxShadow: '0 3px 0px #59a700' }}
-                >
-                  <span className="text-2xl">▶️</span>
-                  Start Focus
-                </button>
+              {/* Main Content Area */} 
+              <div className="flex flex-col">
+                {/* Updated scrollable container: Increased max-h and added min-h */}
+                <div className="max-h-[65vh] min-h-[300px] overflow-y-auto pr-2 mb-4">
+                  {/* Actions Box */}
+                  <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
+                    <h3 className="text-xl font-semibold mb-3 text-center flex items-center justify-center gap-2 flex-shrink-0">
+                      <span className="text-2xl">🎯</span>
+                      Choose your {actionCount} action{actionCount !== 1 ? 's' : ''}
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2 pr-1 -mr-1">
+                      {Array.from({ length: actionCount }, (_, i) => (
+                        <div key={i} className="flex bg-white rounded-lg border border-gray-200 flex-shrink-0" style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}>
+                           <div className="py-2 px-2 sm:px-3 border-r border-gray-200 min-w-[60px] sm:min-w-[60px] flex items-center">
+                             <span className="text-sm sm:text-base text-gray-700">Action {i + 1}</span>
+                           </div>
+                           <CustomDropdown
+                            options={[
+                              { value: "auto", label: "Auto", icon: "🎲" }, 
+                              ...FOCUS_ACTIONS.filter(action => action.id !== 'auto').map(action => ({
+                                value: action.id,
+                                label: action.id === 'invest' ? 'Economy' : 
+                                       action.id === 'develop' ? 'Industry' : 
+                                       action.id === 'improve_army' ? 'Army' : 
+                                       action.id === 'population_growth' ? 'Population' : 
+                                       action.name, 
+                                icon: (() => {
+                                  switch (action.id) {
+                                    case 'invest': return '💰';
+                                    case 'develop': return '🏭';
+                                    case 'improve_army': return '⚔️';
+                                    case 'population_growth': return '👥';
+                                    default: return '🎯';
+                                  }
+                                })()
+                              }))
+                            ]}
+                            value={selectedActions[i] || 'auto'}
+                            onChange={(value) => handleActionChange(i, value as ActionType)}
+                            className="flex-1 text-sm sm:text-base [&>button]:justify-center sm:[&>button]:justify-between"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Intention Box */}
+                  <textarea
+                    value={intention}
+                    onChange={(e) => setIntention(e.target.value)}
+                    placeholder="Write your intention..."
+                    className="bg-white text-gray-800 border border-gray-200 rounded-lg px-3 py-2 w-full outline-none text-base resize-none h-[100px] flex-shrink-0"
+                    style={{ boxShadow: '0 2px 0 rgba(229,229,229,255)' }}
+                  />
+                </div>
+
+                {/* Start Focus Button - Updated Styles */}
+                  <button 
+                    onClick={startFocusSession}
+                  className="mt-auto px-8 py-3 bg-[#6ec53e] text-white rounded-lg font-semibold text-xl border-2 border-[#59a700] hover:bg-[#60b33a] active:bg-[#539e30] transition-all duration-150 w-full flex items-center justify-center gap-2 flex-shrink-0 hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#59a700]"
+                  style={{ boxShadow: '0 3px 0px #59a700' }}
+                  >
+                    <span className="text-2xl">▶️</span>
+                    Start Focus
+                  </button>
+              </div>
             </div>
-          </div>
+          </>
         ) : (
           <div className="relative z-10">
             <FocusTimer 
@@ -668,20 +742,35 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
               intention={intention}
               setFocusTimeRemaining={setFocusTimeRemaining}
               showFocusModal={handleReturnToMap}
+
+              // Props for TagSelector in FocusTimer
+              initialSelectedTagId={activeSession?.tagId ?? selectedSessionTagId}
+              availableTags={availableTags}
+              onFinalTagCreate={handleSessionTagCreate}
+              onFinalTagColorChangeRequest={(tagToChange) => {
+                console.log('[FocusNowModal] Color change requested for tag from FocusTimer:', tagToChange);
+              }}
             />
           </div>
         )}
 
         {showCompletionScreen && (
-          <div className="[font-family:var(--font-mplus-rounded)]">
-            <div className="bg-[#6ec53e] py-4 sm:py-6 px-4 sm:px-6 text-center rounded-t-lg -m-4 sm:-m-6 mb-4 sm:mb-6">
+          <div className="[font-family:var(--font-mplus-rounded)] -mt-4 sm:-mt-10">
+            <div className="bg-[#6ec53e] py-4 sm:py-6 px-4 sm:px-6 text-center rounded-t-lg relative">
               <h1 className="text-2xl sm:text-[2.5rem] text-white m-0 font-bold flex items-center justify-center gap-2 sm:gap-3">
                 <span className="text-3xl sm:text-4xl">🎉</span>
                 Session Complete!
               </h1>
+              {/* Close Button for completion screen - now inside green bar */}
+              <button 
+                onClick={handleModalClose} 
+                className="absolute top-2 right-2 text-white hover:text-gray-200 transition-colors z-20 p-2" 
+              >
+                <span className="text-xl font-bold">✕</span>
+              </button>
             </div>
             
-            <div className="p-4 sm:p-2">
+            <div className="p-4 sm:p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-8 mb-6 sm:mb-8">
                 <div className="flex items-center gap-3 sm:gap-4">
                   <div className="text-3xl sm:text-[2.5rem]">⏱️</div>
@@ -700,6 +789,18 @@ const FocusNowModal: React.FC<FocusNowModalProps> = ({ userId, onClose, hasActiv
                   </div>
                 </div>
               </div>
+
+              {intention && (
+                <div className="mb-6 sm:mb-8">
+                  <h3 className="text-base sm:text-[1.2rem] text-gray-800 mb-2 sm:mb-3 flex items-center gap-2">
+                    <span className="text-xl sm:text-2xl">💡</span>
+                    Your Intention
+                  </h3>
+                  <p className="text-base sm:text-lg text-gray-700 bg-gray-50 p-3 sm:p-4 rounded-lg border border-gray-200 leading-relaxed break-words">
+                    {intention}
+                  </p>
+                </div>
+              )}
 
               {calculateResourceGains() && (
                 <div className="bg-gray-50 rounded-lg p-4 sm:p-6 mb-6 sm:mb-8 border border-gray-200">

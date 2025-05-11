@@ -19,5 +19,6 @@ export interface ScenarioDetails {
   greatPowers: string[]; // Array of nation tags
   otherPlayableNations: string[]; // Array of nation tags
   mapDataFile: string; // Reference to the world data file, e.g., "world_1836"
+  playerNationTag?: string; // Optional suggested player nation
   // countryDataFile: string; // We can derive this from nationTags and countries_xxxx for now
 } 

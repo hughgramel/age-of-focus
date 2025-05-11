@@ -261,23 +261,21 @@ export default function GameView({ game, isDemo = false, onBack, panzoomInstance
           // --- End Battle Calculations ---
 
           const popup = document.createElement('div');
-          // Apply theme styling: similar to profile cards
-          popup.className = '[font-family:var(--font-mplus-rounded)] fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] bg-white rounded-xl p-6 w-full max-w-2xl border-2 border-[#67b9e7]/30 shadow-[4px_4px_0px_0px_rgba(103,185,231,0.3)]';
+          popup.className = '[font-family:var(--font-mplus-rounded)] fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[60] bg-white rounded-xl p-7 w-full max-w-2xl border-2 border-[#67b9e7]/30 shadow-[4px_4px_0px_0px_rgba(103,185,231,0.3)]';
           
-          // Reusable styles
-          const emojiStyle = `text-shadow: -0.5px -0.5px 0 rgba(0,0,0,0.1), 0.5px -0.5px 0 rgba(0,0,0,0.1), -0.5px 0.5px 0 rgba(0,0,0,0.1), 0.5px 0.5px 0 rgba(0,0,0,0.1); display: inline-block; font-size: 1.4em;`; // Slightly smaller
-          const flagStyle = `display: inline-block; width: 1.5em; height: 1.5em; vertical-align: middle; margin-right: 0.3em; line-height: 1; font-size: 1.5em;`; // Slightly smaller
-          const statLabelStyle = `text-[#0B1423]/70 text-sm`;
-          const statValueStyle = `font-semibold text-lg text-[#0B1423]`;
-          const columnHeaderStyle = `text-lg font-bold text-[#0B1423] mb-3 flex items-center justify-center gap-2`;
-          const buttonBaseStyle = `px-6 py-3 text-base font-semibold rounded-lg border-2 transition-all duration-200 flex items-center justify-center gap-2 shadow-[0_3px_0px] hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px] w-full max-w-xs`; // Adjusted shadow and active state for consistency
-          const enabledButtonStyle = `bg-[#dc2626] text-white border-[#991b1b] shadow-[#991b1b] hover:bg-[#c02020] active:bg-[#991b1b]`; // ConquestButton red theme
+          const emojiStyle = `text-shadow: -0.5px -0.5px 0 rgba(0,0,0,0.1), 0.5px -0.5px 0 rgba(0,0,0,0.1), -0.5px 0.5px 0 rgba(0,0,0,0.1), 0.5px 0.5px 0 rgba(0,0,0,0.1); display: inline-block; font-size: 1.5em;`;
+          const flagStyle = `display: inline-block; width: 1.6em; height: 1.6em; vertical-align: middle; margin-right: 0.3em; line-height: 1; font-size: 1.6em;`;
+          const statLabelStyle = `text-[#0B1423]/70 text-base`;
+          const statValueStyle = `font-semibold text-xl text-[#0B1423]`;
+          const columnHeaderStyle = `text-xl font-bold text-[#0B1423] mb-4 flex items-center justify-center gap-2`;
+          const buttonBaseStyle = `px-7 py-3.5 text-lg font-semibold rounded-lg border-2 transition-all duration-200 flex items-center justify-center gap-2 shadow-[0_3px_0px] hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px] w-full max-w-xs`;
+          const enabledButtonStyle = `bg-[#dc2626] text-white border-[#991b1b] shadow-[#991b1b] hover:bg-[#c02020] active:bg-[#991b1b]`;
           const disabledButtonStyle = `bg-gray-200 text-gray-400 border-gray-300 shadow-gray-300 cursor-not-allowed`;
-          const closeButtonStyle = `absolute top-2 right-2 p-1 text-xl font-bold text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors leading-none w-7 h-7 flex items-center justify-center`;
+          const closeButtonStyle = `absolute top-2 right-2 p-1 text-2xl font-bold text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors leading-none w-8 h-8 flex items-center justify-center`;
 
           popup.innerHTML = `
-            <div class="relative mb-4 pb-3">
-              <h2 class="text-xl font-bold text-[#0B1423] text-center">
+            <div class="relative mb-5 pb-4">
+              <h2 class="text-2xl font-bold text-[#0B1423] text-center">
                 <span style="${emojiStyle}" class="mr-1">⚔️</span>
                 Conquest of ${selectedProvince.name}
               </h2>
@@ -286,14 +284,13 @@ export default function GameView({ game, isDemo = false, onBack, panzoomInstance
               </button>
             </div>
 
-            <div class="grid grid-cols-2 gap-6 mb-5"> 
-              
-              <div class="bg-gray-50 rounded-lg p-4 border border-gray-200/80">
+            <div class="grid grid-cols-2 gap-7 mb-6"> 
+              <div class="bg-gray-50 rounded-lg p-5 border border-gray-200/80">
                 <h3 class="${columnHeaderStyle}">
                   <span style="${flagStyle}">${getNationFlag(playerNation.nationTag)}</span>
                   Attacker: ${playerNation.name}
                 </h3>
-                <div class="space-y-2">
+                <div class="space-y-3">
                   <div class="flex justify-between items-baseline">
                     <span class="${statLabelStyle}">⚔️ Power:</span> 
                     <span class="${statValueStyle}">${formatNumber(attackerPower)}</span>
@@ -305,12 +302,12 @@ export default function GameView({ game, isDemo = false, onBack, panzoomInstance
                 </div>
               </div>
 
-              <div class="bg-gray-50 rounded-lg p-4 border border-gray-200/80">
+              <div class="bg-gray-50 rounded-lg p-5 border border-gray-200/80">
                 <h3 class="${columnHeaderStyle}">
                   <span style="${flagStyle}">${getNationFlag(owningNation.nationTag)}</span>
                   Defender: ${owningNation.name}
                 </h3>
-                 <div class="space-y-2">
+                 <div class="space-y-3">
                   <div class="flex justify-between items-baseline">
                     <span class="${statLabelStyle}">⚔️ Power:</span> 
                     <span class="${statValueStyle}">${formatNumber(defenderPower)}</span>
@@ -323,22 +320,22 @@ export default function GameView({ game, isDemo = false, onBack, panzoomInstance
               </div>
             </div>
  
-            <div class="mt-1 pt-1 flex flex-col items-center gap-2"> 
-                <div class="text-center mb-1">
-                    <div class="text-xl font-bold ${isProjectedVictory ? 'text-green-600' : 'text-red-600'}">
+            <div class="mt-2 pt-2 flex flex-col items-center gap-3"> 
+                <div class="text-center mb-2">
+                    <div class="text-2xl font-bold ${isProjectedVictory ? 'text-green-600' : 'text-red-600'}">
                         ${isProjectedVictory ? '📈 Projected Victory' : '📉 Projected Defeat'}
                     </div>
                 </div>
             
                 <button 
                     id="launchAttackButton" 
-                    class="${buttonBaseStyle} ${canLaunchAttack ? enabledButtonStyle : disabledButtonStyle} mb-4"
+                    class="${buttonBaseStyle} ${canLaunchAttack ? enabledButtonStyle : disabledButtonStyle} mb-5"
                     ${!canLaunchAttack ? 'disabled' : ''}
                     title="${disabledReason}"
                 >
                   <span class="mr-1">⚔️</span> Launch Attack (${CONQUEST_GOLD_COST}💰)
                 </button>
-                ${disabledReason ? `<span class="text-xs text-red-600 text-center font-semibold">${disabledReason}</span>` : ''}
+                ${disabledReason ? `<span class="text-sm text-red-600 text-center font-semibold">${disabledReason}</span>` : ''}
             </div>
           `;
   
@@ -903,6 +900,9 @@ export default function GameView({ game, isDemo = false, onBack, panzoomInstance
 
       // Here we need 
 
+      console.log('Check achievements now');
+      checkAchievements();
+
       console.log('Action executed successfully');
     } catch (error) {
       console.error('Error executing action:', error);
@@ -962,6 +962,9 @@ export default function GameView({ game, isDemo = false, onBack, panzoomInstance
 
         console.log(`Province ${provinceId} successfully taken by player ${targetOwner}. Saved to slot ${slotNumber}.`);
 
+        console.log('Check achievements now');
+        checkAchievements();
+
         // Optional: Add feedback to the user
         const provinceName = updatedGame.provinces[provinceIndex].name || provinceId;
         const feedback = document.createElement('div');
@@ -977,6 +980,10 @@ export default function GameView({ game, isDemo = false, onBack, panzoomInstance
       console.error(`Error taking province ${provinceId}:`, error);
     }
   };
+
+  const checkAchievements = async () => {
+    console.log('Checking achievements');
+  }
 
   // Effect to handle Escape key press for closing modals
   useEffect(() => {
@@ -1127,13 +1134,13 @@ export default function GameView({ game, isDemo = false, onBack, panzoomInstance
         </>
       )}
       
-      {/* Conquest Mode Text Prompt (same as before) */}
+      {/* Conquest Mode Text Prompt */}
       {isInConqueringMode && (
         <div 
-          className="absolute top-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2 md:px-8 md:py-4 bg-white rounded-lg border-2 border-gray-300 [font-family:var(--font-mplus-rounded)]"
+          className="absolute top-6 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 md:px-9 md:py-4.5 bg-white rounded-lg border-2 border-gray-300 [font-family:var(--font-mplus-rounded)]"
           style={{ boxShadow: '0 3px 0px #cccccc' }}
         >
-          <p className="text-lg md:text-xl font-semibold text-gray-800 whitespace-nowrap">⚔️ Select a province to conquer ⚔️</p>
+          <p className="text-xl md:text-2xl font-semibold text-gray-800 whitespace-nowrap">⚔️ Select a province to conquer ⚔️</p>
         </div>
       )}
 
@@ -1207,7 +1214,7 @@ export default function GameView({ game, isDemo = false, onBack, panzoomInstance
         )}
       </div>
 
-      {/* Conditionally render Cancel button for Conquest Mode (structure remains the same) */}
+      {/* Conditionally render Cancel button for Conquest Mode */}
       {isInConqueringMode && (
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
           <button
@@ -1221,10 +1228,10 @@ export default function GameView({ game, isDemo = false, onBack, panzoomInstance
               handleProvinceSelect(null);
             }}
             className={`
-              px-6 py-3 rounded-lg font-semibold border-2 text-white
+              px-7 py-3.5 rounded-lg font-semibold border-2 text-white
               transition-all duration-150 ease-in-out 
               hover:translate-y-[-1px] active:translate-y-[0.5px]
-              [font-family:var(--font-mplus-rounded)] text-lg
+              [font-family:var(--font-mplus-rounded)] text-xl
             `}
             style={{ 
               backgroundColor: '#dc2626', 

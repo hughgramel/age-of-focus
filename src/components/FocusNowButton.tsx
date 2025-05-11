@@ -30,9 +30,9 @@ export default function FocusNowButton({
   const bgColor = '#6ec53e';
   const darkColor = '#59a700';
 
-  const paddingClasses = size === 'large' ? 'py-4 px-8' : 'py-3 px-6';
-  const iconSizeClasses = size === 'large' ? 'text-3xl' : 'text-2xl';
-  const textSizeClasses = size === 'large' ? 'text-2xl' : 'text-xl';
+  const paddingClasses = size === 'large' ? 'py-4.5 px-9' : 'py-3.5 px-7';
+  const iconSizeClasses = size === 'large' ? 'text-4xl' : 'text-3xl';
+  const textSizeClasses = size === 'large' ? 'text-3xl' : 'text-2xl';
 
   return (
     <button

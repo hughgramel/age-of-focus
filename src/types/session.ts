@@ -17,6 +17,7 @@ export interface Session {
     createdAt: FieldValue;
     selected_actions?: ActionType[];
     intention?: string | null;
+    tagId?: string | null;
 }
 
 export interface SessionInsert {
@@ -33,6 +34,7 @@ export interface SessionInsert {
     createdAt?: FieldValue;
     selected_actions?: ActionType[];
     intention?: string | null;
+    tagId?: string | null;
 }
 
 export interface SessionUpdate {
@@ -48,6 +50,7 @@ export interface SessionUpdate {
     user_id?: string;
     selected_actions?: ActionType[];
     intention?: string | null;
+    tagId?: string | null;
 }
 
 export interface TimerLocationState {

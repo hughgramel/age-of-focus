@@ -18,7 +18,7 @@ export default function MissionsButton({ fadeIn, onClick }: MissionsButtonProps)
         rounded-xl text-white font-semibold border-2
         flex items-center justify-center 
         transition-all duration-150 ease-in-out
-        py-3 px-6
+        py-3.5 px-7
         hover:translate-y-[-1px] active:translate-y-[0.5px]
         ${fadeIn ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'} 
       `}
@@ -41,8 +41,8 @@ export default function MissionsButton({ fadeIn, onClick }: MissionsButtonProps)
       }}
     >
       <div className="flex items-center justify-center gap-2">
-        <span className="text-2xl">📜</span>
-        <span className="hidden sm:inline text-xl">Missions</span>
+        <span className="text-2xl sm:text-3xl">📜</span>
+        <span className="hidden sm:inline text-xl sm:text-2xl">Missions</span>
       </div>
     </button>
   );

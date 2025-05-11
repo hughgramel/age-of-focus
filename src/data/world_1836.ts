@@ -1,4 +1,5 @@
 import { Game, Nation, Province, ResourceType } from '@/types/game';
+import { ScenarioDetails } from '@/data/scenarios'; // Assuming ScenarioDetails is here or adjust path
 
 // Define all provinces with ownerTag
 const allProvinces: Province[] = [
@@ -2769,4 +2770,16 @@ export const world_1836: Game = {
     austriaHungary as Nation
   ],
   provinces: allProvinces
+};
+
+export const scenarioDetails_1836: ScenarioDetails = {
+  id: '1836',
+  name: 'The Age of Revolutions',
+  year: 1836,
+  description: 'Europe stands at a precipice. The fires of revolution and nationalism burn brightly, while industrial might begins to reshape empires. Lead your nation through this turbulent era.',
+  icon: '🌍',
+  greatPowers: ['PRU', 'FRA', 'GBR', 'RUS', 'AUT'], // Austria corrected to AUT
+  otherPlayableNations: ['SWE', 'SPA', 'BEL', 'NET', 'DEN'], // Netherlands corrected to NET, non-existent nations removed
+  mapDataFile: 'world_1836',
+  playerNationTag: 'GBR' // Added for consistency
 }; 

@@ -61,8 +61,10 @@ import { Session, SessionInsert, SessionUpdate } from '@/types/session';
 import { serverTimestamp } from 'firebase/firestore';
 import { useGame } from '@/contexts/GameContext';
 import { Game } from '@/types/game';  
-import { ActionType, FOCUS_ACTIONS, executeActions, getRandomAction } from '@/data/actions';
+import { ActionType, FOCUS_ACTIONS, executeActions, getRandomAction, calculateActionsFromDuration } from '@/data/actions';
 import { ActionUpdate } from '@/services/actionService';
+import TagSelector from './TagSelector';
+import { Tag } from '@/types/tag';
 
 // Moved interface definition outside component
 interface DebugToolsState {
@@ -79,14 +81,20 @@ interface FocusTimerProps {
   userId: string | null;
   initialDuration?: number; // in seconds
   onSessionComplete?: (minutesElapsed: number) => void;
-  selectedActions?: ActionType[]; // Add this new prop
-  existingSessionId?: string; // Add this new prop for resuming sessions
+  selectedActions?: ActionType[];
+  existingSessionId?: string;
   handleModalClose?: () => void;
   executeActionUpdate: (action: Omit<ActionUpdate, 'target'>) => void;
   playerNationResourceTotals: playerNationResourceTotals;
-  intention?: string; // Add intention prop
+  intention?: string;
   setFocusTimeRemaining: (time: number) => void;
-  showFocusModal?: () => void; // Add this new prop
+  showFocusModal?: () => void;
+
+  // New props for TagSelector
+  initialSelectedTagId?: string | null;
+  availableTags: Tag[];
+  onFinalTagCreate: (name: string) => Promise<Tag | null>;
+  onFinalTagColorChangeRequest: (tag: Tag) => void;
 }
 
 // New component for session confirmation popup
@@ -159,14 +167,20 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
   userId, 
   initialDuration = 60 * 60, // Default to 1 hour
   onSessionComplete,
-  selectedActions = [], // Default to empty array
-  existingSessionId = undefined, // Default to undefined (create new session)
+  selectedActions = [], 
+  existingSessionId = undefined, 
   handleModalClose,
   executeActionUpdate,
   playerNationResourceTotals,
   intention,
   setFocusTimeRemaining,
-  showFocusModal
+  showFocusModal,
+
+  // Destructure new props
+  initialSelectedTagId,
+  availableTags,
+  onFinalTagCreate,
+  onFinalTagColorChangeRequest
 }) => {
   // Default timer durations
   const FOCUS_TIME_SECONDS = initialDuration;
@@ -202,7 +216,8 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
   const [editableIntention, setEditableIntention] = useState("");
   const intentionInputRef = useRef<HTMLInputElement>(null);
 
-  const [currentIntention, setCurrentIntention] = useState<string | undefined>(intention);
+  // State for current session's tag
+  const [currentSessionTagId, setCurrentSessionTagId] = useState<string | null>(initialSelectedTagId || null);
 
   // Temporary storage for values while the confirmation dialog is shown
   const pendingValues = useRef({
@@ -211,6 +226,13 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     startTime: "",
     endTime: ""
   });
+
+  // Effect to update currentSessionTagId if initialSelectedTagId prop changes
+  useEffect(() => {
+    setCurrentSessionTagId(initialSelectedTagId || null);
+  }, [initialSelectedTagId]);
+
+  const [currentIntention, setCurrentIntention] = useState<string | undefined>(intention);
 
   // Helper functions
   const convertSecondsToMinutes = (seconds: number): number => {
@@ -259,9 +281,9 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     }
   };
 
-  // Calculate break time as 1/6th of planned time (replacing the old calculation logic)
+  // Calculate break time as 5 minutes for every 30 minutes of planned focus
   const calculateInitialBreakTime = (plannedMinutes: number): number => {
-    return Math.floor(plannedMinutes / 6);
+    return Math.floor(plannedMinutes / 30) * 5;
   };
 
   // Calculate remaining times
@@ -460,7 +482,8 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
         break_minutes_remaining: calculateInitialBreakTime(Math.floor(FOCUS_TIME_SECONDS / 60)),
         selected_actions: selectedActions,
         createdAt: serverTimestamp(),
-        intention: intention // Add intention to session data
+        intention: intention,
+        tagId: currentSessionTagId
       };
 
       const sessionResult = await SessionService.createSession(sessionData);
@@ -566,6 +589,7 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
   const cancelSessionEnd = () => {
     // Just hide the confirmation, timer continues as normal
     setShowConfirmation(false);
+    setRerender(prev => prev + 1); // Ensure re-render to hide dialog
   };
 
   const confirmSessionEnd = () => {
@@ -720,7 +744,8 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     if (isInitializedRef.current || !userId) {
       console.log('⏭️ Skipping initialization:', {
         alreadyInitialized: isInitializedRef.current,
-        noUserId: !userId
+        noUserId: !userId,
+        // hasActiveSession: !!existingSessionId // Corrected 'hasActiveSession' usage for logging
       });
       return;
     }
@@ -749,6 +774,10 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
           // Load the intention from the existing session with type checking
           if (session.intention) {
             setCurrentIntention(session.intention);
+          }
+          // Load the tagId from the existing session
+          if (session.tagId) {
+            setCurrentSessionTagId(session.tagId);
           }
           
           // Initialize focus times with type checking
@@ -1022,6 +1051,20 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
     }
   };
 
+  // Handler for when the tag is changed within the FocusTimer's TagSelector
+  const handleTimerSessionTagUpdate = async (newTagId: string | null) => {
+    setCurrentSessionTagId(newTagId);
+    if (sessionId.current) {
+      try {
+        await SessionService.updateSession(sessionId.current, { tagId: newTagId });
+        console.log('Session tag updated in timer:', newTagId);
+      } catch (error) {
+        console.error('Error updating session tag from timer:', error);
+        // Optionally revert setCurrentSessionTagId or show an error
+      }
+    }
+  };
+
   if (isLoading) {
     return <div className="timer-page">Loading timer...</div>;
   }
@@ -1112,63 +1155,77 @@ const FocusTimer: React.FC<FocusTimerProps> = ({
               ></div>
             </div>
 
-            <div className="flex justify-between items-center mt-10 mb-12">
-              {/* Save button - Updated Style */}
-              <button 
-                className="bg-white text-gray-800 border-2 border-gray-300 py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-150 hover:bg-gray-50 w-[32%] flex items-center justify-center gap-2 hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#d1d5db]"
-                style={{ boxShadow: '0 3px 0px #d1d5db' }}
-                onClick={promptSessionEnd}
-              >
-                <span className="text-2xl">💾</span>
-                Save
-              </button>
-              
-              {/* Break button logic */} 
-              {isBreak.current ? (
-                <div className="flex flex-col items-center w-[32%] gap-2">
-                  {/* Resume Focus button - Updated Style */}
-                  <button 
-                    className="bg-[#6ec53e] text-white py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-150 hover:opacity-90 w-full text-center flex items-center justify-center gap-2 border-2 border-[#59a700] hover:bg-[#60b33a] active:bg-[#539e30] hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#59a700]"
-                    style={{ boxShadow: '0 3px 0px #59a700' }}
-                    onClick={returnToFocus}
-                  >
-                    <span className="text-2xl">▶️</span>
-                    Resume Focus
-                  </button>
-                  {/* Extend break button - Updated Style */}
-                  <button 
-                    className="bg-white text-gray-800 border-2 border-gray-300 py-2 px-4 rounded-lg text-sm cursor-pointer transition-all duration-150 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#d1d5db] disabled:transform-none disabled:shadow-[0_2px_0px_#d1d5db]"
-                    style={{ boxShadow: '0 2px 0px #d1d5db' }}
-                    onClick={setBreak} 
-                    disabled={breakTimeRemaining.current === 0}
-                  >
-                    <span className="text-xl">⏰</span>
-                    Extend break ({breakTimeRemaining.current}m left)
-                  </button>
-                </div>
-              ) : (
-                 /* Take break button - Updated Style */
+            {/* Tag Selector - Placed below progress bar */}
+            {userId && availableTags && ( // Ensure necessary props are available
+              <div className="my-4 sm:my-6 px-1 sm:px-2 max-w-xs mx-auto"> {/* Centered and width constrained - changed to max-w-xs */}
+                <TagSelector
+                  userId={userId}
+                  availableTags={availableTags}
+                  selectedTagId={currentSessionTagId}
+                  onTagSelect={handleTimerSessionTagUpdate}
+                  onTagCreate={onFinalTagCreate} // Pass through the handler from parent
+                  onColorChangeRequest={onFinalTagColorChangeRequest} // Pass through the handler from parent
+                  onTagArchiveRequest={undefined} // Archiving not handled directly from timer view for now
+                  className="w-full"
+                />
+              </div>
+            )}
+
+            {/* Main Action Buttons - Ensure this is the ONLY button block here */}
+            {isBreak.current ? (
+              <div className="flex flex-row justify-center items-center mt-6 sm:mt-8 mb-8 sm:mb-12 gap-8"> 
+                {/* Save button */}
                 <button 
-                  className="bg-[#6ec53e] text-white py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-150 hover:opacity-90 w-[32%] text-center flex items-center justify-center gap-2 border-2 border-[#59a700] hover:bg-[#60b33a] active:bg-[#539e30] hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#59a700] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:bg-gray-400 disabled:border-gray-500 disabled:shadow-[0_3px_0px_gray-500]"
-                  style={{ boxShadow: '0 3px 0px #59a700' }}
+                  className="bg-white text-gray-800 border-2 border-gray-300 py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-150 hover:bg-gray-50 flex-1 flex items-center justify-center gap-2 hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#d1d5db]"
+                  style={{ boxShadow: '0 3px 0px #d1d5db', minWidth: '180px' }}
+                  onClick={promptSessionEnd}
+                >
+                  <span className="text-2xl">💾</span>
+                  Save
+                </button>
+                {/* Resume button */}
+                <button 
+                  className="bg-[#6ec53e] text-white py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-150 hover:opacity-90 flex-1 flex items-center justify-center gap-2 border-2 border-[#59a700] hover:bg-[#60b33a] active:bg-[#539e30] hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#59a700]"
+                  style={{ boxShadow: '0 3px 0px #59a700', minWidth: '180px' }}
+                  onClick={returnToFocus}
+                >
+                  <span className="text-2xl">▶️</span>
+                  Resume
+                </button>
+                {/* Extend break button */}
+                <button 
+                  className="bg-white text-gray-800 border-2 border-gray-300 py-2 px-4 rounded-lg text-base font-semibold cursor-pointer transition-all duration-150 hover:bg-gray-50 flex-1 flex items-center justify-center gap-1 hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#d1d5db] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-[0_2px_0px_#d1d5db]"
+                  style={{ boxShadow: '0 2px 0px #d1d5db', minWidth: '180px' }}
+                  onClick={setBreak} 
+                  disabled={breakTimeRemaining.current === 0}
+                >
+                  <span className="text-lg">⏰</span>
+                  <span className="text-center">Extend break<br/>({breakTimeRemaining.current}m left)</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-row justify-center items-center mt-6 sm:mt-8 mb-8 sm:mb-12 gap-8"> 
+                {/* Save button */}
+                <button 
+                  className="bg-white text-gray-800 border-2 border-gray-300 py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-150 hover:bg-gray-50 flex-1 flex items-center justify-center gap-2 hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#d1d5db]"
+                  style={{ boxShadow: '0 3px 0px #d1d5db', minWidth: '220px' }}
+                  onClick={promptSessionEnd}
+                >
+                  <span className="text-2xl">💾</span>
+                  Save
+                </button>
+                {/* Take break button */}
+                <button 
+                  className="bg-[#6ec53e] text-white py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-150 hover:opacity-90 flex-1 flex items-center justify-center gap-2 border-2 border-[#59a700] hover:bg-[#60b33a] active:bg-[#539e30] hover:translate-y-[-1px] active:translate-y-[0.5px] active:shadow-[0_1px_0px_#59a700] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:bg-gray-400 disabled:border-gray-500 disabled:shadow-[0_3px_0px_gray-500]"
+                  style={{ boxShadow: '0 3px 0px #59a700', minWidth: '220px' }}
                   onClick={setBreak} 
                   disabled={breakTimeRemaining.current === 0}
                 >
                   <span className="text-2xl">☕</span>
                   Take break
                 </button>
-              )}
-              
-              {/* Discard button - Updated Red Style */}
-              <button 
-                className="bg-[#dc2626] text-white border-2 border-[#991b1b] py-4 px-6 rounded-lg text-lg font-semibold cursor-pointer transition-all duration-150 hover:bg-[#c02020] w-[32%] flex items-center justify-center gap-2 hover:translate-y-[-1px] active:translate-y-[0.5px] active:bg-[#991b1b] active:shadow-[0_1px_0px_#991b1b]"
-                style={{ boxShadow: '0 3px 0px #991b1b' }}
-                onClick={deleteSession}
-              >
-                <span className="text-2xl">🗑️</span>
-                Discard
-              </button>
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Debug Section - Updated Styles */}

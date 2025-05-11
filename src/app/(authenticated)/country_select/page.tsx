@@ -1,15 +1,19 @@
 'use client';
 
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useState, useEffect, Suspense } from 'react';
+import { Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { GameService } from '@/services/gameService';
 import { getScenarioDetails, ScenarioDetails, ScenarioCountryInfo } from '@/data/scenarios';
 import { countries_1836, Country1836 } from '@/data/countries_1836';
 import { getNationName } from '@/data/nationTags';
 import { getNationFlag } from '@/utils/nationFlags';
-import { world_1836 } from '@/data/world_1836';
-import { Nation as GameNation, Province as GameProvince } from '@/types/game';
+import { world_1836, scenarioDetails_1836 } from '@/data/world_1836';
+import { world_1936, scenarioDetails_1936 } from '@/data/world_1936';
+import { Nation as GameNation, Province as GameProvince, Game } from '@/types/game';
+import MapCanvas from '@/components/MapCanvas';
+import panzoom from 'panzoom';
 
 // Helper to format numbers for display
 const formatResourceNumber = (num: number): string => {
@@ -46,86 +50,128 @@ const getBaseCountryInfoWithResources = (tag: string, initialWorldState: typeof 
   };
 };
 
+const scenarioMap = {
+  '1836': { gameData: world_1836, details: scenarioDetails_1836 },
+  '1936': { gameData: world_1936, details: scenarioDetails_1936 },
+};
+
 function CountrySelectContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
 
-  const [scenarioDetails, setScenarioDetails] = useState<ScenarioDetails | null>(null);
-  const [activeTab, setActiveTab] = useState<'greatPowers' | 'otherNations'>('greatPowers');
-  const [displayedCountries, setDisplayedCountries] = useState<ScenarioCountryInfo[]>([]);
-  const [selectedCountryTag, setSelectedCountryTag] = useState<string | null>(null);
+  const [selectedScenarioId, setSelectedScenarioId] = useState<string>('1836');
+  const [loadedGameData, setLoadedGameData] = useState<Game | null>(null);
+  const [loadedScenarioDetails, setLoadedScenarioDetails] = useState<ScenarioDetails | null>(null);
+  
+  const [greatPowers, setGreatPowers] = useState<ScenarioCountryInfo[]>([]);
+  const [otherNations, setOtherNations] = useState<ScenarioCountryInfo[]>([]);
+  const [selectedNation, setSelectedNation] = useState<ScenarioCountryInfo | null>(null);
+  const [capitalProvinceId, setCapitalProvinceId] = useState<string | undefined>(undefined);
   const [isLoading, setIsLoading] = useState(true);
   const [isStartingGame, setIsStartingGame] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const panzoomInstanceRef = useRef<ReturnType<typeof panzoom> | null>(null);
+
+  // Effect to load scenario data based on URL parameter
   useEffect(() => {
-    if (searchParams) {
-      const scenarioId = searchParams.get('scenario');
-      if (scenarioId) {
-        const details = getScenarioDetails(scenarioId);
-        if (details) {
-          setScenarioDetails(details);
-        } else {
-          setError(`Scenario "${scenarioId}" not found.`);
+    const scenarioIdFromQuery = searchParams?.get('scenario') || '1836';
+    setSelectedScenarioId(scenarioIdFromQuery);
+    setIsLoading(true);
+
+    const scenario = scenarioMap[scenarioIdFromQuery as keyof typeof scenarioMap];
+
+    if (scenario) {
+      setLoadedGameData(scenario.gameData as Game);
+      setLoadedScenarioDetails(scenario.details as ScenarioDetails);
+    } else {
+      // Fallback to 1836 if scenario not found
+      setLoadedGameData(scenarioMap['1836'].gameData as Game);
+      setLoadedScenarioDetails(scenarioMap['1836'].details as ScenarioDetails);
+      setSelectedScenarioId('1836'); // Reflect fallback in state
+      console.warn(`Scenario "${scenarioIdFromQuery}" not found, defaulting to 1836.`);
+    }
+  }, [searchParams]);
+
+  // Effect to populate nation lists and set initial capital when scenario data is loaded
+  useEffect(() => {
+    if (loadedGameData && loadedScenarioDetails) {
+      const gpTags = loadedScenarioDetails.greatPowers || [];
+      const onTags = loadedScenarioDetails.otherPlayableNations || [];
+
+      const allScenarioNations = loadedGameData.nations || [];
+
+      const enrichNationData = (tag: string): ScenarioCountryInfo | null => {
+        const nationInfo = getBaseCountryInfoWithResources(tag, loadedGameData as Game);
+        if (nationInfo) {
+          return { ...nationInfo, powerRank: 0 };
+        }
+        return null;
+      };
+
+      setGreatPowers(
+        gpTags.map(tag => enrichNationData(tag)).filter(n => n !== null) as ScenarioCountryInfo[]
+      );
+      setOtherNations(
+        onTags.map(tag => enrichNationData(tag)).filter(n => n !== null) as ScenarioCountryInfo[]
+      );
+
+      if (selectedNation) {
+        const stillExists = [...greatPowers, ...otherNations].find(n => n.tag === selectedNation.tag);
+        if (!stillExists) {
+          setSelectedNation(null);
+          setCapitalProvinceId(undefined);
         }
       } else {
-        setError('No scenario selected in URL.');
-      }
-    } else {
-      setError('Could not read scenario from URL.');
-    }
-    setIsLoading(false);
-  }, [searchParams]); // Removed router from deps here
-
-  useEffect(() => {
-    if (scenarioDetails) {
-      const initialWorldState = scenarioDetails.id === '1836' ? world_1836 : null;
-      if (!initialWorldState) {
-        setError(`Initial game state for scenario ${scenarioDetails.name} not found.`);
-        setDisplayedCountries([]);
-        return;
-      }
-
-      const allPlayableTagsInScenario = [
-        ...new Set([...scenarioDetails.greatPowers, ...scenarioDetails.otherPlayableNations])
-      ];
-
-      const nationsWithScoresAndData = allPlayableTagsInScenario.map(tag => {
-        const baseInfo = getBaseCountryInfoWithResources(tag, initialWorldState);
-        if (!baseInfo) return null;
+        const defaultPlayerTag = loadedScenarioDetails.playerNationTag || (gpTags.length > 0 ? gpTags[0] : null);
+        const defaultNationFromGreatPowers = greatPowers.find(n => n.tag === defaultPlayerTag);
+        const defaultNationFromOthers = otherNations.find(n => n.tag === defaultPlayerTag);
+        const defaultNation = defaultNationFromGreatPowers || defaultNationFromOthers || (greatPowers.length > 0 ? greatPowers[0] : (otherNations.length > 0 ? otherNations[0] : null));
         
-        // Power score calculation using the resources from baseInfo
-        const powerScore = (baseInfo.startingGold / 100) + 
-                         (baseInfo.startingPopulation / 10000) + 
-                         baseInfo.startingIndustry + 
-                         (baseInfo.startingArmy * 0.1);
-        return { ...baseInfo, powerScore }; // tag, name, flag, desc, resources, powerScore
-      }).filter(n => n !== null) as (Omit<ScenarioCountryInfo, 'powerRank'> & {powerScore: number})[];
+        if (defaultNation) {
+          handleNationBoxClick(defaultNation);
+        }
+      }
+      setIsLoading(false);
+    } 
+  }, [loadedGameData, loadedScenarioDetails]);
 
-      nationsWithScoresAndData.sort((a, b) => b.powerScore - a.powerScore);
+  const handleNationBoxClick = (nation: ScenarioCountryInfo) => {
+    setSelectedNation(nation);
+    if (loadedGameData) {
+        const nationProvinces = loadedGameData.provinces.filter((p: GameProvince) => p.ownerTag === nation.tag);
+        let foundCapitalId: string | undefined = undefined;
 
-      const rankedNationsData = nationsWithScoresAndData.map((scoredNation, index) => ({
-        ...scoredNation, // Contains all fields from Omit<ScenarioCountryInfo, 'powerRank'> + powerScore
-        powerRank: index + 1,
-      })) as ScenarioCountryInfo[]; // Now includes powerRank and all resource fields
-      
-      const currentTabTags = new Set(activeTab === 'greatPowers' 
-        ? scenarioDetails.greatPowers 
-        : scenarioDetails.otherPlayableNations);
+        const commonCapitals: { [key: string]: string[] } = {
+            FRA: ['Ile_De_France'],
+            GBR: ['Home_Counties', 'London'],
+            PRU: ['Brandenburg'],
+            GER: ['Brandenburg'],
+            RUS: ['Ingria', 'Moscow'],
+            SOV: ['Moscow'],
+            AUT: ['Austria'],
+            SPA: ['Castile', 'Toledo'],
+            USA: ['Washington']
+        };
 
-      const finalTabCountries = rankedNationsData
-        .filter(country => currentTabTags.has(country.tag))
-        .sort((a, b) => a.powerRank - b.powerRank);
-
-      setDisplayedCountries(finalTabCountries);
-      setSelectedCountryTag(null);
+        if (commonCapitals[nation.tag]) {
+            for (const capId of commonCapitals[nation.tag]) {
+                if (nationProvinces.find(p => p.id === capId)) {
+                    foundCapitalId = capId;
+                    break;
+                }
+            }
+        }
+        if (!foundCapitalId && nationProvinces.length > 0) {
+            foundCapitalId = nationProvinces[0].id;
+        }
+        setCapitalProvinceId(foundCapitalId);
     }
-  }, [scenarioDetails, activeTab]);
+  };
 
   const handleStartGame = async () => {
-    if (!selectedCountryTag || !user || !scenarioDetails) return;
-
+    if (!selectedNation || !user || !loadedGameData) return;
     setIsStartingGame(true);
     setError(null);
     try {
@@ -142,25 +188,25 @@ function CountrySelectContent() {
       // For now, hardcode to use world_1836 for an 1836 scenario
       // Later, this should use scenarioDetails.mapDataFile to load the correct base game data
       let baseGameData;
-      if (scenarioDetails.id === '1836') {
-        baseGameData = JSON.parse(JSON.stringify(world_1836)); // Corrected typo: world_1836
+      if (loadedGameData) {
+        baseGameData = JSON.parse(JSON.stringify(loadedGameData));
       } else {
-        // Placeholder for other scenarios - ideally load dynamically
-        alert('This scenario\'s game data is not yet configured for starting a new game.');
+        // This case should ideally not be reached if UI prevents starting game without loaded data
+        setError('Game data not loaded. Please try again.');
         setIsStartingGame(false);
         return;
       }
 
-      const newGame = {
+      const newGame: Game = {
         ...baseGameData,
-        id: `game_${Date.now()}_${user.uid.slice(0,5)}_${selectedCountryTag}`,
-        gameName: `${getNationName(selectedCountryTag)} - ${scenarioDetails.year}`,
-        playerNationTag: selectedCountryTag,
-        scenario: scenarioDetails.id, // Store scenario ID in game data
-        date: `${scenarioDetails.year}-01-01` // Set game start date based on scenario
+        id: `game_${Date.now()}_${user.uid.slice(0,5)}_${selectedNation.tag}`,
+        gameName: `${getNationName(selectedNation.tag)} - ${loadedScenarioDetails?.year}`,
+        playerNationTag: selectedNation.tag,
+        scenario: selectedScenarioId,
+        date: loadedScenarioDetails?.year ? `${loadedScenarioDetails.year}-01-01` : baseGameData.date
       };
 
-      await GameService.saveGame(user.uid, emptySlot, newGame, scenarioDetails.id);
+      await GameService.saveGame(user.uid, emptySlot, newGame, selectedScenarioId);
       router.push(`/game?save=${emptySlot}`);
 
     } catch (err) {
@@ -170,10 +216,10 @@ function CountrySelectContent() {
     }
   };
 
-  if (isLoading || !scenarioDetails) {
+  if (isLoading || !loadedScenarioDetails) {
     return <div className="flex-1 flex items-center justify-center [font-family:var(--font-mplus-rounded)] text-[#0B1423]">Loading scenario...</div>;
   }
-  if (error && !scenarioDetails) { // Show error if scenarioDetails couldn't be loaded
+  if (error && !loadedScenarioDetails) { // Show error if scenarioDetails couldn't be loaded
     return <div className="flex-1 flex flex-col items-center justify-center p-8 [font-family:var(--font-mplus-rounded)] text-red-600">
       <p>{error}</p>
       <button onClick={() => router.push('/scenario_select')} className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">Back to Scenarios</button>
@@ -186,7 +232,7 @@ function CountrySelectContent() {
         {/* Header: Title and Back Button */}
         <div className="mb-8 flex items-center justify-between">
           <h1 className="text-3xl font-bold text-[#0B1423]">
-            Choose Your Nation - {scenarioDetails.name} ({scenarioDetails.year})
+            Choose Your Nation - {loadedScenarioDetails.name} ({loadedScenarioDetails.year})
           </h1>
           <button
             onClick={() => router.push('/scenario_select')}
@@ -202,96 +248,154 @@ function CountrySelectContent() {
         <div className="mb-6 border-b border-gray-300">
           <nav className="-mb-px flex space-x-8" aria-label="Tabs">
             <button
-              onClick={() => setActiveTab('greatPowers')}
+              onClick={() => setSelectedScenarioId('1836')}
               className={`whitespace-nowrap pb-4 px-1 border-b-2 font-semibold text-lg transition-colors
-                ${activeTab === 'greatPowers' 
+                ${selectedScenarioId === '1836' 
                   ? 'border-[#67b9e7] text-[#67b9e7]' 
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-400'}
               `}
             >
-              Great Powers ({scenarioDetails.greatPowers.length})
+              Great Powers ({greatPowers.length})
             </button>
             <button
-              onClick={() => setActiveTab('otherNations')}
+              onClick={() => setSelectedScenarioId('1936')}
               className={`whitespace-nowrap pb-4 px-1 border-b-2 font-semibold text-lg transition-colors
-                ${activeTab === 'otherNations' 
+                ${selectedScenarioId === '1936' 
                   ? 'border-[#67b9e7] text-[#67b9e7]' 
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-400'}
               `}
             >
-              Other Nations ({scenarioDetails.otherPlayableNations.length})
+              Other Nations ({otherNations.length})
             </button>
           </nav>
         </div>
 
         {/* Country Selection Grid - Ensure it's scrollable if content overflows */}
-        {displayedCountries.length > 0 ? (
+        {greatPowers.length > 0 || otherNations.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5 overflow-y-auto" style={{maxHeight: 'calc(100vh - 220px)'}}> {/* Adjusted maxHeight slightly */}
-            {displayedCountries.map((country) => (
-              <button
-                key={country.tag}
-                onClick={() => setSelectedCountryTag(country.tag)}
-                disabled={isStartingGame}
-                className={`
-                  p-4 rounded-xl border-2 transition-all duration-200 h-auto min-h-[270px] flex flex-col justify-between 
-                  bg-white hover:shadow-lg text-left
-                  ${selectedCountryTag === country.tag 
-                    ? 'border-[#67b9e7] shadow-[0_0px_15px_rgba(103,185,231,0.5),0_4px_0px_#4792ba]' 
-                    : 'border-gray-300 shadow-[0_4px_0px_#d1d5db]'}
-                  ${isStartingGame ? 'opacity-70 cursor-default' : 'hover:translate-y-[-2px] active:translate-y-[1px]'}
-                `}
-              >
-                <div className="w-full flex-grow flex flex-col">
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-4xl leading-none">{country.flag}</span>
-                      <h3 className="text-lg font-bold text-[#0B1423]">{country.name}</h3>
+            {selectedScenarioId === '1836' ? (
+              greatPowers.map((nation) => (
+                <button
+                  key={nation.tag}
+                  onClick={() => handleNationBoxClick(nation)}
+                  disabled={isStartingGame}
+                  className={`
+                    p-4 rounded-xl border-2 transition-all duration-200 h-auto min-h-[270px] flex flex-col justify-between 
+                    bg-white hover:shadow-lg text-left
+                    ${selectedNation === nation 
+                      ? 'border-[#67b9e7] shadow-[0_0px_15px_rgba(103,185,231,0.5),0_4px_0px_#4792ba]' 
+                      : 'border-gray-300 shadow-[0_4px_0px_#d1d5db]'}
+                    ${isStartingGame ? 'opacity-70 cursor-default' : 'hover:translate-y-[-2px] active:translate-y-[1px]'}
+                  `}
+                >
+                  <div className="w-full flex-grow flex flex-col">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-4xl leading-none">{nation.flag}</span>
+                        <h3 className="text-lg font-bold text-[#0B1423]">{nation.name}</h3>
+                      </div>
                     </div>
-                    <span className="text-2xl font-bold text-gray-400">#{country.powerRank}</span>
+
+                    {/* Resources Section (2x2 grid) */}
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 my-3 text-gray-700 w-fit mx-auto">
+                      {/* Population */}
+                      <div className="flex items-center gap-1.5">
+                          <span className="text-lg">👥</span>
+                          <span className="text-base font-semibold">{formatResourceNumber(nation.startingPopulation)}</span>
+                      </div>
+                      {/* Army */}
+                      <div className="flex items-center gap-1.5">
+                          <span className="text-lg">⚔️</span>
+                          <span className="text-base font-semibold">{formatResourceNumber(nation.startingArmy)}</span>
+                      </div>
+                      {/* Industry */}
+                      <div className="flex items-center gap-1.5">
+                          <span className="text-lg">🏭</span>
+                          <span className="text-base font-semibold">{formatResourceNumber(nation.startingIndustry)}</span>
+                      </div>
+                      {/* Gold */}
+                      <div className="flex items-center gap-1.5">
+                          <span className="text-lg">💰</span>
+                          <span className="text-base font-semibold">{formatResourceNumber(nation.startingGold)}</span> 
+                      </div>
+                    </div>
+
+                    <p className="text-sm text-gray-600 leading-snug line-clamp-3 mb-2">{nation.description}</p>
                   </div>
 
-                  {/* Resources Section (2x2 grid) */}
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 my-3 text-gray-700 w-fit mx-auto">
-                    {/* Population */}
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-lg">👥</span>
-                        <span className="text-base font-semibold">{formatResourceNumber(country.startingPopulation)}</span>
+                  {selectedNation === nation && (
+                    <div className="w-full text-center mt-auto pt-2 border-t border-gray-200">
+                      <span className="px-3 py-1 text-xs font-semibold text-white bg-[#67b9e7] rounded-full">Selected</span>
                     </div>
-                    {/* Army */}
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-lg">⚔️</span>
-                        <span className="text-base font-semibold">{formatResourceNumber(country.startingArmy)}</span>
+                  )}
+                </button>
+              ))
+            ) : (
+              otherNations.map((nation) => (
+                <button
+                  key={nation.tag}
+                  onClick={() => handleNationBoxClick(nation)}
+                  disabled={isStartingGame}
+                  className={`
+                    p-4 rounded-xl border-2 transition-all duration-200 h-auto min-h-[270px] flex flex-col justify-between 
+                    bg-white hover:shadow-lg text-left
+                    ${selectedNation === nation 
+                      ? 'border-[#67b9e7] shadow-[0_0px_15px_rgba(103,185,231,0.5),0_4px_0px_#4792ba]' 
+                      : 'border-gray-300 shadow-[0_4px_0px_#d1d5db]'}
+                    ${isStartingGame ? 'opacity-70 cursor-default' : 'hover:translate-y-[-2px] active:translate-y-[1px]'}
+                  `}
+                >
+                  <div className="w-full flex-grow flex flex-col">
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-4xl leading-none">{nation.flag}</span>
+                        <h3 className="text-lg font-bold text-[#0B1423]">{nation.name}</h3>
+                      </div>
                     </div>
-                    {/* Industry */}
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-lg">🏭</span>
-                        <span className="text-base font-semibold">{formatResourceNumber(country.startingIndustry)}</span>
+
+                    {/* Resources Section (2x2 grid) */}
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 my-3 text-gray-700 w-fit mx-auto">
+                      {/* Population */}
+                      <div className="flex items-center gap-1.5">
+                          <span className="text-lg">👥</span>
+                          <span className="text-base font-semibold">{formatResourceNumber(nation.startingPopulation)}</span>
+                      </div>
+                      {/* Army */}
+                      <div className="flex items-center gap-1.5">
+                          <span className="text-lg">⚔️</span>
+                          <span className="text-base font-semibold">{formatResourceNumber(nation.startingArmy)}</span>
+                      </div>
+                      {/* Industry */}
+                      <div className="flex items-center gap-1.5">
+                          <span className="text-lg">🏭</span>
+                          <span className="text-base font-semibold">{formatResourceNumber(nation.startingIndustry)}</span>
+                      </div>
+                      {/* Gold */}
+                      <div className="flex items-center gap-1.5">
+                          <span className="text-lg">💰</span>
+                          <span className="text-base font-semibold">{formatResourceNumber(nation.startingGold)}</span> 
+                      </div>
                     </div>
-                    {/* Gold */}
-                    <div className="flex items-center gap-1.5">
-                        <span className="text-lg">💰</span>
-                        <span className="text-base font-semibold">{formatResourceNumber(country.startingGold)}</span> 
-                    </div>
+
+                    <p className="text-sm text-gray-600 leading-snug line-clamp-3 mb-2">{nation.description}</p>
                   </div>
 
-                  <p className="text-sm text-gray-600 leading-snug line-clamp-3 mb-2">{country.description}</p>
-                </div>
-
-                {selectedCountryTag === country.tag && (
-                  <div className="w-full text-center mt-auto pt-2 border-t border-gray-200">
-                    <span className="px-3 py-1 text-xs font-semibold text-white bg-[#67b9e7] rounded-full">Selected</span>
-                  </div>
-                )}
-              </button>
-            ))}
+                  {selectedNation === nation && (
+                    <div className="w-full text-center mt-auto pt-2 border-t border-gray-200">
+                      <span className="px-3 py-1 text-xs font-semibold text-white bg-[#67b9e7] rounded-full">Selected</span>
+                    </div>
+                  )}
+                </button>
+              ))
+            )}
           </div>
         ) : (
-          <p className="text-center text-gray-500 py-10">No countries available in this category for {scenarioDetails?.name || 'selected scenario'}.</p>
+          <p className="text-center text-gray-500 py-10">No countries available in this category for {loadedScenarioDetails?.name || 'selected scenario'}.</p>
         )}
       </div>
 
       {/* Fixed Start Game Button Area */}
-      {selectedCountryTag && (
+      {selectedNation && (
         <div className="fixed bottom-6 right-6 z-50">
           {error && <p className="text-red-500 mb-2 text-right text-sm">Error: {error}</p>}
           <button

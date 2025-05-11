@@ -23,8 +23,35 @@ export default function ScenarioSelectPage() {
 
   const scenarios = [
     {
+      id: '304bc',
+      title: '304 BC – Diadochi Wars',
+      description: 'The Successor Kings battle for Alexander’s legacy across the Hellenistic world.',
+      path: '/country_select?scenario=304bc',
+      implemented: true,
+      buttonStyle: 'bg-[#bfa76f] text-white border-[#8c7a4f] shadow-[#8c7a4f] hover:bg-[#a68c5c] active:bg-[#8c7a4f]',
+      icon: '🏺'
+    },
+    {
+      id: '1066',
+      title: '1066 – The Norman Conquest',
+      description: 'Vikings, Saxons, and Normans clash for the fate of England and Europe.',
+      path: '/country_select?scenario=1066',
+      implemented: true,
+      buttonStyle: 'bg-[#7b6d57] text-white border-[#5a4c36] shadow-[#5a4c36] hover:bg-[#6a5a3c] active:bg-[#5a4c36]',
+      icon: '⚔️'
+    },
+    {
+      id: '1444',
+      title: '1444 – The Fall of Empires',
+      description: 'The Ottomans rise, Byzantium falls, and the Renaissance dawns.',
+      path: '/country_select?scenario=1444',
+      implemented: true,
+      buttonStyle: 'bg-[#b48a78] text-white border-[#8c5a4c] shadow-[#8c5a4c] hover:bg-[#a86a5c] active:bg-[#8c5a4c]',
+      icon: '🏰'
+    },
+    {
       id: '1836',
-      title: '1836 - The Age of Revolutions',
+      title: '1836 – The Age of Revolutions',
       description: 'Navigate the turbulent era of industrialization and nationalism.',
       path: '/country_select?scenario=1836',
       implemented: true,
@@ -32,22 +59,22 @@ export default function ScenarioSelectPage() {
       icon: '🌍'
     },
     {
-      id: '1914',
-      title: '1914 - The Great War (Soon)',
-      description: 'Lead your nation through the crucible of the First World War.',
-      path: '/country_select?scenario=1914',
-      implemented: false,
-      buttonStyle: 'bg-gray-300 text-gray-500 border-gray-400 shadow-gray-400 cursor-not-allowed',
-      icon: '⚔️'
-    },
-     {
       id: '1936',
-      title: '1936 - The Storm Gathers (Soon)',
-      description: 'Prepare your nation for the defining conflict of the 20th century.',
+      title: '1936 – The Storm Gathers',
+      description: 'Europe stands on the brink. Lead your nation in a new era of ambition and conflict.',
       path: '/country_select?scenario=1936',
-      implemented: false,
-      buttonStyle: 'bg-gray-300 text-gray-500 border-gray-400 shadow-gray-400 cursor-not-allowed',
-      icon: '🕊️'
+      implemented: true,
+      buttonStyle: 'bg-[#708090] text-white border-[#5A5A5A] shadow-[#5A5A5A] hover:bg-[#6A7A8A] active:bg-[#5A5A5A]',
+      icon: '🇩🇪'
+    },
+    {
+      id: '2020',
+      title: '2020 – The Modern World',
+      description: 'Navigate the chaos and memes of the modern era.',
+      path: '/country_select?scenario=2020',
+      implemented: true,
+      buttonStyle: 'bg-[#20B2AA] text-white border-[#008B8B] shadow-[#008B8B] hover:bg-[#48D1CC] active:bg-[#008B8B]',
+      icon: '🌐'
     },
   ];
 

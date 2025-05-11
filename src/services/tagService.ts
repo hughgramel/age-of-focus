@@ -9,7 +9,8 @@ import {
   serverTimestamp, 
   orderBy, 
   limit,
-  QueryConstraint // Import QueryConstraint for typing
+  QueryConstraint, // Import QueryConstraint for typing
+  deleteDoc // Import deleteDoc for hard deletion
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase'; // Assuming your Firebase config is here
 import { Tag, TagCreate, TagUpdate } from '@/types/tag';
@@ -109,4 +110,13 @@ export const TagService = {
     // Explicitly pass the update object
     await updateDoc(tagRef, { isDeleted: true }); 
   },
+
+  /**
+   * Permanently deletes a tag from Firestore.
+   */
+  async deleteTag(tagId: string): Promise<void> {
+    if (!tagId) throw new Error("tagId cannot be empty for deletion");
+    const tagRef = doc(db, 'tags', tagId);
+    await deleteDoc(tagRef);
+  }
 }; 
