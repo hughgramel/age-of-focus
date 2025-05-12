@@ -8,6 +8,8 @@ const navigation = [
   { name: 'Home', href: '/dashboard', icon: '🏠' },
   { name: 'Alliances', href: '/alliances', icon: '🤝' },
   { name: 'Profile', href: '/profile', icon: '👤' },
+  { name: 'Tutorial', href: '/tutorial', icon: '📖' },
+  { name: 'About', href: '/about', icon: 'ℹ️' },
   // Add other authenticated links here if needed
 ];
 

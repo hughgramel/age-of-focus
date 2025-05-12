@@ -4,7 +4,9 @@ import {
   setDoc, 
   updateDoc,
   deleteDoc,
-  serverTimestamp 
+  serverTimestamp,
+  collection,
+  getDocs
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { 
@@ -103,5 +105,26 @@ export class UserService {
   static async deleteUser(uid: string): Promise<void> {
     const userDoc = doc(db, this.COLLECTION, uid);
     await deleteDoc(userDoc);
+  }
+
+  // --- Achievement Methods --- //
+  static async getUserAchievements(uid: string): Promise<string[]> {
+    const achievementsCol = collection(db, this.COLLECTION, uid, 'achievements');
+    const snapshot = await getDocs(achievementsCol);
+    return snapshot.docs.map(doc => doc.id);
+  }
+
+  static async unlockAchievement(uid: string, achievementId: string): Promise<void> {
+    const achievementDoc = doc(db, this.COLLECTION, uid, 'achievements', achievementId);
+    await setDoc(achievementDoc, {
+      achievementId,
+      unlockedAt: serverTimestamp(),
+    });
+  }
+
+  static async isAchievementUnlocked(uid: string, achievementId: string): Promise<boolean> {
+    const achievementDoc = doc(db, this.COLLECTION, uid, 'achievements', achievementId);
+    const docSnap = await getDoc(achievementDoc);
+    return docSnap.exists();
   }
 } 

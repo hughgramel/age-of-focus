@@ -70,10 +70,12 @@ export class GameService {
     const saves: Record<number, SaveGame | null> = {
       1: null,
       2: null,
-      3: null
+      3: null,
+      4: null,
+      5: null
     };
 
-    for (let i = 1; i <= 3; i++) {
+    for (let i = 1; i <= 5; i++) {
       saves[i] = await this.getSaveGame(userId, i);
     }
 

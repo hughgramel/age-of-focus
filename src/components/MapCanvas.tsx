@@ -106,27 +106,39 @@ const MapCanvas = ({ mapName, children, onStateClick, onMapReady, disableKeyboar
   // Initialize panzoom with proper bounds and zoom constraints
   const initializeZoom = useCallback((svg: SVGElement) => {
     console.log('[MapCanvas Debug] Starting initializeZoom...');
-    const calculateInitialZoom = () => {
-      const svgRect = svg.getBoundingClientRect();
-      const containerRect = svgContainerRef.current?.getBoundingClientRect();
-      console.log('[MapCanvas Debug] SVG Rect:', svgRect);
-      console.log('[MapCanvas Debug] Container Rect:', containerRect);
-      if (!containerRect || svgRect.width === 0 || svgRect.height === 0) {
-        console.log('[MapCanvas Debug] Invalid rects, defaulting zoom to 1');
-        return 1;
-      }
-      const widthRatio = containerRect.width / svgRect.width;
-      const heightRatio = containerRect.height / svgRect.height;
-      const initialZoom = Math.min(widthRatio, heightRatio) * 10;
-      console.log('[MapCanvas Debug] Width Ratio:', widthRatio, 'Height Ratio:', heightRatio, 'Initial Zoom Calc:', initialZoom);
-      return initialZoom;
-    };
-
-    const initialZoomLevel = calculateInitialZoom();
+    // Calculate initial zoom to fit SVG in container
+    const container = svgContainerRef.current;
+    if (!container) {
+      console.warn('[MapCanvas Debug] No container for initial zoom calculation. Defaulting to scale 1.');
+      initialZoomRef.current = 1;
+      const panzoomInstance = panzoom(svg, {
+        maxZoom: 40,
+        minZoom: 1,
+        initialZoom: 1,
+        smoothScroll: false,
+        bounds: true,
+        boundsPadding: 0.6
+      });
+      panzoomInstanceRef.current = panzoomInstance;
+      return { panzoomInstance, initialZoomLevel: 1 };
+    }
+    // Get SVG bounding box and container size
+    const svgRect = svg.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    // Use viewBox if available for more accurate sizing
+    let svgWidth = svgRect.width;
+    let svgHeight = svgRect.height;
+    // Fix: Cast svg to SVGSVGElement for viewBox access
+    const svgEl = svg as SVGSVGElement;
+    if (svgEl.viewBox && svgEl.viewBox.baseVal) {
+      svgWidth = svgEl.viewBox.baseVal.width;
+      svgHeight = svgEl.viewBox.baseVal.height;
+    }
+    const widthRatio = containerRect.width / svgWidth;
+    const heightRatio = containerRect.height / svgHeight;
+    const initialZoomLevel = Math.min(widthRatio, heightRatio);
     initialZoomRef.current = initialZoomLevel;
     console.log(`[MapCanvas Debug] Calculated Initial Zoom Level: ${initialZoomLevel}`);
-
-    // Initialize panzoom with only the basic fit-zoom options
     const panzoomInstance = panzoom(svg, {
       maxZoom: 40,
       minZoom: initialZoomLevel * 0.8,
@@ -135,8 +147,10 @@ const MapCanvas = ({ mapName, children, onStateClick, onMapReady, disableKeyboar
       bounds: true,
       boundsPadding: 0.6
     });
-
     panzoomInstanceRef.current = panzoomInstance;
+    console.log('SHOWING PANZOOM INSTANCE');
+    console.log('panzoomInstanceRef.current', panzoomInstanceRef.current);
+    console.log('panzoomInstanceRef.current.getTransform()', panzoomInstanceRef.current.getTransform());
     console.log(`[MapCanvas Debug] Panzoom initialized. MinZoom: ${initialZoomLevel * 0.8}, MaxZoom: 40, InitialZoom: ${initialZoomLevel}`);
     return { panzoomInstance, initialZoomLevel };
   }, []);
@@ -302,13 +316,14 @@ const MapCanvas = ({ mapName, children, onStateClick, onMapReady, disableKeyboar
     const maxZoom = 40;
     // Use the targetScale provided (which should be the initialFit level)
     const desiredScale = targetScale || initialZoomRef.current * 3; // Default zoom-in if no targetScale
-    const finalScale = Math.max(minZoom, Math.min(maxZoom, desiredScale));
+    const finalScale = Math.max(8, Math.min(maxZoom, desiredScale));
 
     console.log(`[MapCanvas Debug] MinZoom: ${minZoom.toFixed(2)}, MaxZoom: ${maxZoom}, Desired Scale: ${desiredScale.toFixed(2)}, Final Scale: ${finalScale.toFixed(2)}`);
 
     // 1. Apply the zoom centered on the SVG point (this might not center it visually)
     console.log(`[MapCanvas Debug] Applying zoomAbs: cx=${cx.toFixed(2)}, cy=${cy.toFixed(2)}, scale=${finalScale.toFixed(2)}`);
-    panzoomInstanceRef.current.zoomAbs(cx, cy, finalScale);
+    console.log("panzoomInstanceRef.current", panzoomInstanceRef.current);
+    console.log("panzoomInstanceRef.current.getTransform()", panzoomInstanceRef.current.getTransform());
     const postZoomTransform = panzoomInstanceRef.current.getTransform();
     console.log(`[MapCanvas Debug] Transform after zoomAbs: X=${postZoomTransform.x.toFixed(2)}, Y=${postZoomTransform.y.toFixed(2)}, Scale=${postZoomTransform.scale.toFixed(2)}`);
 
@@ -436,15 +451,40 @@ const MapCanvas = ({ mapName, children, onStateClick, onMapReady, disableKeyboar
         }
 
         // --- Center on Capital AFTER Init (using setTimeout) ---
-        if (initialFocusProvinceId && stateDataRef.current.has(initialFocusProvinceId)) {
-          console.log(`Scheduling zoom to capital: ${initialFocusProvinceId} at level ${initialZoomLevel}`);
-          setTimeout(() => {
-            // Pass the calculated initialZoomLevel to zoomToProvince
-            zoomToProvince(initialFocusProvinceId, initialZoomLevel);
-          }, 100); // Delay might need adjustment
-        } else {
-          console.log('No valid initialFocusProvinceId provided, using default fit.');
-        }
+        setTimeout(() => {
+          if (panzoomInstanceRef.current && svgContainerRef.current) {
+            // Set scale to 10 and center the SVG in the container using viewBox coordinates
+            const svg = svgContainerRef.current.querySelector('svg');
+            if (svg) {
+              const svgEl = svg as SVGSVGElement;
+              const containerRect = svgContainerRef.current.getBoundingClientRect();
+              // Always use viewBox for SVG logical size
+              const svgWidth = svgEl.viewBox.baseVal.width;
+              const svgHeight = svgEl.viewBox.baseVal.height;
+              const scale = 10;
+              // Try to center on the capital province
+              let cx = svgWidth / 2;
+              let cy = svgHeight / 2;
+              let capitalId = initialFocusProvinceId && stateDataRef.current.has(initialFocusProvinceId)
+                ? initialFocusProvinceId
+                : "Ile_de_France";
+              const capitalState = stateDataRef.current.get(capitalId);
+              if (capitalState) {
+                const bbox = capitalState.path.getBBox();
+                cx = bbox.x + bbox.width / 2;
+                cy = bbox.y + bbox.height / 2;
+              }
+              // Center coordinates in container (pixels)
+              const containerCenterX = containerRect.width / 2;
+              const containerCenterY = containerRect.height / 2;
+              // Calculate pan to center capital at scale 10
+              const targetX = containerCenterX - (cx * scale);
+              const targetY = containerCenterY - (cy * scale);
+              panzoomInstanceRef.current.zoomAbs(0, 0, scale);
+              panzoomInstanceRef.current.moveTo(targetX, targetY);
+            }
+          }
+        }, 100);
         // --- End Center on Capital --- 
 
         setIsLoading(false);

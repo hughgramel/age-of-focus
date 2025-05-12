@@ -168,7 +168,7 @@ export default function LoadGame() {
     <div className="w-full max-w-3xl mx-auto px-4 py-8 [font-family:var(--font-mplus-rounded)]">
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold text-[#0B1423]">
-          Load Saved Game
+          Select a Save Game
         </h1>
         <button
           onClick={() => router.push('/dashboard')}
@@ -253,7 +253,8 @@ export default function LoadGame() {
                     </div>
                     <button
                       onClick={(e) => handleDeleteClick(e, gameData)}
-                      className="mt-2 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border border-red-300 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-colors duration-150 shadow-sm hover:shadow-md"
+                      className="mt-2 px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 border-2 border-[#b91c1c] rounded-md text-xs font-semibold flex items-center gap-1.5 transition-colors duration-150 shadow-[0_3px_0px_#b91c1c] hover:shadow-[0_1px_0px_#b91c1c]"
+                      style={{ boxShadow: '0 3px 0px #b91c1c' }}
                     >
                       <FaTrashAlt /> Delete
                     </button>
@@ -271,6 +272,23 @@ export default function LoadGame() {
         onConfirm={handleDeleteConfirm}
         gameName={deleteConfirmation.nationTag || ''}
       />
+
+      {/* New Nation Button at the bottom */}
+      <div className="flex justify-center mt-12">
+        <button
+          onClick={() => router.push('/scenario_select')}
+          className={`
+            w-full max-w-3xl px-5 py-7 text-2xl font-bold rounded-xl border-2 transition-all duration-200 
+            flex items-center justify-center gap-3 shadow-[4px_4px_0px_0px_rgba(103,185,231,0.3)] hover:shadow-[6px_6px_0px_0px_rgba(103,185,231,0.35)]
+            [font-family:var(--font-mplus-rounded)] whitespace-nowrap
+            bg-[#6ec53e] text-white border-[#59a700] hover:bg-[#60b33a] active:bg-[#539e30]`
+          }
+          style={{ borderRadius: '20px' }}
+        >
+          <span role="img" aria-label="swords" className="text-2xl">⚔️</span>
+          New Nation
+        </button>
+      </div>
     </div>
   );
 } 

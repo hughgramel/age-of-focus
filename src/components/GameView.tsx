@@ -22,6 +22,8 @@ import { getNationFlag } from '@/utils/nationFlags';
 import MissionsModal from './MissionsModal';
 import { getNationName } from '@/data/nationTags';
 import panzoom from 'panzoom';
+import { achievements as allAchievements } from '@/data/achievements/achievements_world_states';
+import { UserService } from '@/services/userService';
 
 interface GameViewProps {
   game?: Game;
@@ -55,6 +57,29 @@ const VICTORY_POWER_RATIO = 1.2; // Attacker needs 1.2x defender power to guaran
 const MINIMUM_POWER_RATIO = 0.8; // Attacker needs at least 0.8x defender power to attempt
 // --- End Conquest Constants ---
 
+// --- Achievement Popup Component ---
+function GameAchievementPopup({ achievementName, nationFlag, nationName, onClose, style }: { achievementName: string; nationFlag: string; nationName: string; onClose: () => void; style?: React.CSSProperties }) {
+  return (
+    <div
+      className="fixed z-50 bg-white border-2 border-gray-800 rounded-lg px-6 py-4 flex items-center gap-4 [font-family:var(--font-mplus-rounded)] shadow-none"
+      style={{
+        ...style,
+        boxShadow: '0 8px 0px 0px #1e293b', // dark bottom shadow
+        minWidth: 320,
+        maxWidth: 400,
+      }}
+    >
+      <span className="text-2xl select-none">🏆</span>
+      <div className="flex-1">
+        <div className="font-bold text-lg text-gray-800 mb-1">Achievement Unlocked</div>
+        <div className="text-base font-semibold text-gray-900 mb-0.5">{achievementName}</div>
+        <div className="text-xs text-gray-500 flex items-center gap-1 mt-1">{nationFlag} {nationName}</div>
+      </div>
+      <button onClick={onClose} className="ml-3 text-gray-400 hover:text-gray-700 text-lg font-bold">✕</button>
+    </div>
+  );
+}
+
 export default function GameView({ game, isDemo = false, onBack, panzoomInstanceRef }: GameViewProps) {
   const { user } = useAuth();
   const selectedProvinceRef = useRef<string | null>(null);
@@ -81,6 +106,7 @@ export default function GameView({ game, isDemo = false, onBack, panzoomInstance
     playerArmy: 0
   });
   const [focusTimeRemaining, setFocusTimeRemaining] = useState(0);
+  const [achievementPopups, setAchievementPopups] = useState<{ name: string; nationFlag: string; nationName: string }[]>([]);
 
   // Effect to determine screen size for layout changes
   // This is a basic way; consider a more robust hook for production (e.g., from a UI library or use-hooks)
@@ -902,6 +928,8 @@ export default function GameView({ game, isDemo = false, onBack, panzoomInstance
 
       console.log('Check achievements now');
       checkAchievements();
+      console.log('Check missions now');
+      checkMissions();
 
       console.log('Action executed successfully');
     } catch (error) {
@@ -964,6 +992,8 @@ export default function GameView({ game, isDemo = false, onBack, panzoomInstance
 
         console.log('Check achievements now');
         checkAchievements();
+        console.log('Check missions now');
+        checkMissions();
 
         // Optional: Add feedback to the user
         const provinceName = updatedGame.provinces[provinceIndex].name || provinceId;
@@ -981,9 +1011,143 @@ export default function GameView({ game, isDemo = false, onBack, panzoomInstance
     }
   };
 
-  const checkAchievements = async () => {
-    console.log('Checking achievements');
+  async function checkMissions() {
+    console.log('Checking missions');
+    // Here we need to check if the player has any missions that are now complete.
+    // If we do, we complete them and award the rewards by executing the action or granting the rewards.
   }
+  // --- Achievement Checking ---
+  async function checkAndUnlockAchievements({
+    userId,
+    playerNationTag,
+    playerNationName,
+    gold,
+    industry,
+    army,
+    population,
+    ownedProvinceIds,
+    unlockedAchievementIds,
+    showPopup,
+  }: {
+    userId: string;
+    playerNationTag: string;
+    playerNationName: string;
+    gold: number;
+    industry: number;
+    army: number;
+    population: number;
+    ownedProvinceIds: string[];
+    unlockedAchievementIds: string[];
+    showPopup: (achievement: { name: string; nationFlag: string; nationName: string }) => void;
+  }) {
+    for (const ach of allAchievements) {
+      if (unlockedAchievementIds.includes(ach.id)) continue;
+      const req = ach.requirements;
+      let met = true;
+      if (req.tag && req.tag !== playerNationTag) met = false;
+      if (req.minGold && gold < req.minGold) met = false;
+      if (req.minIndustry && industry < req.minIndustry) met = false;
+      if (req.minArmy && army < req.minArmy) met = false;
+      if (req.minPopulation && population < req.minPopulation) met = false;
+      if (req.minProvinces && ownedProvinceIds.length < req.minProvinces) met = false;
+      if (req.requiredProvinces && req.requiredProvinces.length > 0) {
+        for (const prov of req.requiredProvinces) {
+          if (!ownedProvinceIds.includes(prov)) met = false;
+        }
+      }
+      if (met) {
+        await UserService.unlockAchievement(userId, ach.id);
+        showPopup({
+          name: ach.name,
+          nationFlag: getNationFlag(playerNationTag),
+          nationName: playerNationName,
+        });
+      }
+    }
+  }
+
+  async function checkAchievements() {
+    try {
+      // Determine scenario (default to 'world_states' if not found)
+      const scenario = localGame?.mapName || 'world_states';
+      let achievementsModule;
+      if (scenario === 'world_states') {
+        achievementsModule = await import('../data/achievements/achievements_world_states');
+      } else {
+        // Fallback or add more scenarios as needed
+        achievementsModule = await import('../data/achievements/achievements_world_states');
+      }
+      const { achievements } = achievementsModule;
+      const playerNation = localGame?.nations.find(n => n.nationTag === localGame.playerNationTag);
+      if (!playerNation || !localGame) {
+        console.warn('No player nation or game found for achievement check.');
+        return;
+      }
+      // Get all provinces owned by the player
+      const ownedProvinces = localGame.provinces.filter(p => p.ownerTag === playerNation.nationTag);
+      const ownedProvinceIds = ownedProvinces.map(p => p.id);
+      // Gather resources
+      const gold = playerNation.gold;
+      const industry = ownedProvinces.reduce((sum, p) => sum + (p.industry || 0), 0);
+      const army = ownedProvinces.reduce((sum, p) => sum + (p.army || 0), 0);
+      const population = ownedProvinces.reduce((sum, p) => sum + (p.population || 0), 0);
+      // Get unlocked achievements from Firestore
+      let unlockedAchievementIds: string[] = [];
+      if (user) {
+        unlockedAchievementIds = await UserService.getUserAchievements(user.uid);
+        // Show popup handler
+        const showPopup = (achievement: { name: string; nationFlag: string; nationName: string }) => {
+          setAchievementPopups(prev => [achievement, ...prev]);
+        };
+        // Call the unlock logic
+        await checkAndUnlockAchievements({
+          userId: user.uid,
+          playerNationTag: playerNation.nationTag,
+          playerNationName: playerNation.name,
+          gold,
+          industry,
+          army,
+          population,
+          ownedProvinceIds,
+          unlockedAchievementIds,
+          showPopup,
+        });
+      }
+      // ... existing achievement check logic (for console logs, etc.)
+      achievements.forEach(ach => {
+        const req = ach.requirements;
+        let met = true;
+        if (req.tag && req.tag !== playerNation.nationTag) met = false;
+        if (req.minGold && gold < req.minGold) met = false;
+        if (req.minIndustry && industry < req.minIndustry) met = false;
+        if (req.minArmy && army < req.minArmy) met = false;
+        if (req.minPopulation && population < req.minPopulation) met = false;
+        if (req.minProvinces && ownedProvinceIds.length < req.minProvinces) met = false;
+        if (req.requiredProvinces && req.requiredProvinces.length > 0) {
+          for (const prov of req.requiredProvinces) {
+            if (!ownedProvinceIds.includes(prov)) met = false;
+          }
+        }
+        console.log(`Achievement: ${ach.name} - ${met ? 'ACHIEVED' : 'Not achieved'}`);
+        if (!met) {
+          console.log('  Requirements:', ach.requirements);
+          console.log('  Your stats:', { gold, industry, army, population, ownedProvinceIds });
+        }
+      });
+    } catch (err) {
+      console.error('Error checking achievements:', err);
+    }
+  }
+  // --- End Achievement Checking ---
+
+  // Auto-dismiss achievement popups after 3.5s
+  useEffect(() => {
+    if (achievementPopups.length === 0) return;
+    const timer = setTimeout(() => {
+      setAchievementPopups(prev => prev.slice(0, -1));
+    }, 3500);
+    return () => clearTimeout(timer);
+  }, [achievementPopups]);
 
   // Effect to handle Escape key press for closing modals
   useEffect(() => {
@@ -1066,60 +1230,13 @@ export default function GameView({ game, isDemo = false, onBack, panzoomInstance
       {/* --- UI Elements for NON-CONQUEST MODE --- */}
       {!isInConqueringMode && (
         <>
-          {/* Layout for larger screens (sm and up) */}
-          {!isSmallScreen && (
-            <>
-              {/* Top-Left: BackButton and ResourceBar */}
-              <div className="absolute top-4 left-4 z-40 flex flex-row items-start gap-3">
-                <BackButton onClick={onBack} />
-                {localGame && (
-                  <ResourceBar
-                    playerGold={currentGold}
-                    totalPopulation={totalPopulation}
-                    totalIndustry={totalIndustry}
-                    totalArmy={totalArmy}
-                    playerNationTag={localGame.playerNationTag}
-                    gameDate={localGame.date}
-                    fadeIn={fadeIn}
-                  />
-                )}
-              </div>
-
-              {/* Middle-Left: Vertical ButtonGroup (4 buttons) */}
-              <div className="absolute top-1/2 left-4 -translate-y-1/2 z-40">
-                <ButtonGroup {...fourButtonHandlerProps} orientation="vertical" />
-              </div>
-
-              {/* Bottom-Center: Standalone FocusNowButton with size="large" */}
-              <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40">
-                <FocusNowButton 
-                  fadeIn={fadeIn} 
-                  hasActiveSession={hasActiveSession} 
-                  onClick={handleFocusNowClick} 
-                  focusTimeRemaining={focusTimeRemaining}
-                  size="large"
-                />
-              </div>
-            </>
-          )}
-
-          {/* Layout for smaller screens (below sm) */}
-          {isSmallScreen && (
-             <div className="fixed bottom-4 left-0 right-0 flex justify-center items-center gap-3 sm:gap-6 px-2 sm:px-0 z-40">
-                <ButtonGroup {...fourButtonHandlerProps} orientation="horizontal" />
-                <div className="flex-shrink-0"> {/* Wrapper for FocusNowButton to be a flex item */} 
-                  <FocusNowButton 
-                    fadeIn={fadeIn} 
-                    hasActiveSession={hasActiveSession} 
-                    onClick={handleFocusNowClick} 
-                    focusTimeRemaining={focusTimeRemaining}
-                  />
-                </div>
-            </div>
-          )}
-           {/* ResourceBar at top for small screens (Moved inside !isSmallScreen check for its specific location) */}
-           {isSmallScreen && localGame && (
-            <div className="fixed top-2 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-2rem)] max-w-md">
+          {/* Top-Left: BackButton */}
+          <div className="absolute top-4 left-4 z-40">
+            <BackButton onClick={onBack} />
+          </div>
+          {/* Top-Center: ResourceBar */}
+          {localGame && (
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-40">
               <ResourceBar
                 playerGold={currentGold}
                 totalPopulation={totalPopulation}
@@ -1131,6 +1248,22 @@ export default function GameView({ game, isDemo = false, onBack, panzoomInstance
               />
             </div>
           )}
+
+          {/* Middle-Left: Vertical ButtonGroup (4 buttons) */}
+          <div className="absolute top-1/2 left-4 -translate-y-1/2 z-40">
+            <ButtonGroup {...fourButtonHandlerProps} orientation="vertical" />
+          </div>
+
+          {/* Bottom-Center: Standalone FocusNowButton with size="large" */}
+          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-40">
+            <FocusNowButton 
+              fadeIn={fadeIn} 
+              hasActiveSession={hasActiveSession} 
+              onClick={handleFocusNowClick} 
+              focusTimeRemaining={focusTimeRemaining}
+              size="large"
+            />
+          </div>
         </>
       )}
       
@@ -1254,6 +1387,18 @@ export default function GameView({ game, isDemo = false, onBack, panzoomInstance
           </button>
         </div>
       )}
+
+      {/* Achievement Popups (bottom left, stacked) */}
+      {achievementPopups.map((popup, idx) => (
+        <GameAchievementPopup
+          key={popup.name + idx}
+          achievementName={popup.name}
+          nationFlag={popup.nationFlag}
+          nationName={popup.nationName}
+          onClose={() => setAchievementPopups(prev => prev.filter((_, i) => i !== idx))}
+          style={{ bottom: `${1.5 + idx * 4}rem`, left: '1.5rem' }}
+        />
+      ))}
     </div>
   );
 } 

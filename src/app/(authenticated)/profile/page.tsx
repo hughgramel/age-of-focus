@@ -8,6 +8,9 @@ import { Task } from '@/types/task';
 import { GameService, SaveGame } from '@/services/gameService';
 import { getNationFlag } from '@/utils/nationFlags';
 import { getNationName } from '@/data/nationTags';
+import { UserService } from '@/services/userService';
+import { achievements as allAchievements } from '@/data/achievements/achievements_world_states';
+import Link from 'next/link';
 
 // Helper to format the date
 const formatJoinDate = (date: Date | undefined): string => {
@@ -59,16 +62,20 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [saveGames, setSaveGames] = useState<SaveGame[]>([]);
   const [loadingGames, setLoadingGames] = useState(true);
+  const [userAchievements, setUserAchievements] = useState<{ id: string; unlockedAt: Date }[]>([]);
+  const [loadingAchievements, setLoadingAchievements] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       if (user) {
         setLoadingStats(true);
         setLoadingGames(true);
+        setLoadingAchievements(true);
         try {
-          const [userTasks, userGamesData] = await Promise.all([
+          const [userTasks, userGamesData, userAchievementDocs] = await Promise.all([
             TaskService.getUserTasks(user.uid),
-            GameService.getSaveGames(user.uid)
+            GameService.getSaveGames(user.uid),
+            UserService.getUserAchievements(user.uid)
           ]);
           
           setTasks(userTasks);
@@ -80,12 +87,22 @@ export default function ProfilePage() {
             );
           setSaveGames(gamesArray);
 
+          // Fetch achievement unlock dates
+          const achievementsCol = (await import('firebase/firestore')).collection;
+          const db = (await import('@/lib/firebase')).db;
+          const snapshot = await (await import('firebase/firestore')).getDocs(achievementsCol(db, 'users', user.uid, 'achievements'));
+          const unlocked = snapshot.docs.map(doc => ({
+            id: doc.id,
+            unlockedAt: doc.data().unlockedAt?.toDate ? doc.data().unlockedAt.toDate() : null
+          })).sort((a, b) => b.unlockedAt - a.unlockedAt);
+          setUserAchievements(unlocked);
         } catch (error) {
           console.error('Error loading profile data:', error);
           setError('Failed to load profile data.');
         } finally {
           setLoadingStats(false);
           setLoadingGames(false);
+          setLoadingAchievements(false);
         }
       }
     };
@@ -152,7 +169,7 @@ export default function ProfilePage() {
               <div className="text-center py-8 text-[#0B1423]/50">Loading nations...</div>
             ) : saveGames.length > 0 ? (
               <div className="space-y-3">
-                {saveGames.slice(0, 3).map((gameData) => (
+                {saveGames.slice(0, 5).map((gameData) => (
                   <RecentNationCard key={gameData.game.id} gameData={gameData} />
                 ))}
               </div>
@@ -166,11 +183,46 @@ export default function ProfilePage() {
           </section>
 
           <section className="mb-8">
-            <h2 className="text-2xl font-bold text-[#0B1423] mb-4">Achievements</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-[#0B1423]">Recent Achievements</h2>
+              <div className="flex gap-2 ml-4">
+                {userAchievements.length > 0 && (
+                  <>
+                    <Link href="/achievements" className="inline-block px-5 py-2 rounded-lg border-2 border-gray-300 bg-white text-[#0B1423] font-semibold shadow-[0_4px_0px] shadow-gray-300 hover:bg-gray-50 transition-all duration-150">
+                      View All
+                    </Link>
+                    <Link href="/achievements/locked" className="inline-block px-5 py-2 rounded-lg border-2 border-gray-300 bg-white text-[#0B1423] font-semibold shadow-[0_4px_0px] shadow-gray-300 hover:bg-gray-50 transition-all duration-150">
+                      View Locked
+                    </Link>
+                  </>
+                )}
+              </div>
+            </div>
             <div className="bg-white rounded-lg p-6 border-2 border-gray-300 shadow-[0_4px_0px] shadow-gray-300">
-              <p className="text-center text-[#0B1423]/50 py-8">
-                Achievements coming soon!
-              </p>
+              {loadingAchievements ? (
+                <div className="text-center py-8 text-[#0B1423]/50">Loading achievements...</div>
+              ) : userAchievements.length === 0 ? (
+                <p className="text-center text-[#0B1423]/50 py-8">No achievements unlocked yet. Play to earn your first achievement!</p>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                    {userAchievements.slice(0, 10).map(({ id, unlockedAt }) => {
+                      const ach = allAchievements.find(a => a.id === id);
+                      if (!ach) return null;
+                      return (
+                        <div key={id} className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-lg p-3">
+                          <span className="text-2xl select-none">{ach.icon}</span>
+                          <div>
+                            <div className="font-bold text-[#0B1423] text-base">{ach.name}</div>
+                            <div className="text-xs text-gray-700">{ach.description}</div>
+                            <div className="text-xs text-gray-500 mt-1">{unlockedAt ? `Unlocked ${unlockedAt.toLocaleDateString()}` : ''}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
             </div>
           </section>
 
@@ -181,6 +233,12 @@ export default function ProfilePage() {
           )}
 
           <div className="mt-8 text-center">
+            <Link
+              href="/profile/manage"
+              className="inline-block px-6 py-3 font-semibold rounded-lg border-2 border-gray-300 bg-white text-[#0B1423] shadow-[0_4px_0px] shadow-gray-300 hover:bg-gray-50 active:translate-y-[1px] active:shadow-[0_2px_0px] shadow-gray-300/50 transition-all duration-150 mr-4"
+            >
+              Manage Account
+            </Link>
             <button
               onClick={handleLogout}
               className="px-6 py-3 font-semibold rounded-lg border-2 border-gray-300 bg-white text-[#0B1423] shadow-[0_4px_0px] shadow-gray-300 hover:bg-gray-50 active:translate-y-[1px] active:shadow-[0_2px_0px] shadow-gray-300/50 transition-all duration-150"

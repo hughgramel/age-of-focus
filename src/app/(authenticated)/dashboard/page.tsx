@@ -104,26 +104,27 @@ export default function Dashboard() {
     <main className={`flex-1 flex flex-col px-4 py-8 transition-opacity duration-300 h-full ${isNavigating ? 'opacity-0' : 'opacity-100'}`}>
         
       {/* Resource Bar (Top) */} 
-      <div className="w-full max-w-4xl mx-auto h-[48px] mb-8 flex-shrink-0">
+      <div className="w-full max-w-5xl mx-auto h-[48px] mb-8 flex-shrink-0 px-2">
         {recentGame && recentGameResources && (
-          <ResourceBar 
-            playerGold={recentGameResources.playerGold}
-            totalPopulation={recentGameResources.totalPopulation}
-            totalIndustry={recentGameResources.totalIndustry}
-            totalArmy={recentGameResources.totalArmy}
-            playerNationTag={recentGame.game.playerNationTag}
-            gameDate={recentGame.game.date}
-            fadeIn={resourceBarFadeIn}
-          />
+          <div className="w-full">
+            <ResourceBar 
+              playerGold={recentGameResources.playerGold}
+              totalPopulation={recentGameResources.totalPopulation}
+              totalIndustry={recentGameResources.totalIndustry}
+              totalArmy={recentGameResources.totalArmy}
+              playerNationTag={recentGame.game.playerNationTag}
+              gameDate={recentGame.game.date}
+              fadeIn={resourceBarFadeIn}
+            />
+          </div>
         )}
       </div>
 
       {/* Main Content Area (Buttons Left, Placeholder Right) */} 
       <div className="flex-grow flex items-center w-full max-w-7xl mx-auto">
-        
-        {/* Left Column: Buttons (Centered Horizontally) */}
-        <div className="w-1/3 flex flex-col items-center pr-4">
-          <div className="flex flex-col gap-6">
+        {/* Centered Column: Buttons */}
+        <div className="w-full flex flex-col items-center justify-center">
+          <div className="flex flex-col gap-6 items-center">
             {/* Resume Nation Button */} 
             <button
               onClick={handleContinueGame}
@@ -179,24 +180,6 @@ export default function Dashboard() {
             </button>
           </div>
         </div>
-
-        {/* Right Column: Grid Content */} 
-        <div className="flex-grow self-stretch p-6 ml-4 flex flex-col justify-center"> 
-          {/* Grid Container - Increased gap, removed flex-grow */} 
-          <div className="grid grid-cols-2 gap-4"> 
-            {[...Array(6)].map((_, index) => (
-              <div 
-                key={index}
-                className="bg-white rounded-lg border-2 border-gray-300 shadow-[0_4px_0px] shadow-gray-300 p-4 flex items-center justify-center h-40"
-              >
-                <span className="text-gray-400 text-sm [font-family:var(--font-mplus-rounded)]">
-                  Box {index + 1}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
       </div>
     </main>
   );
