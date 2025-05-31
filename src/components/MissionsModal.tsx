@@ -69,7 +69,8 @@ export default function MissionsModal({ onClose, playerNationName, playerNationT
     if (!user) return;
     const newlyUnlocked: string[] = [];
     for (const achievement of achievements) {
-      // Only check if not already unlocked and available for this nation
+      // Only check if not already unlocked and available for this natio
+      console.log(achievement)
       const isAvailable = !achievement.requirements.tag || achievement.requirements.tag === playerNationTag;
       if (!isAvailable) continue;
       if (unlocked.includes(achievement.id)) continue;

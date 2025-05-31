@@ -23,6 +23,13 @@ export const achievements: Achievement[] = [
     requirements: { minGold: 1000 },
   },
   {
+    id: 'the_eagle_rises',
+    name: 'The Eagle Rises',
+    description: 'As Prussia, unite the German Empire.',
+    icon: '🦅',
+    requirements: { tag: 'PRU', requiredProvinces: ["Baden","Wurttemberg","Bavaria","Franconia","Hesse","Rhineland","Alsace_Lorraine","North_Rhine","Ruhr","Westphalia","Hannover","Elbe","Mecklenburg","Brandenburg","Anhalt","Brunswick","Schleswig_Holstein","Saxony","Silesia","Posen","West_Prussia","East_Prussia","Pomerania"] },
+  },
+  {
     id: 'industrial_power',
     name: 'Industrial Revolution',
     description: 'Lead your nation through the industrial revolution by developing a strong manufacturing base.',
@@ -98,13 +105,6 @@ export const achievements: Achievement[] = [
     description: 'As the United States, expand westward and establish a strong industrial economy.',
     icon: '🦅',
     requirements: { tag: 'USA', minProvinces: 12, minIndustry: 1000 },
-  },
-  {
-    id: 'german_unification',
-    name: 'German Unification',
-    description: 'As Prussia, unite the German states and establish a powerful industrial-military complex.',
-    icon: '⚡',
-    requirements: { tag: 'PRU', minProvinces: 8, minIndustry: 1200, minArmy: 1500 },
   },
   {
     id: 'italian_unification',

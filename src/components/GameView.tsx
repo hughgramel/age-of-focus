@@ -80,6 +80,17 @@ function GameAchievementPopup({ achievementName, nationFlag, nationName, onClose
   );
 }
 
+// Helper to convert seconds to mm:ss
+const convertSecondsToTimeFormat = (seconds: number): string => {
+  const numHours = Math.floor((seconds / 60) / 60);
+  const numMinutes = Math.floor((seconds / 60) % 60);
+  const numSeconds = Math.floor(seconds % 60);
+  const hoursStr = numHours > 0 ? `${numHours}:` : '';
+  const minutesStr = numHours > 0 && numMinutes < 10 ? `0${numMinutes}` : numMinutes;
+  const secondsStr = numSeconds < 10 ? `0${numSeconds}` : numSeconds;
+  return `${hoursStr}${minutesStr}:${secondsStr}`;
+};
+
 export default function GameView({ game, isDemo = false, onBack, panzoomInstanceRef }: GameViewProps) {
   const { user } = useAuth();
   const selectedProvinceRef = useRef<string | null>(null);
@@ -1178,6 +1189,15 @@ export default function GameView({ game, isDemo = false, onBack, panzoomInstance
     };
     // Depend on the modal states so the listener always knows the current state
   }, [isModalOpen, isTaskModalOpen, isHabitsModalOpen, isNationalPathModalOpen, isMissionsModalOpen, handleProvinceSelect]);
+
+  // Set tab title based on focus session
+  useEffect(() => {
+    if (hasActiveSession) {
+      document.title = `${convertSecondsToTimeFormat(Math.max(0, focusTimeRemaining))}`;
+    } else {
+      document.title = 'Age of Focus';
+    }
+  }, [hasActiveSession, focusTimeRemaining]);
 
   if (!localGame && !isDemo) {
     return <div className="flex items-center justify-center h-screen text-white">Loading game data...</div>;

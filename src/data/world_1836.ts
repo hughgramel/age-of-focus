@@ -670,8 +670,8 @@ const allProvinces: Province[] = [
   },
   {
     id: 'Schleswig_Holstein',
-    name: 'Schleswig-Holstein',
-    ownerTag: 'HAN',
+    name: 'Schleswig Holstein',
+    ownerTag: 'DEN',
     path: '',
     population: 923456,
     goldIncome: 85,
